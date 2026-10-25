@@ -1,4 +1,4 @@
-# Salonplafond BAR – Projektstruktur
+# Salonplafond Kuche – Projektstruktur
 
 Statische Web-App (kein Build nötig). Läuft auf GitHub Pages, Daten in Supabase.
 
