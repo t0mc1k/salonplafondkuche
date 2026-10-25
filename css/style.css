@@ -1,0 +1,155 @@
+    body { font-family: system-ui, -apple-system, sans-serif; transition: background-color 0.2s, color 0.2s; }
+    
+    /* Tmavý režim (štandard) */
+    body.dark-mode { background-color: #0f172a; color: #f8fafc; }
+    body.dark-mode .card { background: #1e293b; border: 1px solid #334155; color: #f8fafc; }
+    body.dark-mode .list-item { background: #1e293b; border: 1px solid #334155; color: #f8fafc; }
+    body.dark-mode .list-item:hover { background: #283548; border-color: #f59e0b; }
+    body.dark-mode .modal-bg { background: rgba(0,0,0,0.8); }
+    body.dark-mode .custom-box { background: #090d16; border-color: #1e293b; color: #cbd5e1; }
+    body.dark-mode input, body.dark-mode select, body.dark-mode textarea { background-color: #090d16 !important; color: #f8fafc !important; border-color: #334155 !important; }
+
+    /* Svetlý režim */
+    body.light-mode { background-color: #f8fafc; color: #0f172a; }
+    body.light-mode .card { background: #ffffff; border: 1px solid #e2e8f0; color: #0f172a; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -4px rgba(0,0,0,0.05); }
+    body.light-mode .list-item { background: #ffffff; border: 1px solid #e2e8f0; color: #0f172a; }
+    body.light-mode .list-item:hover { background: #fef3c7; border-color: #f59e0b; }
+    body.light-mode input, body.light-mode select, body.light-mode textarea { background-color: #ffffff !important; color: #0f172a !important; border-color: #cbd5e1 !important; }
+    body.light-mode .modal-bg { background: rgba(15,23,42,0.4); backdrop-filter: blur(4px); }
+    body.light-mode .custom-box { background: #f1f5f9; border-color: #e2e8f0; color: #334155; }
+
+    .card { border-radius: 1rem; transition: transform 0.2s; }
+    .card:hover { transform: translateY(-4px); border-color: #f59e0b; }
+    .list-item { border-radius: 0.75rem; transition: background 0.2s; }
+    
+    .login-logo-advanced {
+      animation: advancedSpinRotateAnim 5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+    @keyframes advancedSpinRotateAnim {
+      0% { transform: scale(1) rotate(0deg); box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+      25% { transform: scale(1.1) rotate(90deg); box-shadow: 0 0 25px rgba(245, 158, 11, 0.8); }
+      50% { transform: scale(0.95) rotate(180deg); box-shadow: 0 0 10px rgba(245, 158, 11, 0.3); }
+      75% { transform: scale(1.1) rotate(270deg); box-shadow: 0 0 25px rgba(245, 158, 11, 0.8); }
+      100% { transform: scale(1) rotate(360deg); box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+    }
+
+    .header-logo-container {
+      position: relative;
+      width: 3rem;
+      height: 3rem;
+      background-color: #fbbf24;
+      border-radius: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      user-select: none;
+      animation: salonLogoPlayful 7s ease-in-out infinite;
+      transition: transform 0.2s;
+    }
+    .header-logo-container:hover {
+      transform: scale(1.1) rotate(5deg);
+    }
+    
+    .logo-main-char { font-size: 1.25rem; font-weight: 900; color: #0f172a; line-height: 1; }
+    .logo-macron { font-size: 13px; font-weight: 900; color: #0f172a; line-height: 1; margin-bottom: -2px; letter-spacing: 1px; }
+    .logo-dot { font-size: 9px; font-weight: 900; color: #0f172a; line-height: 1; margin-top: -2px; }
+
+    @keyframes salonLogoPlayful {
+      0% { transform: translateY(0) rotate(0deg) scale(1); }
+      10% { transform: translateY(-6px) rotate(-15deg) scale(1.1); }
+      20% { transform: translateY(0) rotate(360deg) scale(1); }
+      30% { transform: translateY(-10px) rotate(360deg) scale(1.15); }
+      40% { transform: translateY(0) rotate(360deg) scale(1); }
+      50% { transform: scale(1.15) rotate(15deg); }
+      65% { transform: scale(1) rotate(0deg); }
+      100% { transform: translateY(0) rotate(0deg) scale(1); }
+    }
+
+    .pulse-badge-dot {
+      animation: pulseBlinkEffect 1.5s infinite;
+    }
+    @keyframes pulseBlinkEffect {
+      0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.8); }
+      50% { transform: scale(1.2); opacity: 0.8; box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+      100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+
+    @media print {
+      @page { size: portrait; margin: 10mm; }
+      body { background: white !important; color: black !important; padding: 0 !important; }
+      
+      body > *:not(#drinkModal):not(#a3PrintPreviewModal) { display: none !important; }
+
+      #drinkModal, #a3PrintPreviewModal {
+        position: absolute !important;
+        inset: 0 !important;
+        background: white !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        display: block !important;
+        z-index: 99999 !important;
+      }
+
+      #drinkModal .card, #a3PrintPreviewModal .card {
+        border: none !important;
+        box-shadow: none !important;
+        background: white !important;
+        color: black !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+      }
+
+      .no-print, button, .modal-bg { display: none !important; }
+      body.print-no-images #printModalImage { display: none !important; }
+
+      .print-watermark-footer {
+        display: block !important;
+        position: fixed !important;
+        bottom: 5mm !important;
+        right: 5mm !important;
+        font-size: 8pt !important;
+        font-weight: bold !important;
+        color: #64748b !important;
+        text-align: right !important;
+      }
+    }
+
+    .print-watermark-footer { display: none; }
+
+    /* Drag & Drop in den Multi-View-Korb */
+    [data-drink-id] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+    [data-drink-id] img { -webkit-user-drag: none; user-drag: none; }
+    body.tray-dragging, body.tray-dragging * { cursor: grabbing !important; user-select: none !important; }
+    .tray-source-dragging { opacity: 0.45; }
+
+    /* Mobilné menu: vždy v obraze, posúvateľné, nie mimo obrazovky */
+    @media (max-width: 767px) {
+      #settingsDropdown {
+        position: fixed !important;
+        left: 1rem !important;
+        right: 1rem !important;
+        top: auto !important;
+        bottom: max(1rem, env(safe-area-inset-bottom, 0px)) !important;
+        width: auto !important;
+        max-height: min(80dvh, calc(100dvh - 2rem));
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        z-index: 250 !important;
+        margin-top: 0 !important;
+      }
+    }
+    @media (min-width: 768px) {
+      #settingsDropdown {
+        max-height: min(70vh, 36rem);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        z-index: 250 !important;
+      }
+    }

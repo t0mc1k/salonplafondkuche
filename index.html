@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="de" id="htmlRoot">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Salonplafond BAR v3.1.00</title>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- SheetJS pre Excel Import & Export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css?v=3.1.00">
+</head>
+<body class="dark-mode p-4 md:p-8 max-w-6xl mx-auto pb-32" onclick="closeDropdowns(event)">
+
+  <!-- 1. PRIHLASOVACIA OBRAZOVKA -->
+  <div id="authContainer" class="fixed inset-0 z-[200] bg-slate-950 flex flex-col items-center justify-center p-4 md:p-6 text-center overflow-y-auto">
+    <div class="flex flex-col items-center gap-4 w-full max-w-lg my-auto">
+      
+      <div class="login-logo-advanced w-16 h-16 bg-amber-400 rounded-2xl flex flex-col items-center justify-center shadow-2xl p-1 text-slate-950 font-bold select-none border-2 border-amber-300 mx-auto">
+        <div class="text-[12px] font-black tracking-[1px] leading-none mb-0.5">——</div>
+        <div class="text-2xl font-black leading-none my-0">O</div>
+        <div class="text-[10px] font-black leading-none mt-0.5">•</div>
+      </div>
+
+      <div>
+        <h1 class="text-lg md:text-xl font-black tracking-wider text-white uppercase">Anmeldung</h1>
+        <h2 class="text-xl md:text-2xl font-extrabold text-amber-400 tracking-tight mt-1">Salonplafond BAR</h2>
+        <span class="text-xs text-slate-400 font-medium mt-0.5 block">v3.1.00 • Touch-Grid PIN-Login</span>
+      </div>
+
+      <div id="pinLoginForm" class="w-full bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-2xl space-y-4 text-left mt-1">
+        <div>
+          <label class="block text-xs font-semibold uppercase mb-2 text-slate-300 flex items-center justify-between">
+            <span>1. Wer bist du? (Personal wählen)</span>
+            <span id="selectedWaiterLabel" class="text-amber-400 font-bold"></span>
+          </label>
+          <div id="waiterGridContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+            <p class="col-span-full text-slate-500 italic text-xs text-center py-4">Personal wird geladen...</p>
+          </div>
+        </div>
+
+        <div id="pinInputSection" class="hidden border-t border-slate-800 pt-3">
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-semibold uppercase text-slate-300">2. PIN-Code eingeben</label>
+            <button type="button" onclick="resetWaiterSelection()" class="text-[11px] text-amber-400 hover:underline">← Anderen Namen wählen</button>
+          </div>
+          <div class="relative mb-2">
+            <input type="password" id="loginPinInput" readonly placeholder="••••" class="w-full p-2.5 text-center tracking-widest text-base rounded-xl bg-slate-950 border border-slate-800 text-amber-400 font-black focus:outline-none focus:border-amber-400">
+          </div>
+
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" onclick="appendPinNum('1')" class="p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-white text-sm font-bold rounded-xl transition">1</button>
+            <button type="button" onclick="appendPinNum('2')" class="p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-white text-sm font-bold rounded-xl transition">2</button>
+            <button type="button" onclick="appendPinNum('3')" class="p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-white text-sm font-bold rounded-xl transition">3</button>
+            <button type="button" onclick="appendPinNum('4')" class="p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-white text-sm font-bold rounded-xl transition">4</button>
+            <button type="button" onclick="appendPinNum('5')" class="p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-white text-sm font-bold rounded-xl transition">5</button>
+            <button type="button" onclick="appendPinNum('6')" class="p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-white text-sm font-bold rounded-xl transition">6</button>
+            <button type="button" onclick="appendPinNum('7')" class="p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-white text-sm font-bold rounded-xl transition">7</button>
+            <button type="button" onclick="appendPinNum('8')" class="p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-white text-sm font-bold rounded-xl transition">8</button>
+            <button type="button" onclick="appendPinNum('9')" class="p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-white text-sm font-bold rounded-xl transition">9</button>
+            <button type="button" onclick="clearPinInput()" class="p-2.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 text-xs font-bold rounded-xl transition">C</button>
+            <button type="button" onclick="appendPinNum('0')" class="p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-white text-sm font-bold rounded-xl transition">0</button>
+            <button type="button" onclick="backspacePinInput()" class="p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-amber-400 text-xs font-bold rounded-xl transition">⌫</button>
+          </div>
+          <button type="button" id="pinSubmitBtn" onclick="submitPinLogin()" class="w-full mt-2 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold rounded-xl text-sm transition shadow-lg">🔓 Anmelden</button>
+        </div>
+
+        <div id="pinAuthError" class="text-xs text-red-400 hidden font-medium text-center"></div>
+
+      </div>
+
+      <div class="mt-2 flex flex-col items-center gap-1">
+        <span class="text-xs text-slate-300 font-extrabold block">Erstellt von © T0mc1k (Tomas Kardos)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPRÁVCOVSKÝ PANEL PRE PERSONAL & PINs -->
+  <div id="staffPinManagementModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[260]">
+    <div class="card max-w-2xl w-full p-6 relative flex flex-col gap-5 max-h-[85vh] overflow-y-auto border-amber-500/50 shadow-2xl">
+      <button onclick="closeStaffPinModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      <div>
+        <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">👤 Personal & PINs (Zentrale)</h3>
+        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Verwaltung von Personal, PIN-Codes, Profilbildern und Zugriffsberechtigungen.</p>
+      </div>
+
+      <div class="custom-box p-4 rounded-xl border flex flex-col gap-3">
+        <h4 class="text-xs font-bold uppercase text-amber-600 dark:text-amber-400" id="staffFormTitle">➕ Neuen Mitarbeiter hinzufügen</h4>
+        <input type="hidden" id="editingStaffOriginalName" value="">
+        <input type="hidden" id="staffInputAvatar" value="">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div>
+            <label class="block text-[10px] font-semibold uppercase mb-1">Name / Vorname</label>
+            <input type="text" id="staffInputName" placeholder="z. B. Max" class="w-full p-2.5 rounded-lg border text-xs">
+          </div>
+          <div>
+            <label class="block text-[10px] font-semibold uppercase mb-1">PIN-Code</label>
+            <input type="text" id="staffInputPin" placeholder="z. B. 1234" class="w-full p-2.5 rounded-lg border text-xs">
+          </div>
+          <div>
+            <label class="block text-[10px] font-semibold uppercase mb-1">Rolle</label>
+            <select id="staffInputRole" class="w-full p-2.5 rounded-lg border text-xs">
+              <option value="staff">staff (Kellner)</option>
+              <option value="manager">manager (Manager)</option>
+              <option value="developer">developer (Entwickler)</option>
+            </select>
+          </div>
+        </div>
+
+        <label class="flex items-center gap-2 text-xs font-semibold cursor-pointer">
+          <input type="checkbox" id="staffInputCanEdit" class="w-4 h-4 accent-amber-500">
+          <span>🍸 Darf Getränke bearbeiten (Manager &amp; Developer immer)</span>
+        </label>
+
+        <div>
+          <label class="block text-[10px] font-semibold uppercase mb-1">Profilbild hochladen:</label>
+          <div class="flex gap-2 items-center">
+            <input type="file" id="staffAvatarFile" accept="image/*" onchange="uploadStaffAvatarToSupabase(event)" class="text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer">
+            <span id="staffAvatarStatus" class="text-[11px] text-amber-500 font-medium"></span>
+          </div>
+        </div>
+
+        <div class="flex gap-2 mt-1">
+          <button onclick="saveStaffMember()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition">Speichern</button>
+          <button onclick="resetStaffForm()" class="px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold rounded-lg text-xs transition border">Zurücksetzen</button>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center pt-1">
+        <h4 class="text-xs font-bold uppercase tracking-wider">Aktuelles Personal in der Datenbank:</h4>
+        <button onclick="openLoginHistoryModal()" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 font-bold rounded-lg text-xs transition border border-slate-300 dark:border-slate-700 flex items-center gap-1.5">
+          📜 Login-Protokoll anzeigen
+        </button>
+      </div>
+
+      <div id="staffManagementListContainer" class="flex flex-col gap-2 max-h-[35vh] overflow-y-auto pr-1">
+        <p class="text-slate-500 italic text-xs text-center py-4">Lade Personal...</p>
+      </div>
+
+      <div class="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="closeStaffPinModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGIN-HISTORIE / PROTOKOLL -->
+  <div id="loginHistoryModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[285]">
+    <div class="card max-w-2xl w-full p-6 relative flex flex-col gap-4 max-h-[85vh] overflow-y-auto border-amber-500/50 shadow-2xl">
+      <button onclick="closeLoginHistoryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      
+      <div class="flex items-center justify-between pr-8">
+        <div>
+          <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">📜 Login-Historie & Protokoll</h3>
+          <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Übersicht darüber, welcher Benutzer sich wann im System angemeldet hat und wer aktuell online ist.</p>
+        </div>
+        <button onclick="clearLoginHistoryLogs()" class="px-3 py-1.5 bg-red-500/20 hover:bg-red-500 text-red-600 dark:text-red-400 hover:text-white rounded-lg transition text-xs font-bold border border-red-500/30 shrink-0 flex items-center gap-1" title="Login-Protokoll leeren">
+          🗑️ Log vyčistiť
+        </button>
+      </div>
+
+      <!-- Online Status Box -->
+      <div id="onlineUsersSummaryBox" class="custom-box p-3 rounded-xl border flex flex-col gap-2 text-xs">
+        <span class="font-bold text-amber-600 dark:text-amber-400 uppercase text-[10px]">🟢 Aktiv online in den letzten 15 Minuten (<span id="onlineCountBadge">0</span>):</span>
+        <div id="onlineUsersListContainer" class="flex flex-wrap gap-1.5">
+          <span class="text-slate-500 italic">Lade Online-Status...</span>
+        </div>
+      </div>
+
+      <div id="loginHistoryListContainer" class="flex flex-col gap-2 max-h-[40vh] overflow-y-auto pr-1 custom-box p-3 rounded-xl border text-xs">
+        <p class="text-slate-500 italic text-xs text-center py-4">Lade Login-Protokoll...</p>
+      </div>
+
+      <div class="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="closeLoginHistoryModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MÔJ PROFIL (USER PROFILE) S BIO -->
+  <div id="userProfileModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[280]">
+    <div class="card max-w-md w-full p-6 relative flex flex-col gap-4 max-h-[90vh] overflow-y-auto border-amber-500/50 shadow-2xl">
+      <button onclick="closeUserProfileModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      <div>
+        <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">👤 Mein Profil</h3>
+        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Passe hier dein eigenes Profilbild, deinen PIN-Code und deine Beschreibung (Bio) an.</p>
+      </div>
+
+      <div class="custom-box p-4 rounded-xl border flex flex-col gap-4 items-center text-center">
+        <div id="profileModalAvatarContainer" onclick="openMyFullAvatar()" class="w-20 h-20 rounded-full border-2 border-amber-500 bg-slate-800 overflow-hidden flex items-center justify-center shadow-lg cursor-pointer hover:scale-105 transition" title="Klicken, um Foto in voller Größe anzuzeigen">
+          <span class="text-lg font-black text-amber-400" id="profileAvatarFallback">?</span>
+        </div>
+        <div>
+          <h4 id="profileModalName" class="text-base font-bold text-white"></h4>
+          <span id="profileModalRole" class="text-[10px] uppercase tracking-wider text-amber-400 font-semibold"></span>
+        </div>
+      </div>
+
+      <div class="custom-box p-4 rounded-xl border flex flex-col gap-3 text-left">
+        <div>
+          <label class="block text-[11px] font-semibold uppercase mb-1">Neuen PIN-Code festlegen:</label>
+          <input type="password" id="profileInputNewPin" placeholder="z. B. 1234" maxlength="6" class="w-full p-2.5 rounded-lg border text-xs tracking-widest text-amber-400 font-black">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold uppercase mb-1">Über mich / Bio (Status):</label>
+          <textarea id="profileInputBio" placeholder="Schreibe etwas über dich..." rows="2" class="w-full p-2.5 rounded-lg border text-xs"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold uppercase mb-1">Neues Profilbild hochladen:</label>
+          <input type="hidden" id="profileInputAvatarUrl" value="">
+          <div class="flex gap-2 items-center">
+            <input type="file" id="profileAvatarFile" accept="image/*" onchange="uploadMyAvatarToSupabase(event)" class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer w-full">
+          </div>
+          <span id="profileAvatarStatus" class="text-[11px] text-amber-500 font-medium mt-1 block"></span>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="saveMyUserProfile()" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition shadow">Änderungen speichern</button>
+        <button onclick="closeUserProfileModal()" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- USER DETAIL MODAL (Zobrazenie cudzieho profilu bez PINu) -->
+  <div id="userDetailModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[290]">
+    <div class="card max-w-sm w-full p-6 relative flex flex-col gap-4 items-center text-center border-amber-500/50 shadow-2xl">
+      <button onclick="closeUserDetailModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      <div id="userDetailAvatarContainer" class="w-24 h-24 rounded-full border-2 border-amber-500 bg-slate-800 overflow-hidden flex items-center justify-center shadow-lg cursor-pointer hover:scale-105 transition" title="Foto in Großansicht öffnen">
+        <span class="text-2xl font-black text-amber-400" id="userDetailAvatarFallback">?</span>
+      </div>
+      <div>
+        <h4 id="userDetailName" class="text-lg font-bold text-white"></h4>
+        <span id="userDetailRole" class="text-[10px] uppercase tracking-wider text-amber-400 font-semibold block mt-0.5"></span>
+      </div>
+      <div class="w-full custom-box p-3 rounded-xl border text-left">
+        <span class="text-[10px] font-bold uppercase text-slate-400 block mb-1">Über mich:</span>
+        <p id="userDetailBio" class="text-xs italic text-slate-300">Keine Beschreibung angegeben.</p>
+      </div>
+      <button onclick="closeUserDetailModal()" class="w-full py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+    </div>
+  </div>
+
+  <!-- Celá aplikácia -->
+  <div id="appContainer" class="hidden">
+
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4 pb-4 border-b border-slate-300 dark:border-slate-700">
+      <div class="flex items-center gap-3">
+        <div class="header-logo-container" onclick="showRandomMotivation(event)" title="Klick mich für Osterei-Motivation! 🍸">
+          <span class="logo-macron" id="headerLogoMacron">——</span>
+          <span class="logo-main-char" id="headerLogoChar">O</span>
+          <span class="logo-dot" id="headerLogoDot">•</span>
+        </div>
+
+        <div class="flex flex-col justify-center">
+          <h1 class="text-3xl font-bold tracking-tight text-amber-500 dark:text-amber-400 leading-none">Salonplafond BAR</h1>
+          <span class="text-xs text-slate-600 dark:text-slate-400 font-medium block mt-0.5">v3.1.00</span>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="handleLogout()" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Benutzer wechseln">
+          🚪 Benutzer wechseln
+        </button>
+
+        <button onclick="openTeamChatModal()" id="headerChatEnvelopeBtn" class="relative px-3 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Team-Chat öffnen">
+          <span>✉️ Chat</span>
+          <span id="headerChatBadgeDot" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-950 pulse-badge-dot"></span>
+        </button>
+
+        <button onclick="toggleFullscreen()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 flex items-center gap-1 transition">
+          ⛶ Vollbild
+        </button>
+
+        <div class="relative">
+          <button onclick="toggleSettingsMenu(event)" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1 shadow-md transition relative">
+            ⚙️ Menü
+            <span id="menuNotificationDot" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-amber-500 dark:bg-amber-400 rounded-full border-2 border-white dark:border-slate-950 pulse-badge-dot"></span>
+          </button>
+
+          <div id="settingsMenuBackdrop" class="hidden fixed inset-0 z-[240] bg-black/60 md:bg-transparent" onclick="closeSettingsMenu()"></div>
+          
+          <div id="settingsDropdown" class="hidden absolute right-0 mt-2 w-72 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl shadow-2xl p-2 z-50 flex flex-col gap-1.5 text-slate-900 dark:text-slate-100">
+            
+            <button onclick="openAddDrinkModalFromMenu()" id="menuAddDrinkBtn" class="hidden w-full text-left px-2.5 py-2 rounded bg-amber-500 text-slate-950 hover:bg-amber-600 text-xs font-black items-center gap-2 shadow-sm">
+              ➕ Neues Getränk hinzufügen
+            </button>
+
+            <button onclick="openWorkScheduleModal()" class="w-full text-left px-2.5 py-2 rounded bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center justify-between border border-slate-200 dark:border-slate-700">
+              <span>📅 Mein Arbeitsplan</span> <span>→</span>
+            </button>
+
+            <button onclick="openA3PrintSetupModal()" class="w-full text-left px-2.5 py-2 rounded bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center justify-between border border-slate-200 dark:border-slate-700">
+              <span>🖨️ Karten-Druck (A3)</span> <span>→</span>
+            </button>
+
+            <button onclick="openUnifiedSettingsModal()" class="w-full text-left px-2.5 py-2 rounded bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center justify-between border border-slate-200 dark:border-slate-700">
+              <span>⚙️ Einstellungen (Zentrale)</span> <span>→</span>
+            </button>
+
+            <button onclick="openStaffPinModalFromMenu()" id="menuStaffPinBtn" class="hidden w-full text-left px-2.5 py-2 rounded bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-amber-600 dark:text-amber-400 items-center justify-between border border-slate-200 dark:border-slate-700">
+              <span>👤 Personal & PINs (Zentrale)</span> <span>→</span>
+            </button>
+
+            <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
+
+            <button onclick="openTeamChatModal()" class="w-full text-left px-2.5 py-2 rounded bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center justify-between border border-slate-200 dark:border-slate-700">
+              <span>💬 Team-Chat</span> <span>→</span>
+            </button>
+
+            <button onclick="openUserProfileModalFromMenu()" class="w-full text-left px-2.5 py-2 rounded bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center justify-between border border-slate-200 dark:border-slate-700">
+              <span class="flex items-center gap-2">
+                <span id="menuAvatarThumbnailContainer" class="w-6 h-6 rounded-full border border-amber-500 bg-slate-800 overflow-hidden flex items-center justify-center shrink-0">
+                  <span class="text-[10px] font-bold text-amber-400" id="menuAvatarFallback">?</span>
+                </span>
+                <span>Mein Profil</span>
+              </span>
+              <span>→</span>
+            </button>
+
+            <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
+
+            <button onclick="refreshData()" class="w-full text-left px-2.5 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              🔄 Daten aktualisieren
+            </button>
+
+            <button onclick="openSeasonModal()" class="w-full text-left px-2.5 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              📅 Saison wählen...
+            </button>
+
+            <button onclick="createNewSeasonPrompt()" class="w-full text-left px-2.5 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
+              ➕ Neue Saison erstellen
+            </button>
+
+            <button onclick="openShoppingModal()" class="w-full text-left px-2.5 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              🛒 Einkaufsliste / Inventur
+            </button>
+            
+            <button onclick="openImportExportModal()" id="btnMenuImportExport" class="hidden w-full text-left px-2.5 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-semibold text-amber-600 dark:text-amber-300 items-center gap-2">
+              📊 Import & Export
+            </button>
+
+            <button onclick="openChangelogModal()" class="w-full text-left px-2.5 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center justify-between">
+              <span class="flex items-center gap-2">🚀 Was ist neu? (Changelog)</span>
+            </button>
+
+            <button onclick="openSupportModal()" class="w-full text-left px-2.5 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center justify-between">
+              <span class="flex items-center gap-2">💬 Support & Tickets</span>
+              <span id="menuDropdownTicketDot" class="hidden w-2 h-2 bg-amber-500 rounded-full pulse-badge-dot"></span>
+            </button>
+
+            <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
+
+            <button onclick="handleLogout()" class="w-full text-left px-2.5 py-2 rounded hover:bg-red-500/20 text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
+              🚪 Benutzer wechseln
+            </button>
+
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="mb-6 flex items-center justify-between flex-wrap gap-3">
+      <div class="inline-flex items-center gap-3">
+        <div id="headerUserAvatarContainer" onclick="openUserProfileModal()" class="w-8 h-8 rounded-full border-2 border-amber-500 bg-slate-800 overflow-hidden flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition shadow" title="Klicken, um mein Profil zu öffnen">
+          <span class="text-[10px] font-bold text-amber-400" id="headerAvatarFallback">?</span>
+        </div>
+        <span class="text-xs text-slate-800 dark:text-slate-200 font-bold">Angemeldet: <span id="currentUserEmail" class="text-amber-600 dark:text-amber-300"></span></span>
+      </div>
+
+      <button onclick="openWorkScheduleModal()" class="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+        📅 Mein Arbeitsplan anzeigen
+      </button>
+    </div>
+
+    <!-- Vyhľadávacie pole -->
+    <div class="mb-6 flex flex-col md:flex-row justify-between items-center gap-3">
+      <div class="relative w-full">
+        <input type="text" id="searchInput" autocomplete="off" oninput="onSearchInput()" placeholder="🔍 Getränk oder Zutat suchen..." class="px-4 py-3 pr-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white w-full focus:outline-none focus:border-amber-500 text-sm shadow-md font-medium">
+        <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm font-bold bg-slate-700/50 hover:bg-slate-700 w-5 h-5 rounded-full items-center justify-center">&times;</button>
+      </div>
+      <div id="activeSeasonBadge" onclick="openSeasonModal()" title="Klicken, um Saison zu wechseln" class="hidden cursor-pointer px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center gap-2 transition shrink-0 shadow-sm">
+        <span>📅 Saison:</span> <span id="activeSeasonName"></span>
+      </div>
+    </div>
+
+    <div id="addDrinkBtnContainer" class="hidden mb-4">
+      <button onclick="openAddDrinkModal()" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition shadow-md flex items-center gap-2">
+        ➕ Neues Getränk hinzufügen
+      </button>
+    </div>
+
+    <div class="flex flex-col gap-3 mb-6">
+      <div class="flex items-center gap-2 overflow-x-auto pb-2">
+        <span class="text-xs text-slate-600 dark:text-slate-400 font-semibold mr-1 shrink-0">Kategorie:</span>
+        <div id="categories" class="flex gap-2"></div>
+      </div>
+      
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <button onclick="toggleFilterDrawer()" class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center gap-1.5 transition">
+            ⚡ Filter & Glasauswahl <span id="filterArrow">▼</span>
+          </button>
+          <span class="text-[11px] text-slate-500" id="activeFilterSummary"></span>
+        </div>
+
+        <div id="filterDrawer" class="hidden flex-col gap-3 p-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl shadow-sm transition-all">
+          <div>
+            <span class="text-xs text-slate-600 dark:text-slate-400 font-semibold mb-1.5 block">Ernährung & Bestseller:</span>
+            <div class="flex gap-2 items-center overflow-x-auto text-xs">
+              <button onclick="toggleSpecialFilter('featured')" id="filterFeatured" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 flex items-center gap-1 whitespace-nowrap">⭐ TOP / Highlight</button>
+              <button onclick="toggleSpecialFilter('vegan')" id="filterVegan" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap">🌱 Vegan</button>
+              <button onclick="toggleSpecialFilter('glutenfree')" id="filterGluten" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap">🌾 Glutenfrei</button>
+              <button onclick="toggleSpecialFilter('lactosefree')" id="filterLactose" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap">🥛 Laktosefrei</button>
+              <button onclick="toggleSpecialFilter('nonalcoholic')" id="filterNonAlc" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap">🚫 Alkoholfrei</button>
+              <button onclick="toggleSpecialFilter('favorites')" id="filterFavs" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap">❤️ Schicht-Favoriten</button>
+            </div>
+          </div>
+
+          <div>
+            <span class="text-xs text-slate-600 dark:text-slate-400 font-semibold mb-1.5 block">🍸 Nach Glas-Typ filtern:</span>
+            <div id="glassFilterContainer" class="flex gap-1.5 flex-wrap text-xs"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="drinksGrid">
+      <p id="loadingTxt" class="col-span-full text-slate-500 dark:text-slate-400">Lade Getränke aus der Datenbank...</p>
+    </div>
+
+    <footer class="mt-20 pt-6 border-t border-slate-300 dark:border-slate-800 text-center text-xs text-slate-500">
+      Salonplafond BAR App v3.1.00 • Erstellt von <span class="text-amber-600 dark:text-amber-400 font-semibold">© T0mc1k (Tomas Kardos)</span>
+    </footer>
+
+  </div>
+
+  <!-- Scroll-to-Top -->
+  <button id="scrollToTopBtn" onclick="scrollToTop()" class="hidden fixed bottom-20 right-5 z-40 bg-amber-500 hover:bg-amber-600 text-slate-950 p-3.5 rounded-full shadow-xl transition font-black text-base border-2 border-white dark:border-slate-900" title="Nach oben">
+    ⬆️
+  </button>
+
+  <!-- Bar Tray -->
+  <div id="barTrayBar" class="hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 border-t border-amber-500/40 backdrop-blur-md p-3 px-4 shadow-2xl flex items-center justify-between gap-3 max-w-5xl mx-auto rounded-t-2xl">
+    <div class="flex items-center gap-2 overflow-x-auto py-1 flex-1" id="barTrayItems"></div>
+    <div class="flex items-center gap-2 shrink-0 border-l border-slate-300 dark:border-slate-700 pl-3">
+      <button onclick="openMultiViewModal()" class="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition shadow flex items-center gap-1.5">
+        ⚡ Multi-View (<span id="trayCountBadge">0</span>)
+      </button>
+      <button onclick="clearBarTray()" class="px-2.5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-white rounded-xl text-xs transition border border-slate-300 dark:border-slate-700" title="Leeren">🗑️</button>
+    </div>
+  </div>
+
+  <!-- WORK SCHEDULE MODAL -->
+  <div id="workScheduleModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[295]">
+    <div class="card max-w-2xl w-full p-6 relative flex flex-col gap-4 max-h-[85vh] overflow-y-auto border-amber-500/50 shadow-2xl">
+      <button onclick="closeWorkScheduleModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      <div>
+        <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">📅 Mein Arbeitsplan</h3>
+        <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Übersicht deiner Schichten und Arbeitszeiten für die aktuelle Woche.</p>
+      </div>
+
+      <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2.5">
+        <span class="text-base">⚠️</span>
+        <span><b>Testversion:</b> Dieser Arbeitsplan befindet sich noch im Testmodus und ist noch nicht vollständig verbindlich.</span>
+      </div>
+
+      <div id="workScheduleContentContainer" class="flex flex-col gap-2.5 custom-box p-4 rounded-xl border text-xs max-h-[50vh] overflow-y-auto">
+        <p class="text-slate-500 italic text-xs text-center py-4">Lade Arbeitsplan...</p>
+      </div>
+
+      <div class="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="closeWorkScheduleModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEAM CHAT MODAL -->
+  <div id="teamChatModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[280]">
+    <div class="card max-w-4xl w-full p-6 relative flex flex-col gap-4 max-h-[85vh] overflow-y-auto border-amber-500/50 shadow-2xl">
+      <button onclick="closeTeamChatModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold z-10">&times;</button>
+      
+      <div class="flex justify-between items-center pr-8">
+        <div>
+          <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">💬 Salonplafond Team-Chat</h3>
+          <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Echtzeit-Kommunikation für das Bar-Team. Nutze die Sidebar für Profil-Details oder @Mentions.</p>
+        </div>
+        <button onclick="toggleChatSidebar()" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
+          👥 <span id="chatSidebarToggleLabel">Team-Sidebar einblenden</span>
+        </button>
+      </div>
+
+      <div class="flex gap-4 items-start relative overflow-hidden">
+        
+        <div class="flex-1 flex flex-col gap-3 min-w-0">
+          <div id="chatMessagesContainer" class="custom-box p-4 rounded-xl border flex flex-col gap-3 h-[42vh] overflow-y-auto pr-2">
+            <p class="text-slate-500 italic text-xs text-center py-4">Lade Chat-Nachrichten...</p>
+          </div>
+
+          <div id="replyingIndicatorBox" class="hidden custom-box p-2.5 rounded-lg border-l-4 border-amber-500 flex items-center justify-between text-xs">
+            <div>
+              <span class="text-[10px] text-amber-500 font-bold block uppercase">Antwort auf <span id="replyingAuthorName"></span>:</span>
+              <span id="replyingSnippetText" class="text-slate-300 truncate block max-w-md"></span>
+            </div>
+            <button type="button" onclick="cancelReply()" class="text-slate-400 hover:text-white font-bold p-1">&times;</button>
+          </div>
+
+          <form onsubmit="handleSendChatMessage(event)" class="flex flex-col gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <input type="hidden" id="replyingMessageId" value="">
+            
+            <div class="flex items-center justify-between gap-2">
+              <input type="text" id="chatMessageInput" autocomplete="off" placeholder="Nachricht an das Team schreiben (nutze @Name zum Markieren)..." class="flex-1 p-3 rounded-xl border text-xs focus:outline-none focus:border-amber-500">
+              <button type="submit" class="px-5 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition shadow flex items-center gap-1.5 shrink-0">
+                Senden ➔
+              </button>
+            </div>
+
+            <!-- Panel pre rýchle formátovanie textu -->
+            <div class="flex items-center gap-1.5 px-1">
+              <span class="text-[10px] text-slate-400 font-semibold uppercase mr-1">Formatierung:</span>
+              <button type="button" onclick="applyTextStyling('**')" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 font-bold rounded text-xs border border-slate-300 dark:border-slate-700 transition" title="Fett (Tučné)"><b>B</b></button>
+              <button type="button" onclick="applyTextStyling('*')" class="px-2 py-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 italic rounded text-xs border border-slate-300 dark:border-slate-700 transition" title="Kursiv (Kurzíva)"><i>I</i></button>
+            </div>
+          </form>
+        </div>
+
+        <div id="chatSidebar" class="hidden w-80 custom-box p-3 rounded-xl border flex flex-col gap-2.5 h-[42vh] overflow-y-auto shrink-0 transition-all">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Team-Mitglieder</span>
+          <div id="chatSidebarUsersList" class="flex flex-col gap-2">
+            <span class="text-xs text-slate-500 italic">Lade Mitglieder...</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="flex justify-between items-center pt-1 border-t border-slate-200 dark:border-slate-800">
+        <span class="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+          🟢 Aktuell online: <span id="chatOnlineCountLabel" class="text-white font-extrabold">0 Mitglieder</span>
+        </span>
+        <button onclick="closeTeamChatModal()" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- A3 Print Setup Modal -->
+  <div id="a3PrintSetupModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="card max-w-xl w-full p-6 relative flex flex-col gap-4 max-h-[85vh] overflow-y-auto border-amber-500/50 shadow-2xl">
+      <button onclick="closeA3PrintSetupModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      <div>
+        <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">🖨️ Karten-Druck (A3 Format)</h3>
+        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Wähle die Saison, markiere <b>maximal 3 Getränke</b> und passe die Druckoptionen an.</p>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label class="text-xs font-semibold">Saison wählen:</label>
+        <select id="a3SeasonSelect" onchange="renderA3DrinkSelectionList()" class="p-2.5 rounded-lg border text-xs w-full"></select>
+      </div>
+
+      <div class="custom-box p-3.5 rounded-xl border flex flex-col gap-2">
+        <span class="text-xs font-bold text-amber-600 dark:text-amber-400">⚙️ Druck-Optionen:</span>
+        <div class="flex flex-wrap gap-4 text-xs">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="a3OptionImage" checked class="accent-amber-500 w-4 h-4">
+            <span class="font-semibold">Mit Bild drucken</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="a3OptionPrice" checked class="accent-amber-500 w-4 h-4">
+            <span class="font-semibold">Mit Preis drucken</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label class="text-xs font-semibold flex justify-between">
+          <span>Getränke auswählen (max. 3):</span>
+          <span id="a3SelectedCountBadge" class="text-amber-500 font-bold">0 / 3 gewählt</span>
+        </label>
+        <div id="a3DrinkCheckboxList" class="flex flex-col gap-2 max-h-[35vh] overflow-y-auto pr-1 custom-box p-3 rounded-xl border">
+          <p class="text-slate-500 italic text-xs text-center py-4">Bitte Saison wählen...</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="generateA3PrintPreview()" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 font-bold text-slate-950 rounded-xl text-xs transition shadow flex items-center gap-2">
+          🖨️ A3 Vorschau & Drucken
+        </button>
+        <button onclick="closeA3PrintSetupModal()" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- A3 Print Preview Modal -->
+  <div id="a3PrintPreviewModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[300]">
+    <div class="card max-w-4xl w-full p-8 relative flex flex-col gap-6 max-h-[90vh] overflow-y-auto border-amber-500/50 shadow-2xl bg-white text-slate-900">
+      <button onclick="closeA3PrintPreviewModal()" class="no-print absolute top-4 right-4 text-slate-500 hover:text-slate-900 text-2xl font-bold">&times;</button>
+      
+      <div id="a3PrintContainer" class="flex flex-col gap-8 bg-white text-slate-900 p-4 relative">
+        <div id="a3PrintDrinksList" class="flex flex-col gap-8"></div>
+        <div class="print-watermark-footer">Salonplafond BAR App create Tomas Kardos</div>
+      </div>
+
+      <div class="no-print flex justify-end gap-2 pt-4 border-t border-slate-200 bg-white">
+        <button onclick="window.print()" class="px-6 py-3 bg-amber-500 hover:bg-amber-600 font-extrabold text-slate-950 rounded-xl text-xs transition shadow-lg flex items-center gap-2">
+          🖨️ Jetzt drucken
+        </button>
+        <button onclick="closeA3PrintPreviewModal()" class="px-5 py-3 bg-slate-200 hover:bg-slate-300 font-bold text-slate-800 rounded-xl text-xs transition">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shopping List / Inventory Modal -->
+  <div id="shoppingModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="card max-w-3xl w-full p-6 relative flex flex-col gap-4 max-h-[85vh] overflow-y-auto border-amber-500/50 shadow-2xl">
+      <button onclick="closeShoppingModal()" class="no-print absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl font-bold">&times;</button>
+      
+      <div>
+        <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">🛒 Einkaufsliste & Inventur</h3>
+        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Übersicht aller benötigten Zutaten für die aktive Saison: <span id="shoppingSeasonName" class="font-bold text-amber-600 dark:text-amber-300"></span></p>
+      </div>
+
+      <div class="no-print flex flex-wrap gap-2 pt-1 pb-2 border-b border-slate-200 dark:border-slate-800">
+        <button onclick="printShoppingList()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition shadow flex items-center gap-1.5">
+          🖨️ Einkaufsliste drucken
+        </button>
+        <button onclick="exportShoppingListExcel()" class="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 font-bold rounded-xl text-xs transition border border-slate-300 dark:border-slate-700 flex items-center gap-1.5">
+          📗 Als Excel exportieren
+        </button>
+      </div>
+
+      <div id="shoppingListContainer" class="flex flex-col gap-2 mt-1 custom-box p-4 rounded-xl border text-xs max-h-[50vh] overflow-y-auto"></div>
+
+      <div class="no-print flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="closeShoppingModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unified Settings Modal -->
+  <div id="unifiedSettingsModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="card max-w-md w-full p-6 relative flex flex-col gap-5 border-amber-500/50 shadow-2xl">
+      <button onclick="closeUnifiedSettingsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl font-bold">&times;</button>
+      <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">⚙️ Einstellungen & Zentrale</h3>
+      <p class="text-xs text-slate-600 dark:text-slate-300">Passe hier alle App-Einstellungen zentral an:</p>
+      
+      <div class="flex flex-col gap-3">
+        <div class="custom-box p-3 rounded-xl border flex items-center justify-between">
+          <span class="text-xs font-semibold">👤 Modus:</span>
+          <button onclick="toggleMode(); updateUnifiedSettingsUI();" id="unifiedModeBtn" class="px-3 py-1.5 bg-amber-500 text-slate-950 font-bold rounded-lg text-xs">Kellner / Manager</button>
+        </div>
+
+        <div class="custom-box p-3 rounded-xl border flex items-center justify-between">
+          <span class="text-xs font-semibold">🎨 Design:</span>
+          <button onclick="toggleThemeMode(); updateUnifiedSettingsUI();" id="unifiedThemeBtn" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 text-amber-600 dark:text-amber-400 font-bold rounded-lg text-xs border border-slate-300 dark:border-slate-700">Dunkel / Hell</button>
+        </div>
+
+        <div class="custom-box p-3 rounded-xl border flex items-center justify-between">
+          <span class="text-xs font-semibold">🖼️ Ansicht:</span>
+          <div class="flex gap-1">
+            <button onclick="setViewMode('grid'); updateUnifiedSettingsUI();" id="unifiedViewGrid" class="px-2.5 py-1 text-xs font-bold rounded bg-amber-500 text-slate-950">Grid</button>
+            <button onclick="setViewMode('list'); updateUnifiedSettingsUI();" id="unifiedViewList" class="px-2.5 py-1 text-xs font-bold rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">Liste</button>
+          </div>
+        </div>
+
+        <div class="custom-box p-3 rounded-xl border flex flex-col gap-2">
+          <span class="text-xs font-semibold">📅 Aktive Saison wählen:</span>
+          <select id="unifiedSeasonSelect" onchange="onUnifiedSeasonChange(this)" class="p-2.5 rounded-lg border text-xs"></select>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="closeUnifiedSettingsModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Multi-View -->
+  <div id="multiViewModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="card max-w-7xl w-full max-h-[90vh] overflow-y-auto p-6 relative flex flex-col gap-4 border-amber-500/50 shadow-2xl">
+      <button onclick="closeMultiViewModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl font-bold">&times;</button>
+      <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400">⚡ Multi-View: Rezepte im direkten Vergleich</h3>
+      <div id="multiViewContentContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2"></div>
+      <div class="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="closeMultiViewModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition border border-slate-300 dark:border-slate-700">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal pre Výber náhradného drinku v Multi-View -->
+  <div id="replaceDrinkModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[270]">
+    <div class="card max-w-md w-full p-6 relative flex flex-col gap-4 border-amber-500/50 shadow-2xl max-h-[80vh] overflow-y-auto">
+      <button onclick="closeReplaceDrinkModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      <h3 class="text-lg font-bold text-amber-600 dark:text-amber-400">🔄 Drink ersetzen</h3>
+      <p class="text-xs text-slate-600 dark:text-slate-400">Wähle einen neuen Drink aus der aktuellen Saison aus, der diesen ersetzen soll:</p>
+      <input type="hidden" id="replaceIndexTarget" value="">
+      <div id="replaceDrinkListContainer" class="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1"></div>
+    </div>
+  </div>
+
+  <!-- Modal pre Pridanie / Úpravu Drinku -->
+  <div id="adminModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="card max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 relative flex flex-col gap-4 border-amber-500/50 shadow-2xl">
+      <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl font-bold">&times;</button>
+      <h2 id="formTitle" class="text-xl font-bold text-amber-600 dark:text-amber-400">➕ Neues Getränk hinzufügen</h2>
+      <input type="hidden" id="editingId" value="">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input type="text" id="dName" autocomplete="off" placeholder="Getränkename (z. B. Strawberry Kiss)" class="p-3 rounded border text-slate-900 dark:text-white md:col-span-2 text-xs">
+        
+        <div class="md:col-span-2 custom-box p-4 rounded-xl border flex flex-col gap-2">
+          <label class="text-xs font-semibold">📅 Saison / Zeitraum:</label>
+          <select id="dSeason" onchange="handleSeasonSelectChange(this)" class="p-3 rounded border text-xs"></select>
+        </div>
+
+        <div class="md:col-span-2 custom-box p-4 rounded-xl border flex flex-col gap-2">
+          <label class="text-xs font-semibold">🏷️ Kategorie auswählen:</label>
+          <div class="flex flex-wrap gap-3 text-xs" id="categoryRadios">
+            <label class="flex items-center gap-1.5 cursor-pointer custom-box px-3 py-2 rounded-lg border"><input type="radio" name="dCatRadio" value="Cocktails" class="accent-amber-500"> Cocktails</label>
+            <label class="flex items-center gap-1.5 cursor-pointer custom-box px-3 py-2 rounded-lg border"><input type="radio" name="dCatRadio" value="Mocktails" class="accent-amber-500"> Mocktails</label>
+            <label class="flex items-center gap-1.5 cursor-pointer custom-box px-3 py-2 rounded-lg border"><input type="radio" name="dCatRadio" value="Salonplafond Classic" class="accent-amber-500"> Salonplafond Classic</label>
+            <label class="flex items-center gap-1.5 cursor-pointer custom-box px-3 py-2 rounded-lg border"><input type="radio" name="dCatRadio" value="After Dinner Drinks" class="accent-amber-500"> After Dinner Drinks</label>
+            <label class="flex items-center gap-1.5 cursor-pointer custom-box px-3 py-2 rounded-lg border"><input type="radio" name="dCatRadio" value="APERITTIF" class="accent-amber-500"> APERITTIF</label>
+          </div>
+        </div>
+
+        <div class="md:col-span-2 custom-box p-4 rounded-xl border grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs font-semibold mb-1 block">🍸 Glas-Typ / Equipment:</label>
+            <div class="flex flex-wrap gap-1.5 mb-2 text-xs">
+              <button type="button" onclick="setQuickVal('dGlass', 'Coupette')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Coupette</button>
+              <button type="button" onclick="setQuickVal('dGlass', 'Highball')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Highball</button>
+              <button type="button" onclick="setQuickVal('dGlass', 'Tumbler')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Tumbler</button>
+              <button type="button" onclick="setQuickVal('dGlass', 'Rocks')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Rocks</button>
+              <button type="button" onclick="setQuickVal('dGlass', 'Martini')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Martini</button>
+            </div>
+            <input type="text" id="dGlass" autocomplete="off" placeholder="oder selbst eingeben..." class="p-2.5 rounded border text-xs w-full">
+          </div>
+
+          <div>
+            <label class="text-xs font-semibold mb-1 block">🥄 Method (Zubereitungsmethode):</label>
+            <input type="text" id="dMethod" autocomplete="off" placeholder="z. B. Shake & fine strain, Stir, Build" class="p-2.5 rounded border text-xs w-full mt-7 md:mt-7">
+          </div>
+
+          <div>
+            <label class="text-xs font-semibold mb-1 block">🧊 Ice (Eis):</label>
+            <div class="flex flex-wrap gap-1.5 mb-2 text-xs">
+              <button type="button" onclick="setQuickVal('dIce', 'Cubed')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Cubed</button>
+              <button type="button" onclick="setQuickVal('dIce', 'Crushed')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Crushed</button>
+              <button type="button" onclick="setQuickVal('dIce', 'Ice Ball')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Ice Ball</button>
+              <button type="button" onclick="setQuickVal('dIce', 'None')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">None</button>
+            </div>
+            <input type="text" id="dIce" autocomplete="off" placeholder="oder selbst eingeben..." class="p-2.5 rounded border text-xs w-full">
+          </div>
+
+          <div>
+            <label class="text-xs font-semibold mb-1 block">🍋 Garnish (Garnitur):</label>
+            <input type="text" id="dGarnish" autocomplete="off" placeholder="z. B. Dried strawberry, Mint sprig" class="p-2.5 rounded border text-xs w-full mt-7 md:mt-7">
+          </div>
+        </div>
+
+        <div class="md:col-span-2 custom-box p-4 rounded-xl border flex flex-col gap-3">
+          <div class="flex justify-between items-center">
+            <label class="text-xs font-semibold">📋 Zutaten & Mengen:</label>
+            <button type="button" onclick="addIngredientRow()" class="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-400 font-bold rounded-lg text-xs border border-amber-500/30">+ Zutat hinzufügen</button>
+          </div>
+          <div id="ingredientRowsContainer" class="flex flex-col gap-2"></div>
+        </div>
+
+        <div class="md:col-span-2 custom-box border rounded-xl overflow-hidden">
+          <button type="button" onclick="document.getElementById('recipeCollapse').classList.toggle('hidden')" class="w-full p-3 text-left font-bold text-amber-700 dark:text-amber-400 text-xs flex justify-between items-center bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 transition">
+            <span>📖 Zubereitung / Schritt für Schritt (Optional)</span>
+            <span class="text-xs">▼ Anzeigen / Verbergen</span>
+          </button>
+          
+          <div id="recipeCollapse" class="hidden p-4 border-t border-slate-300 dark:border-slate-700">
+            <textarea id="dRecipe" placeholder="Detaillierte Zubereitung Schritt für Schritt eingeben..." class="p-3 rounded border text-xs w-full" rows="3"></textarea>
+          </div>
+        </div>
+
+        <div class="md:col-span-2 custom-box border rounded-xl overflow-hidden">
+          <button type="button" onclick="document.getElementById('allergensCollapse').classList.toggle('hidden')" class="w-full p-3 text-left font-bold text-amber-700 dark:text-amber-400 text-xs flex justify-between items-center bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 transition">
+            <span>⚠️ Allergene (Optional)</span>
+            <span class="text-xs">▼ Anzeigen / Verbergen</span>
+          </button>
+          
+          <div id="allergensCollapse" class="hidden p-4 flex flex-col gap-3 border-t border-slate-300 dark:border-slate-700">
+            <div>
+              <label class="text-[11px] font-semibold mb-1.5 block">Häufige Allergene auswählen:</label>
+              <div class="flex flex-wrap items-center gap-2 text-xs">
+                <label class="flex items-center gap-1.5 custom-box px-3 py-2 rounded-lg border cursor-pointer"><input type="checkbox" onchange="togglePresetAllergen('🍷 Sulfite', this.checked)" class="preset-alg accent-amber-500"> 🍷 Sulfite</label>
+                <label class="flex items-center gap-1.5 custom-box px-3 py-2 rounded-lg border cursor-pointer"><input type="checkbox" onchange="togglePresetAllergen('🌾 Gluten', this.checked)" class="preset-alg accent-amber-500"> 🌾 Gluten</label>
+                <label class="flex items-center gap-1.5 custom-box px-3 py-2 rounded-lg border cursor-pointer"><input type="checkbox" onchange="togglePresetAllergen('🥛 Laktose', this.checked)" class="preset-alg accent-amber-500"> 🥛 Laktose</label>
+                <label class="flex items-center gap-1.5 custom-box px-3 py-2 rounded-lg border cursor-pointer"><input type="checkbox" onchange="togglePresetAllergen('🥚 Ei', this.checked)" class="preset-alg accent-amber-500"> 🥚 Ei</label>
+                <label class="flex items-center gap-1.5 custom-box px-3 py-2 rounded-lg border cursor-pointer"><input type="checkbox" onchange="togglePresetAllergen('🥜 Nüsse', this.checked)" class="preset-alg accent-amber-500"> 🥜 Nüsse</label>
+                <label class="flex items-center gap-1.5 custom-box px-3 py-2 rounded-lg border cursor-pointer"><input type="checkbox" onchange="togglePresetAllergen('🫘 Soja', this.checked)" class="preset-alg accent-amber-500"> 🫘 Soja</label>
+              </div>
+            </div>
+
+            <textarea id="dAllergens" placeholder="Allergene (z. B. Enthält Sulfite...)" class="p-3 rounded border text-xs w-full" rows="2"></textarea>
+          </div>
+        </div>
+
+        <div class="md:col-span-2 custom-box border rounded-xl overflow-hidden">
+          <button type="button" onclick="document.getElementById('pricesCollapse').classList.toggle('hidden')" class="w-full p-3 text-left font-bold text-amber-700 dark:text-amber-400 text-xs flex justify-between items-center bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 transition">
+            <span>💶 Preis & Wareneinsatz (Optional)</span>
+            <span class="text-xs">▼ Anzeigen / Verbergen</span>
+          </button>
+          
+          <div id="pricesCollapse" class="hidden p-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-300 dark:border-slate-700">
+            <div>
+              <label class="text-xs font-semibold mb-1 block">💶 Wareneinsatz (€):</label>
+              <input type="number" step="0.10" id="dCost" placeholder="0.00" class="p-3 rounded border w-full text-xs">
+            </div>
+            <div>
+              <label class="text-xs font-semibold mb-1 block">🏷️ Verkaufspreis (€):</label>
+              <input type="number" step="0.10" id="dPrice" placeholder="0.00" class="p-3 rounded border w-full text-xs">
+            </div>
+          </div>
+        </div>
+
+        <div class="md:col-span-2 custom-box p-4 rounded-xl border flex flex-col gap-2">
+          <label class="text-xs font-semibold">📸 Foto des Getränks:</label>
+          <div class="flex gap-2 items-center">
+            <input type="file" id="imageFile" accept="image/*" onchange="uploadImageToSupabase(event)" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer">
+            <span id="uploadStatus" class="text-xs text-amber-600 dark:text-amber-400 font-medium"></span>
+          </div>
+          <input type="text" id="dPhoto" autocomplete="off" placeholder="Bild-URL..." class="p-3 rounded border text-xs mt-1">
+        </div>
+
+        <div class="md:col-span-2 flex items-center p-3 custom-box rounded border text-xs">
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" id="dFeatured" class="accent-amber-500"> ⭐ Als Bestseller / Highlight markieren</label>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-3 mt-4 pt-3 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="saveDrink()" class="flex-1 py-3 bg-amber-500 hover:bg-amber-600 font-bold text-slate-950 rounded-xl text-xs transition shadow-md">Getränk speichern</button>
+        <button onclick="deleteDrinkFromForm()" id="deleteFormBtn" class="hidden px-4 py-3 bg-red-600 hover:bg-red-500 font-bold text-white rounded-xl text-xs transition border border-red-500/30">🗑️ Löschen</button>
+        <button onclick="closeAdminModal()" class="px-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detail View -->
+  <div id="drinkModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="card max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 relative flex flex-col justify-between shadow-2xl">
+      <div>
+        <button onclick="closeModal()" class="no-print absolute top-4 right-4 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl font-bold">&times;</button>
+        <div id="modalContent"></div>
+        <div class="print-watermark-footer">Salonplafond BAR App create Tomas Kardos</div>
+      </div>
+      <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex gap-2 no-print items-center flex-wrap">
+        <button id="modalPhotoBtn" onclick="openPhotoPreviewFromModal()" class="hidden px-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-400 font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-700">
+          🖼️ Foto anzeigen
+        </button>
+        <button id="modalFavBtn" class="px-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-400 font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-700">
+          ❤️ Schicht-Favorit
+        </button>
+        <button id="modalEditBtn" class="px-4 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm">
+          ✏️ Bearbeiten
+        </button>
+        <button id="modalDeleteBtn" class="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm">
+          🗑️ Löschen
+        </button>
+        <button onclick="openPrintOptionsModal()" class="px-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-400 font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-700">
+          🖨️ Drucken / PDF
+        </button>
+        <button onclick="closeModal()" class="flex-1 py-3.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.99] text-amber-700 dark:text-amber-400 font-extrabold text-sm rounded-xl border-2 border-amber-500/50 transition shadow-sm tracking-wide">
+          ✕ Schließen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print Options Dialog Modal -->
+  <div id="printOptionsModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[260]">
+    <div class="card max-w-sm w-full p-6 relative flex flex-col gap-4 text-center border-amber-500/50 shadow-2xl">
+      <button onclick="closePrintOptionsModal()" class="absolute top-4 right-4 text-slate-500 dark:text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      <div class="w-12 h-12 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl mx-auto flex items-center justify-center text-2xl border border-amber-500/30">🖨️</div>
+      <h3 class="text-lg font-bold text-amber-600 dark:text-amber-400">Drucken-Optionen</h3>
+      <p class="text-xs text-slate-600 dark:text-slate-300">Wähle aus, wie das Rezept gedruckt werden soll:</p>
+      <div class="flex flex-col gap-2.5 mt-2">
+        <button onclick="executePrint(true)" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition shadow flex items-center justify-center gap-2">
+          🖼️ Mit Bild drucken
+        </button>
+        <button onclick="executePrint(false)" class="w-full py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl text-xs transition border border-slate-300 dark:border-slate-700 flex items-center justify-center gap-2">
+          📄 Ohne Bild drucken (Text pur)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Samostatný Modal pre náhľad fotky (Lightbox) -->
+  <div id="photoPreviewModal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden items-center justify-center p-4 z-[350]">
+    <div class="relative max-w-4xl w-full flex flex-col items-center">
+      <button onclick="closePhotoPreview()" class="absolute -top-12 right-0 text-white hover:text-amber-400 text-3xl font-bold">&times;</button>
+      <img id="previewImageSrc" src="" class="max-h-[85vh] max-w-full rounded-2xl shadow-2xl object-contain border border-slate-700" alt="Detailansicht">
+    </div>
+  </div>
+
+  <!-- Changelog (Was ist neu?) & Historie zmien -->
+  <div id="changelogModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[280]">
+    <div class="card max-w-2xl w-full p-6 relative flex flex-col gap-4 max-h-[85vh] overflow-y-auto border-amber-500/50 shadow-2xl">
+      <button onclick="closeChangelogModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      <div>
+        <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">🚀 Was ist neu? (Changelog)</h3>
+        <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Hier siehst du die aktuellsten Änderungen der App sowie die komplette Historie aller Versionen.</p>
+      </div>
+
+      <!-- Aktuálna novinka -->
+      <div class="custom-box p-4 rounded-xl border border-amber-500/40 text-xs shrink-0">
+        <div class="flex justify-between items-center mb-1 text-[11px] text-amber-600 dark:text-amber-400 font-bold">
+          <span>Version v3.1.00 (Tomas Kardos - Developer)</span>
+          <span class="text-slate-500">Oktober 2026</span>
+        </div>
+        <p class="leading-relaxed font-semibold">Modularisierung der App, verbesserte Menüstrukturen, Login-Protokoll-Bereinigung und UI-Optimierungen.</p>
+      </div>
+
+      <div id="adminChangelogFormContainer" class="hidden custom-box p-4 rounded-xl border flex flex-col gap-2.5">
+        <label class="text-xs font-bold text-amber-600 dark:text-amber-300">➕ Neue Neuigkeit hinzufügen (Tomas - Developer):</label>
+        <textarea id="newChangelogText" rows="2" placeholder="z. B. v3.1.00: Neue Features..." class="p-3 rounded-lg border text-xs focus:outline-none focus:border-amber-500"></textarea>
+        <button onclick="submitNewChangelog()" class="py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition shadow">Als Neuigkeit veröffentlichen</button>
+      </div>
+
+      <button onclick="toggleChangelogHistory()" id="toggleHistoryBtn" class="w-full py-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 font-bold rounded-xl text-xs transition border border-slate-300 dark:border-slate-700 flex items-center justify-center gap-1.5">
+        📜 Versionshistorie / Archiv (v1.0 – v3.0.50) anzeigen
+      </button>
+
+      <div id="changelogHistoryContainer" class="hidden flex-col gap-2.5 max-h-[40vh] overflow-y-auto pr-2 pt-1 border-t border-slate-200 dark:border-slate-800">
+        <p class="text-slate-500 italic text-xs text-center py-2">Lade Historie...</p>
+      </div>
+
+      <div class="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="closeChangelogModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Jednotný Import & Export Dialog Modal -->
+  <div id="importExportModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="card max-w-xl w-full p-6 relative flex flex-col gap-6 max-h-[90vh] overflow-y-auto border-amber-500/50 shadow-2xl">
+      <button onclick="closeImportExportModal()" class="absolute top-4 right-4 text-slate-400 dark:text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      
+      <div>
+        <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">📊 Import & Export (Zentrale)</h3>
+        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Verwalte deine Rezept-Datenbank zentral durch Export oder geführten Import.</p>
+      </div>
+
+      <div class="custom-box p-4 rounded-xl border flex flex-col gap-3">
+        <h4 class="text-sm font-bold flex items-center gap-1.5">📤 Daten exportieren</h4>
+        <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+          Wähle die gewünschte Saison aus und exportiere die Rezepte in dein bevorzugtes Format (Excel oder CSV).
+        </p>
+        
+        <div class="flex flex-col gap-2 mt-1">
+          <label class="text-[11px] font-semibold">Saison für Export wählen:</label>
+          <select id="exportSeasonSelect" class="p-2.5 rounded-lg border text-xs w-full"></select>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+          <button onclick="exportToExcel()" class="py-2.5 px-3 custom-box hover:bg-slate-200 dark:hover:bg-slate-800 text-amber-700 dark:text-amber-400 font-bold rounded-lg text-xs border transition flex items-center justify-center gap-1.5">
+            📗 Excel (.xlsx) exportieren
+          </button>
+          <button onclick="exportToCSV()" class="py-2.5 px-3 custom-box hover:bg-slate-200 dark:hover:bg-slate-800 text-amber-700 dark:text-amber-400 font-bold rounded-lg text-xs border transition flex items-center justify-center gap-1.5">
+            📊 CSV-Tabelle exportieren
+          </button>
+        </div>
+      </div>
+
+      <div class="custom-box p-4 rounded-xl border flex flex-col gap-3">
+        <h4 class="text-sm font-bold flex items-center gap-1.5">📥 Rezepte importieren (Assistent)</h4>
+        <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+          Lade eine strukturierte Excel-Datei (.xlsx, .xls) hoch, um neue Rezepte direkt in eine gewählte Saison einzuspielen.
+        </p>
+        
+        <div class="flex flex-col gap-2.5 mt-1">
+          <div>
+            <label class="text-[11px] font-semibold mb-1 block">1. Excel-Datei auswählen:</label>
+            <input type="file" id="wizardExcelFile" accept=".xlsx, .xls" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer w-full custom-box p-2 rounded-lg border">
+          </div>
+          <div>
+            <label class="text-[11px] font-semibold mb-1 block">2. Ziel-Saison für den Import:</label>
+            <select id="wizardSeasonSelect" onchange="handleWizardSeasonChange(this)" class="p-2.5 rounded-lg border text-xs w-full"></select>
+          </div>
+        </div>
+
+        <div id="wizardStatus" class="text-xs text-amber-600 dark:text-amber-400 font-medium text-center"></div>
+
+        <button onclick="executeWizardImport()" class="py-3 bg-amber-500 hover:bg-amber-600 font-bold text-slate-950 rounded-xl text-xs transition shadow-lg mt-1">
+          🚀 Import starten
+        </button>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="closeImportExportModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Motivation Modal -->
+  <div id="motivationModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="card max-w-md w-full border-amber-500/50 p-6 relative flex flex-col gap-4 text-center shadow-2xl">
+      <button onclick="closeMotivationModal()" class="absolute top-4 right-4 text-slate-500 dark:text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      <div class="w-16 h-16 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl mx-auto flex items-center justify-center text-3xl border border-amber-500/30">🍸</div>
+      <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400">Salonplafond Osterei 🐣</h3>
+      <div id="motivationTextContainer" class="custom-box p-4 rounded-xl border text-sm italic min-h-[90px] flex items-center justify-center"></div>
+      <div class="flex gap-2 mt-2">
+        <button onclick="showRandomMotivation()" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 font-bold text-slate-950 rounded-lg text-xs transition">🔄 Noch ein Spruch</button>
+        <button onclick="closeMotivationModal()" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-lg text-xs transition">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Season Selection Modal Dialog -->
+  <div id="seasonModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="card max-w-md w-full p-6 relative flex flex-col gap-4 shadow-2xl border-amber-500/50">
+      <button onclick="closeSeasonModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold z-10">&times;</button>
+      
+      <div class="flex items-center justify-between pr-8">
+        <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400">📅 Saison & Archiv wählen</h3>
+      </div>
+
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-xs text-slate-600 dark:text-slate-300">Wähle die aktive Saison oder verwalte die Einträge:</p>
+        <button onclick="createNewSeasonPrompt()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition shadow flex items-center gap-1 shrink-0">
+          ➕ Neue Saison
+        </button>
+      </div>
+      
+      <div id="seasonModalList" class="flex flex-col gap-2.5 mt-1 max-h-[50vh] overflow-y-auto pr-1"></div>
+      
+      <div class="mt-2 pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+        <button onclick="closeSeasonModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-lg text-xs transition">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Support & Tickets Modal -->
+  <div id="supportModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="card max-w-2xl w-full p-6 relative flex flex-col gap-4 max-h-[85vh] overflow-y-auto border-amber-500/50 shadow-2xl">
+      <button onclick="closeSupportModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      
+      <div class="flex flex-col gap-4">
+        <div>
+          <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400">💬 Bar-Tickets & Anfragen</h3>
+          <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Schreibe eine Anfrage oder einen Änderungswunsch als <b id="ticketAuthorDisplay" class="text-amber-600 dark:text-amber-300"></b>.</p>
+        </div>
+
+        <div class="custom-box p-4 rounded-xl border flex flex-col gap-2.5">
+          <label class="text-xs font-semibold">Neue Anfrage / Anliegen:</label>
+          <textarea id="newTicketMessage" rows="3" placeholder="z. B. Rezept für Strawberry Kiss anpassen..." class="p-3 rounded-lg border text-xs focus:outline-none focus:border-amber-500"></textarea>
+          <button onclick="submitNewTicket()" class="py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition shadow">Absenden</button>
+        </div>
+
+        <div class="flex flex-col gap-2 mt-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider">Aktive & gelöste Anfragen:</h4>
+          <div id="ticketsListContainer" class="flex flex-col gap-2 max-h-[35vh] overflow-y-auto pr-1">
+            <p class="text-slate-500 italic text-xs text-center py-4">Lade Anfragen...</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="closeSupportModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js?v=3.1.00"></script>
+  <script src="js/ui.js?v=3.1.00"></script>
+  <script src="js/auth.js?v=3.1.00"></script>
+  <script src="js/profile.js?v=3.1.00"></script>
+  <script src="js/staff-admin.js?v=3.1.00"></script>
+  <script src="js/chat.js?v=3.1.00"></script>
+  <script src="js/tickets.js?v=3.1.00"></script>
+  <script src="js/schedule.js?v=3.1.00"></script>
+  <script src="js/seasons.js?v=3.1.00"></script>
+  <script src="js/drinks.js?v=3.1.00"></script>
+  <script src="js/drink-admin.js?v=3.1.00"></script>
+  <script src="js/tray.js?v=3.1.00"></script>
+  <script src="js/shopping.js?v=3.1.00"></script>
+  <script src="js/import-export.js?v=3.1.00"></script>
+  <script src="js/print-a3.js?v=3.1.00"></script>
+  <script src="js/app.js?v=3.1.00"></script>
+</body>
+</html>
