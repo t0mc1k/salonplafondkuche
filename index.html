@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Salonplafond BAR v3.1.00</title>
+  <title>Salonplafond KÜCHE v1.0.00beta</title>
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- SheetJS pre Excel Import & Export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="css/style.css?v=3.1.00">
+  <link rel="stylesheet" href="css/style.css?v=1.0.00beta">
 </head>
 <body class="dark-mode p-4 md:p-8 max-w-6xl mx-auto pb-32" onclick="closeDropdowns(event)">
 
@@ -26,8 +26,8 @@
 
       <div>
         <h1 class="text-lg md:text-xl font-black tracking-wider text-white uppercase">Anmeldung</h1>
-        <h2 class="text-xl md:text-2xl font-extrabold text-amber-400 tracking-tight mt-1">Salonplafond BAR</h2>
-        <span class="text-xs text-slate-400 font-medium mt-0.5 block">v3.1.00 • Touch-Grid PIN-Login</span>
+        <h2 class="text-xl md:text-2xl font-extrabold text-amber-400 tracking-tight mt-1">Salonplafond KÜCHE</h2>
+        <span class="text-xs text-slate-400 font-medium mt-0.5 block">v1.0.00beta • Touch-Grid PIN-Login</span>
       </div>
 
       <div id="pinLoginForm" class="w-full bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-2xl space-y-4 text-left mt-1">
@@ -102,16 +102,16 @@
           <div>
             <label class="block text-[10px] font-semibold uppercase mb-1">Rolle</label>
             <select id="staffInputRole" class="w-full p-2.5 rounded-lg border text-xs">
-              <option value="staff">staff (Kellner)</option>
-              <option value="manager">manager (Manager)</option>
-              <option value="developer">developer (Entwickler)</option>
+              <option value="staff">staff (Koch / Küchenhilfe)</option>
+              <option value="manager">manager (Sous-Chef)</option>
+              <option value="developer">developer (Küchef/Entwickler)</option>
             </select>
           </div>
         </div>
 
         <label class="flex items-center gap-2 text-xs font-semibold cursor-pointer">
           <input type="checkbox" id="staffInputCanEdit" class="w-4 h-4 accent-amber-500">
-          <span>🍸 Darf Getränke bearbeiten (Manager &amp; Developer immer)</span>
+          <span>🍳 Darf Rezepte bearbeiten (Manager &amp; Developer immer)</span>
         </label>
 
         <div>
@@ -250,15 +250,15 @@
     <!-- Header -->
     <header class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4 pb-4 border-b border-slate-300 dark:border-slate-700">
       <div class="flex items-center gap-3">
-        <div class="header-logo-container" onclick="showRandomMotivation(event)" title="Klick mich für Osterei-Motivation! 🍸">
+        <div class="header-logo-container" onclick="showRandomMotivation(event)" title="Klick mich für Osterei-Motivation! 🍳">
           <span class="logo-macron" id="headerLogoMacron">——</span>
           <span class="logo-main-char" id="headerLogoChar">O</span>
           <span class="logo-dot" id="headerLogoDot">•</span>
         </div>
 
         <div class="flex flex-col justify-center">
-          <h1 class="text-3xl font-bold tracking-tight text-amber-500 dark:text-amber-400 leading-none">Salonplafond BAR</h1>
-          <span class="text-xs text-slate-600 dark:text-slate-400 font-medium block mt-0.5">v3.1.00</span>
+          <h1 class="text-3xl font-bold tracking-tight text-amber-500 dark:text-amber-400 leading-none">Salonplafond KÜCHE</h1>
+          <span class="text-xs text-slate-600 dark:text-slate-400 font-medium block mt-0.5">v1.0.00beta</span>
         </div>
       </div>
 
@@ -287,7 +287,7 @@
           <div id="settingsDropdown" class="hidden absolute right-0 mt-2 w-72 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl shadow-2xl p-2 z-50 flex flex-col gap-1.5 text-slate-900 dark:text-slate-100">
             
             <button onclick="openAddDrinkModalFromMenu()" id="menuAddDrinkBtn" class="hidden w-full text-left px-2.5 py-2 rounded bg-amber-500 text-slate-950 hover:bg-amber-600 text-xs font-black items-center gap-2 shadow-sm">
-              ➕ Neues Getränk hinzufügen
+              ➕ Neues Rezept hinzufügen
             </button>
 
             <button onclick="openWorkScheduleModal()" class="w-full text-left px-2.5 py-2 rounded bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center justify-between border border-slate-200 dark:border-slate-700">
@@ -295,7 +295,7 @@
             </button>
 
             <button onclick="openA3PrintSetupModal()" class="w-full text-left px-2.5 py-2 rounded bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center justify-between border border-slate-200 dark:border-slate-700">
-              <span>🖨️ Karten-Druck (A3)</span> <span>→</span>
+              <span>🖨️ Rezept-Druck (A3)</span> <span>→</span>
             </button>
 
             <button onclick="openUnifiedSettingsModal()" class="w-full text-left px-2.5 py-2 rounded bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center justify-between border border-slate-200 dark:border-slate-700">
@@ -380,7 +380,7 @@
     <!-- Vyhľadávacie pole -->
     <div class="mb-6 flex flex-col md:flex-row justify-between items-center gap-3">
       <div class="relative w-full">
-        <input type="text" id="searchInput" autocomplete="off" oninput="onSearchInput()" placeholder="🔍 Getränk oder Zutat suchen..." class="px-4 py-3 pr-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white w-full focus:outline-none focus:border-amber-500 text-sm shadow-md font-medium">
+        <input type="text" id="searchInput" autocomplete="off" oninput="onSearchInput()" placeholder="🔍 Gericht oder Zutat suchen..." class="px-4 py-3 pr-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white w-full focus:outline-none focus:border-amber-500 text-sm shadow-md font-medium">
         <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-sm font-bold bg-slate-700/50 hover:bg-slate-700 w-5 h-5 rounded-full items-center justify-center">&times;</button>
       </div>
       <div id="activeSeasonBadge" onclick="openSeasonModal()" title="Klicken, um Saison zu wechseln" class="hidden cursor-pointer px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center gap-2 transition shrink-0 shadow-sm">
@@ -390,7 +390,7 @@
 
     <div id="addDrinkBtnContainer" class="hidden mb-4">
       <button onclick="openAddDrinkModal()" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition shadow-md flex items-center gap-2">
-        ➕ Neues Getränk hinzufügen
+        ➕ Neues Rezept hinzufügen
       </button>
     </div>
 
@@ -403,7 +403,7 @@
       <div class="flex flex-col gap-2">
         <div class="flex items-center gap-2">
           <button onclick="toggleFilterDrawer()" class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center gap-1.5 transition">
-            ⚡ Filter & Glasauswahl <span id="filterArrow">▼</span>
+            ⚡ Filter & Typ <span id="filterArrow">▼</span>
           </button>
           <span class="text-[11px] text-slate-500" id="activeFilterSummary"></span>
         </div>
@@ -422,7 +422,7 @@
           </div>
 
           <div>
-            <span class="text-xs text-slate-600 dark:text-slate-400 font-semibold mb-1.5 block">🍸 Nach Glas-Typ filtern:</span>
+            <span class="text-xs text-slate-600 dark:text-slate-400 font-semibold mb-1.5 block">🍽️ Nach Typ / Anrichte filtern:</span>
             <div id="glassFilterContainer" class="flex gap-1.5 flex-wrap text-xs"></div>
           </div>
         </div>
@@ -430,11 +430,11 @@
     </div>
 
     <div id="drinksGrid">
-      <p id="loadingTxt" class="col-span-full text-slate-500 dark:text-slate-400">Lade Getränke aus der Datenbank...</p>
+      <p id="loadingTxt" class="col-span-full text-slate-500 dark:text-slate-400">Lade Rezepte aus der Datenbank...</p>
     </div>
 
     <footer class="mt-20 pt-6 border-t border-slate-300 dark:border-slate-800 text-center text-xs text-slate-500">
-      Salonplafond BAR App v3.1.00 • Erstellt von <span class="text-amber-600 dark:text-amber-400 font-semibold">© T0mc1k (Tomas Kardos)</span>
+      Salonplafond KÜCHE App v1.0.00beta • Erstellt von <span class="text-amber-600 dark:text-amber-400 font-semibold">© T0mc1k (Tomas Kardos)</span>
     </footer>
 
   </div>
@@ -486,8 +486,8 @@
       
       <div class="flex justify-between items-center pr-8">
         <div>
-          <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">💬 Salonplafond Team-Chat</h3>
-          <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Echtzeit-Kommunikation für das Bar-Team. Nutze die Sidebar für Profil-Details oder @Mentions.</p>
+          <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">💬 Salonplafond Küchen-Chat</h3>
+          <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Echtzeit-Kommunikation für das Küchen-Team. Nutze die Sidebar für Profil-Details oder @Mentions.</p>
         </div>
         <button onclick="toggleChatSidebar()" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1.5">
           👥 <span id="chatSidebarToggleLabel">Team-Sidebar einblenden</span>
@@ -551,8 +551,8 @@
     <div class="card max-w-xl w-full p-6 relative flex flex-col gap-4 max-h-[85vh] overflow-y-auto border-amber-500/50 shadow-2xl">
       <button onclick="closeA3PrintSetupModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
       <div>
-        <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">🖨️ Karten-Druck (A3 Format)</h3>
-        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Wähle die Saison, markiere <b>maximal 3 Getränke</b> und passe die Druckoptionen an.</p>
+        <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">🖨️ Rezept-Druck (A3 Format)</h3>
+        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Wähle die Saison, markiere <b>maximal 3 Rezepte</b> und passe die Druckoptionen an.</p>
       </div>
 
       <div class="flex flex-col gap-2">
@@ -576,7 +576,7 @@
 
       <div class="flex flex-col gap-2">
         <label class="text-xs font-semibold flex justify-between">
-          <span>Getränke auswählen (max. 3):</span>
+          <span>Rezepte auswählen (max. 3):</span>
           <span id="a3SelectedCountBadge" class="text-amber-500 font-bold">0 / 3 gewählt</span>
         </label>
         <div id="a3DrinkCheckboxList" class="flex flex-col gap-2 max-h-[35vh] overflow-y-auto pr-1 custom-box p-3 rounded-xl border">
@@ -600,7 +600,7 @@
       
       <div id="a3PrintContainer" class="flex flex-col gap-8 bg-white text-slate-900 p-4 relative">
         <div id="a3PrintDrinksList" class="flex flex-col gap-8"></div>
-        <div class="print-watermark-footer">Salonplafond BAR App create Tomas Kardos</div>
+        <div class="print-watermark-footer">Salonplafond KÜCHE App create Tomas Kardos</div>
       </div>
 
       <div class="no-print flex justify-end gap-2 pt-4 border-t border-slate-200 bg-white">
@@ -615,7 +615,7 @@
   <!-- Shopping List / Inventory Modal -->
   <div id="shoppingModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="card max-w-3xl w-full p-6 relative flex flex-col gap-4 max-h-[85vh] overflow-y-auto border-amber-500/50 shadow-2xl">
-      <button onclick="closeShoppingModal()" class="no-print absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl font-bold">&times;</button>
+      <button onclick="closeShoppingModal()" class="no-print absolute top-4 right-4 text-slate-700 dark:hover:text-white text-2xl font-bold">&times;</button>
       
       <div>
         <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">🛒 Einkaufsliste & Inventur</h3>
@@ -642,14 +642,14 @@
   <!-- Unified Settings Modal -->
   <div id="unifiedSettingsModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="card max-w-md w-full p-6 relative flex flex-col gap-5 border-amber-500/50 shadow-2xl">
-      <button onclick="closeUnifiedSettingsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl font-bold">&times;</button>
+      <button onclick="closeUnifiedSettingsModal()" class="absolute top-4 right-4 text-slate-700 dark:hover:text-white text-2xl font-bold">&times;</button>
       <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">⚙️ Einstellungen & Zentrale</h3>
       <p class="text-xs text-slate-600 dark:text-slate-300">Passe hier alle App-Einstellungen zentral an:</p>
       
       <div class="flex flex-col gap-3">
         <div class="custom-box p-3 rounded-xl border flex items-center justify-between">
           <span class="text-xs font-semibold">👤 Modus:</span>
-          <button onclick="toggleMode(); updateUnifiedSettingsUI();" id="unifiedModeBtn" class="px-3 py-1.5 bg-amber-500 text-slate-950 font-bold rounded-lg text-xs">Kellner / Manager</button>
+          <button onclick="toggleMode(); updateUnifiedSettingsUI();" id="unifiedModeBtn" class="px-3 py-1.5 bg-amber-500 text-slate-950 font-bold rounded-lg text-xs">Koch / Manager</button>
         </div>
 
         <div class="custom-box p-3 rounded-xl border flex items-center justify-between">
@@ -680,7 +680,7 @@
   <!-- Modal Multi-View -->
   <div id="multiViewModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="card max-w-7xl w-full max-h-[90vh] overflow-y-auto p-6 relative flex flex-col gap-4 border-amber-500/50 shadow-2xl">
-      <button onclick="closeMultiViewModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl font-bold">&times;</button>
+      <button onclick="closeMultiViewModal()" class="absolute top-4 right-4 text-slate-700 dark:hover:text-white text-2xl font-bold">&times;</button>
       <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400">⚡ Multi-View: Rezepte im direkten Vergleich</h3>
       <div id="multiViewContentContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2"></div>
       <div class="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
@@ -689,26 +689,26 @@
     </div>
   </div>
 
-  <!-- Modal pre Výber náhradného drinku v Multi-View -->
+  <!-- Modal pre Výber náhradného receptu v Multi-View -->
   <div id="replaceDrinkModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[270]">
     <div class="card max-w-md w-full p-6 relative flex flex-col gap-4 border-amber-500/50 shadow-2xl max-h-[80vh] overflow-y-auto">
       <button onclick="closeReplaceDrinkModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
-      <h3 class="text-lg font-bold text-amber-600 dark:text-amber-400">🔄 Drink ersetzen</h3>
-      <p class="text-xs text-slate-600 dark:text-slate-400">Wähle einen neuen Drink aus der aktuellen Saison aus, der diesen ersetzen soll:</p>
+      <h3 class="text-lg font-bold text-amber-600 dark:text-amber-400">🔄 Rezept ersetzen</h3>
+      <p class="text-xs text-slate-600 dark:text-slate-400">Wähle ein neues Rezept aus der aktuellen Saison aus, das dieses ersetzen soll:</p>
       <input type="hidden" id="replaceIndexTarget" value="">
       <div id="replaceDrinkListContainer" class="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1"></div>
     </div>
   </div>
 
-  <!-- Modal pre Pridanie / Úpravu Drinku -->
+  <!-- Modal pre Pridanie / Úpravu Receptu -->
   <div id="adminModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="card max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 relative flex flex-col gap-4 border-amber-500/50 shadow-2xl">
-      <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl font-bold">&times;</button>
-      <h2 id="formTitle" class="text-xl font-bold text-amber-600 dark:text-amber-400">➕ Neues Getränk hinzufügen</h2>
+      <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-700 dark:hover:text-white text-2xl font-bold">&times;</button>
+      <h2 id="formTitle" class="text-xl font-bold text-amber-600 dark:text-amber-400">➕ Neues Rezept hinzufügen</h2>
       <input type="hidden" id="editingId" value="">
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input type="text" id="dName" autocomplete="off" placeholder="Getränkename (z. B. Strawberry Kiss)" class="p-3 rounded border text-slate-900 dark:text-white md:col-span-2 text-xs">
+        <input type="text" id="dName" autocomplete="off" placeholder="Gerichtsname (z. B. Wiener Schnitzel)" class="p-3 rounded border text-slate-900 dark:text-white md:col-span-2 text-xs">
         
         <div class="md:col-span-2 custom-box p-4 rounded-xl border flex flex-col gap-2">
           <label class="text-xs font-semibold">📅 Saison / Zeitraum:</label>
@@ -718,46 +718,45 @@
         <div class="md:col-span-2 custom-box p-4 rounded-xl border flex flex-col gap-2">
           <label class="text-xs font-semibold">🏷️ Kategorie auswählen:</label>
           <div class="flex flex-wrap gap-3 text-xs" id="categoryRadios">
-            <label class="flex items-center gap-1.5 cursor-pointer custom-box px-3 py-2 rounded-lg border"><input type="radio" name="dCatRadio" value="Cocktails" class="accent-amber-500"> Cocktails</label>
-            <label class="flex items-center gap-1.5 cursor-pointer custom-box px-3 py-2 rounded-lg border"><input type="radio" name="dCatRadio" value="Mocktails" class="accent-amber-500"> Mocktails</label>
-            <label class="flex items-center gap-1.5 cursor-pointer custom-box px-3 py-2 rounded-lg border"><input type="radio" name="dCatRadio" value="Salonplafond Classic" class="accent-amber-500"> Salonplafond Classic</label>
-            <label class="flex items-center gap-1.5 cursor-pointer custom-box px-3 py-2 rounded-lg border"><input type="radio" name="dCatRadio" value="After Dinner Drinks" class="accent-amber-500"> After Dinner Drinks</label>
-            <label class="flex items-center gap-1.5 cursor-pointer custom-box px-3 py-2 rounded-lg border"><input type="radio" name="dCatRadio" value="APERITTIF" class="accent-amber-500"> APERITTIF</label>
+            <label class="flex items-center gap-1.5 cursor-pointer custom-box px-3 py-2 rounded-lg border"><input type="radio" name="dCatRadio" value="Vorspeisen" class="accent-amber-500"> Vorspeisen</label>
+            <label class="flex items-center gap-1.5 cursor-pointer custom-box px-3 py-2 rounded-lg border"><input type="radio" name="dCatRadio" value="Hauptspeisen" class="accent-amber-500"> Hauptspeisen</label>
+            <label class="flex items-center gap-1.5 cursor-pointer custom-box px-3 py-2 rounded-lg border"><input type="radio" name="dCatRadio" value="Suppen" class="accent-amber-500"> Suppen</label>
+            <label class="flex items-center gap-1.5 cursor-pointer custom-box px-3 py-2 rounded-lg border"><input type="radio" name="dCatRadio" value="Desserts" class="accent-amber-500"> Desserts</label>
+            <label class="flex items-center gap-1.5 cursor-pointer custom-box px-3 py-2 rounded-lg border"><input type="radio" name="dCatRadio" value="Spezialitäten" class="accent-amber-500"> Spezialitäten</label>
           </div>
         </div>
 
         <div class="md:col-span-2 custom-box p-4 rounded-xl border grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="text-xs font-semibold mb-1 block">🍸 Glas-Typ / Equipment:</label>
+            <label class="text-xs font-semibold mb-1 block">🍽️ Typ / Anrichte:</label>
             <div class="flex flex-wrap gap-1.5 mb-2 text-xs">
-              <button type="button" onclick="setQuickVal('dGlass', 'Coupette')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Coupette</button>
-              <button type="button" onclick="setQuickVal('dGlass', 'Highball')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Highball</button>
-              <button type="button" onclick="setQuickVal('dGlass', 'Tumbler')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Tumbler</button>
-              <button type="button" onclick="setQuickVal('dGlass', 'Rocks')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Rocks</button>
-              <button type="button" onclick="setQuickVal('dGlass', 'Martini')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Martini</button>
+              <button type="button" onclick="setQuickVal('dGlass', 'Teller groß')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Teller groß</button>
+              <button type="button" onclick="setQuickVal('dGlass', 'Teller tief')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Teller tief</button>
+              <button type="button" onclick="setQuickVal('dGlass', 'Pfanne')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Pfanne</button>
+              <button type="button" onclick="setQuickVal('dGlass', 'Schüssel')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Schüssel</button>
             </div>
             <input type="text" id="dGlass" autocomplete="off" placeholder="oder selbst eingeben..." class="p-2.5 rounded border text-xs w-full">
           </div>
 
           <div>
-            <label class="text-xs font-semibold mb-1 block">🥄 Method (Zubereitungsmethode):</label>
-            <input type="text" id="dMethod" autocomplete="off" placeholder="z. B. Shake & fine strain, Stir, Build" class="p-2.5 rounded border text-xs w-full mt-7 md:mt-7">
+            <label class="text-xs font-semibold mb-1 block">🥄 Zubereitung / Garmethode:</label>
+            <input type="text" id="dMethod" autocomplete="off" placeholder="z. B. Braten, Dünsten, Sous-vide, Backen" class="p-2.5 rounded border text-xs w-full mt-7 md:mt-7">
           </div>
 
           <div>
-            <label class="text-xs font-semibold mb-1 block">🧊 Ice (Eis):</label>
+            <label class="text-xs font-semibold mb-1 block">🔥 Temperatur / Service:</label>
             <div class="flex flex-wrap gap-1.5 mb-2 text-xs">
-              <button type="button" onclick="setQuickVal('dIce', 'Cubed')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Cubed</button>
-              <button type="button" onclick="setQuickVal('dIce', 'Crushed')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Crushed</button>
-              <button type="button" onclick="setQuickVal('dIce', 'Ice Ball')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Ice Ball</button>
-              <button type="button" onclick="setQuickVal('dIce', 'None')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">None</button>
+              <button type="button" onclick="setQuickVal('dIce', 'Heiß')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Heiß</button>
+              <button type="button" onclick="setQuickVal('dIce', 'Warm')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Warm</button>
+              <button type="button" onclick="setQuickVal('dIce', 'Kalt')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Kalt</button>
+              <button type="button" onclick="setQuickVal('dIce', 'Raumtemperatur')" class="px-2 py-1 custom-box border hover:border-amber-500 rounded">Raumtemperatur</button>
             </div>
             <input type="text" id="dIce" autocomplete="off" placeholder="oder selbst eingeben..." class="p-2.5 rounded border text-xs w-full">
           </div>
 
           <div>
-            <label class="text-xs font-semibold mb-1 block">🍋 Garnish (Garnitur):</label>
-            <input type="text" id="dGarnish" autocomplete="off" placeholder="z. B. Dried strawberry, Mint sprig" class="p-2.5 rounded border text-xs w-full mt-7 md:mt-7">
+            <label class="text-xs font-semibold mb-1 block">🌿 Dekoration / Beilage:</label>
+            <input type="text" id="dGarnish" autocomplete="off" placeholder="z. B. Petersilie, Zitronenscheibe" class="p-2.5 rounded border text-xs w-full mt-7 md:mt-7">
           </div>
         </div>
 
@@ -799,7 +798,7 @@
               </div>
             </div>
 
-            <textarea id="dAllergens" placeholder="Allergene (z. B. Enthält Sulfite...)" class="p-3 rounded border text-xs w-full" rows="2"></textarea>
+            <textarea id="dAllergens" placeholder="Allergene (z. B. Enthält Gluten...)" class="p-3 rounded border text-xs w-full" rows="2"></textarea>
           </div>
         </div>
 
@@ -822,7 +821,7 @@
         </div>
 
         <div class="md:col-span-2 custom-box p-4 rounded-xl border flex flex-col gap-2">
-          <label class="text-xs font-semibold">📸 Foto des Getränks:</label>
+          <label class="text-xs font-semibold">📸 Foto des Gerichts:</label>
           <div class="flex gap-2 items-center">
             <input type="file" id="imageFile" accept="image/*" onchange="uploadImageToSupabase(event)" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer">
             <span id="uploadStatus" class="text-xs text-amber-600 dark:text-amber-400 font-medium"></span>
@@ -836,7 +835,7 @@
       </div>
 
       <div class="flex flex-wrap gap-3 mt-4 pt-3 border-t border-slate-200 dark:border-slate-800">
-        <button onclick="saveDrink()" class="flex-1 py-3 bg-amber-500 hover:bg-amber-600 font-bold text-slate-950 rounded-xl text-xs transition shadow-md">Getränk speichern</button>
+        <button onclick="saveDrink()" class="flex-1 py-3 bg-amber-500 hover:bg-amber-600 font-bold text-slate-950 rounded-xl text-xs transition shadow-md">Rezept speichern</button>
         <button onclick="deleteDrinkFromForm()" id="deleteFormBtn" class="hidden px-4 py-3 bg-red-600 hover:bg-red-500 font-bold text-white rounded-xl text-xs transition border border-red-500/30">🗑️ Löschen</button>
         <button onclick="closeAdminModal()" class="px-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
       </div>
@@ -849,7 +848,7 @@
       <div>
         <button onclick="closeModal()" class="no-print absolute top-4 right-4 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl font-bold">&times;</button>
         <div id="modalContent"></div>
-        <div class="print-watermark-footer">Salonplafond BAR App create Tomas Kardos</div>
+        <div class="print-watermark-footer">Salonplafond KÜCHE App create Tomas Kardos</div>
       </div>
       <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex gap-2 no-print items-center flex-wrap">
         <button id="modalPhotoBtn" onclick="openPhotoPreviewFromModal()" class="hidden px-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-400 font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-700">
@@ -912,20 +911,20 @@
       <!-- Aktuálna novinka -->
       <div class="custom-box p-4 rounded-xl border border-amber-500/40 text-xs shrink-0">
         <div class="flex justify-between items-center mb-1 text-[11px] text-amber-600 dark:text-amber-400 font-bold">
-          <span>Version v3.1.00 (Tomas Kardos - Developer)</span>
+          <span>Version v1.0.00beta (Tomas Kardos - Developer)</span>
           <span class="text-slate-500">Oktober 2026</span>
         </div>
-        <p class="leading-relaxed font-semibold">Modularisierung der App, verbesserte Menüstrukturen, Login-Protokoll-Bereinigung und UI-Optimierungen.</p>
+        <p class="leading-relaxed font-semibold">Erste offizielle Beta-Version der Küchen-App (Salonplafond KÜCHE), umgestellt vom Bar-System.</p>
       </div>
 
       <div id="adminChangelogFormContainer" class="hidden custom-box p-4 rounded-xl border flex flex-col gap-2.5">
         <label class="text-xs font-bold text-amber-600 dark:text-amber-300">➕ Neue Neuigkeit hinzufügen (Tomas - Developer):</label>
-        <textarea id="newChangelogText" rows="2" placeholder="z. B. v3.1.00: Neue Features..." class="p-3 rounded-lg border text-xs focus:outline-none focus:border-amber-500"></textarea>
+        <textarea id="newChangelogText" rows="2" placeholder="z. B. v1.0.00beta: Neue Features..." class="p-3 rounded-lg border text-xs focus:outline-none focus:border-amber-500"></textarea>
         <button onclick="submitNewChangelog()" class="py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition shadow">Als Neuigkeit veröffentlichen</button>
       </div>
 
       <button onclick="toggleChangelogHistory()" id="toggleHistoryBtn" class="w-full py-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 font-bold rounded-xl text-xs transition border border-slate-300 dark:border-slate-700 flex items-center justify-center gap-1.5">
-        📜 Versionshistorie / Archiv (v1.0 – v3.0.50) anzeigen
+        📜 Versionshistorie / Archiv anzeigen
       </button>
 
       <div id="changelogHistoryContainer" class="hidden flex-col gap-2.5 max-h-[40vh] overflow-y-auto pr-2 pt-1 border-t border-slate-200 dark:border-slate-800">
@@ -941,7 +940,7 @@
   <!-- Jednotný Import & Export Dialog Modal -->
   <div id="importExportModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="card max-w-xl w-full p-6 relative flex flex-col gap-6 max-h-[90vh] overflow-y-auto border-amber-500/50 shadow-2xl">
-      <button onclick="closeImportExportModal()" class="absolute top-4 right-4 text-slate-400 dark:text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      <button onclick="closeImportExportModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
       
       <div>
         <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">📊 Import & Export (Zentrale)</h3>
@@ -1003,7 +1002,7 @@
   <div id="motivationModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="card max-w-md w-full border-amber-500/50 p-6 relative flex flex-col gap-4 text-center shadow-2xl">
       <button onclick="closeMotivationModal()" class="absolute top-4 right-4 text-slate-500 dark:text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
-      <div class="w-16 h-16 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl mx-auto flex items-center justify-center text-3xl border border-amber-500/30">🍸</div>
+      <div class="w-16 h-16 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl mx-auto flex items-center justify-center text-3xl border border-amber-500/30">🍳</div>
       <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400">Salonplafond Osterei 🐣</h3>
       <div id="motivationTextContainer" class="custom-box p-4 rounded-xl border text-sm italic min-h-[90px] flex items-center justify-center"></div>
       <div class="flex gap-2 mt-2">
@@ -1044,13 +1043,13 @@
       
       <div class="flex flex-col gap-4">
         <div>
-          <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400">💬 Bar-Tickets & Anfragen</h3>
+          <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400">💬 Küchen-Tickets & Anfragen</h3>
           <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Schreibe eine Anfrage oder einen Änderungswunsch als <b id="ticketAuthorDisplay" class="text-amber-600 dark:text-amber-300"></b>.</p>
         </div>
 
         <div class="custom-box p-4 rounded-xl border flex flex-col gap-2.5">
           <label class="text-xs font-semibold">Neue Anfrage / Anliegen:</label>
-          <textarea id="newTicketMessage" rows="3" placeholder="z. B. Rezept für Strawberry Kiss anpassen..." class="p-3 rounded-lg border text-xs focus:outline-none focus:border-amber-500"></textarea>
+          <textarea id="newTicketMessage" rows="3" placeholder="z. B. Rezept für Wiener Schnitzel anpassen..." class="p-3 rounded-lg border text-xs focus:outline-none focus:border-amber-500"></textarea>
           <button onclick="submitNewTicket()" class="py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs transition shadow">Absenden</button>
         </div>
 
@@ -1068,21 +1067,21 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=3.1.00"></script>
-  <script src="js/ui.js?v=3.1.00"></script>
-  <script src="js/auth.js?v=3.1.00"></script>
-  <script src="js/profile.js?v=3.1.00"></script>
-  <script src="js/staff-admin.js?v=3.1.00"></script>
-  <script src="js/chat.js?v=3.1.00"></script>
-  <script src="js/tickets.js?v=3.1.00"></script>
-  <script src="js/schedule.js?v=3.1.00"></script>
-  <script src="js/seasons.js?v=3.1.00"></script>
-  <script src="js/drinks.js?v=3.1.00"></script>
-  <script src="js/drink-admin.js?v=3.1.00"></script>
-  <script src="js/tray.js?v=3.1.00"></script>
-  <script src="js/shopping.js?v=3.1.00"></script>
-  <script src="js/import-export.js?v=3.1.00"></script>
-  <script src="js/print-a3.js?v=3.1.00"></script>
-  <script src="js/app.js?v=3.1.00"></script>
+  <script src="js/config.js?v=1.0.00beta"></script>
+  <script src="js/ui.js?v=1.0.00beta"></script>
+  <script src="js/auth.js?v=1.0.00beta"></script>
+  <script src="js/profile.js?v=1.0.00beta"></script>
+  <script src="js/staff-admin.js?v=1.0.00beta"></script>
+  <script src="js/chat.js?v=1.0.00beta"></script>
+  <script src="js/tickets.js?v=1.0.00beta"></script>
+  <script src="js/schedule.js?v=1.0.00beta"></script>
+  <script src="js/seasons.js?v=1.0.00beta"></script>
+  <script src="js/drinks.js?v=1.0.00beta"></script>
+  <script src="js/drink-admin.js?v=1.0.00beta"></script>
+  <script src="js/tray.js?v=1.0.00beta"></script>
+  <script src="js/shopping.js?v=1.0.00beta"></script>
+  <script src="js/import-export.js?v=1.0.00beta"></script>
+  <script src="js/print-a3.js?v=1.0.00beta"></script>
+  <script src="js/app.js?v=1.0.00beta"></script>
 </body>
 </html>
