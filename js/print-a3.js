@@ -8,7 +8,7 @@
       const select = document.getElementById('a3SeasonSelect');
       select.innerHTML = seasons.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
       if (currentSeasonFilter) select.value = currentSeasonFilter;
-      renderA3DrinkSelectionList();
+      renderA3DishSelectionList();
       const modal = document.getElementById('a3PrintSetupModal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -19,48 +19,48 @@
       document.getElementById('a3PrintSetupModal').classList.add('hidden');
     }
 
-    function renderA3DrinkSelectionList() {
+    function renderA3DishSelectionList() {
       const selectedSeason = document.getElementById('a3SeasonSelect').value;
-      const seasonDrinks = allDrinks.filter(d => (d.season || '') === selectedSeason);
-      const container = document.getElementById('a3DrinkCheckboxList');
+      const seasonDishes = allDishes.filter(d => (d.season || '') === selectedSeason);
+      const container = document.getElementById('a3DishCheckboxList');
 
-      if (seasonDrinks.length === 0) {
-        container.innerHTML = `<p class="text-slate-500 italic text-xs text-center py-4">Keine Getränke in dieser Saison gefunden.</p>`;
+      if (seasonDishes.length === 0) {
+        container.innerHTML = `<p class="text-slate-500 italic text-xs text-center py-4">Keine Gerichte in dieser Saison gefunden.</p>`;
         return;
       }
 
-      container.innerHTML = seasonDrinks.map(d => `
-        <label class="flex items-center gap-2.5 p-2 rounded hover:bg-slate-800/50 cursor-pointer text-xs">
-          <input type="checkbox" name="a3DrinkCheckbox" value="${d.id}" onchange="updateA3SelectionCount()" class="accent-amber-500 w-4 h-4">
-          <span class="font-bold">${escapeHtml(d.name)}</span> <span class="text-slate-400">(${escapeHtml(d.category || '')})</span>
+      container.innerHTML = seasonDishes.map(d => `
+        <label class="flex items-center gap-2.5 p-2 rounded hover:bg-slate-200/60 dark:hover:bg-slate-800/50 cursor-pointer text-xs">
+          <input type="checkbox" name="a3DishCheckbox" value="${d.id}" onchange="updateA3SelectionCount()" class="accent-amber-500 w-4 h-4">
+          <span class="font-bold">${escapeHtml(d.name)}</span> <span class="text-slate-600 dark:text-slate-400">(${escapeHtml(d.category || '')})</span>
         </label>
       `).join('');
       updateA3SelectionCount();
     }
 
     function updateA3SelectionCount() {
-      const checked = document.querySelectorAll('input[name="a3DrinkCheckbox"]:checked');
+      const checked = document.querySelectorAll('input[name="a3DishCheckbox"]:checked');
       const badge = document.getElementById('a3SelectedCountBadge');
       badge.innerText = `${checked.length} / 3 gewählt`;
       if (checked.length > 3) {
-        alert("Du kannst maximal 3 Getränke für die A3 Karte auswählen.");
+        alert("Du kannst maximal 3 Gerichte für die A3 Karte auswählen.");
         event.target.checked = false;
         updateA3SelectionCount();
       }
     }
 
     function generateA3PrintPreview() {
-      const checked = document.querySelectorAll('input[name="a3DrinkCheckbox"]:checked');
-      if (checked.length === 0) return alert("Bitte wähle mindestens ein Getränk aus.");
+      const checked = document.querySelectorAll('input[name="a3DishCheckbox"]:checked');
+      if (checked.length === 0) return alert("Bitte wähle mindestens ein Gericht aus.");
 
       const showImage = document.getElementById('a3OptionImage').checked;
       const showPrice = document.getElementById('a3OptionPrice').checked;
 
-      const drinksListContainer = document.getElementById('a3PrintDrinksList');
+      const dishesListContainer = document.getElementById('a3PrintDishesList');
 
       let html = '';
       checked.forEach(chk => {
-        let d = allDrinks.find(item => item.id === chk.value);
+        let d = allDishes.find(item => item.id === chk.value);
         if (!d) return;
 
         let priceText = (showPrice && d.selling_price) ? ` — € ${parseFloat(d.selling_price).toFixed(2)}` : '';
@@ -79,10 +79,10 @@
               <span class="text-xs font-bold uppercase text-slate-600">${escapeHtml(d.category || '')}</span>
             </div>
             <div class="text-xs text-slate-700 grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <div><b>Glas:</b> ${escapeHtml(d.glass_type || '-')}</div>
-              <div><b>Method:</b> ${escapeHtml(d.method || '-')}</div>
-              <div><b>Ice:</b> ${escapeHtml(d.ice || '-')}</div>
-              <div><b>Garnish:</b> ${escapeHtml(d.garnish || '-')}</div>
+              <div><b>Geschirr:</b> ${escapeHtml(d.plate_type || '-')}</div>
+              <div><b>Garmethode:</b> ${escapeHtml(d.method || '-')}</div>
+              <div><b>Garzeit / Temp.:</b> ${escapeHtml(d.cook_time || '-')}</div>
+              <div><b>Garnitur:</b> ${escapeHtml(d.garnish || '-')}</div>
             </div>
             <div class="flex flex-col gap-1 mt-1">
               <span class="text-xs font-bold uppercase text-slate-900 border-b border-slate-300 pb-1">Zutaten:</span>
@@ -93,7 +93,7 @@
         `;
       });
 
-      drinksListContainer.innerHTML = html;
+      dishesListContainer.innerHTML = html;
       closeA3PrintSetupModal();
 
       const previewModal = document.getElementById('a3PrintPreviewModal');

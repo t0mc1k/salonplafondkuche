@@ -3,51 +3,52 @@
    Import aus Excel und Export (Excel/CSV)
    ============================================================ */
     function exportToExcel() {
-      if (!allDrinks || allDrinks.length === 0) return alert("Keine Getränke vorhanden.");
+      if (!allDishes || allDishes.length === 0) return alert("Keine Gerichte vorhanden.");
       let selectedExportSeason = document.getElementById('exportSeasonSelect').value;
       
       let filtered = selectedExportSeason === 'ALL' 
-        ? allDrinks 
-        : allDrinks.filter(d => (d.season || '') === selectedExportSeason);
+        ? allDishes 
+        : allDishes.filter(d => (d.season || '') === selectedExportSeason);
 
-      if (filtered.length === 0) return alert("Keine Getränke für diese Saison gefunden.");
+      if (filtered.length === 0) return alert("Keine Gerichte für diese Saison gefunden.");
 
       let dataToExport = filtered.map(d => ({
         Name: d.name || '',
-        Category: d.category || '',
-        Season: d.season || '',
-        Glass: d.glass_type || '',
-        Method: d.method || '',
-        Ice: d.ice || '',
-        Garnish: d.garnish || '',
-        SellingPrice: d.selling_price || 0,
-        CostPrice: d.cost_price || 0,
-        Allergens: d.allergens || '',
-        Recipe: d.recipe || ''
+        Kategorie: d.category || '',
+        Saison: d.season || '',
+        Geschirr: d.plate_type || '',
+        Garmethode: d.method || '',
+        Garzeit: d.cook_time || '',
+        Garnitur: d.garnish || '',
+        Zutaten: Array.isArray(d.ingredients_json) ? d.ingredients_json.map(i => i.name + (i.amount ? ': ' + i.amount : '')).join('; ') : '',
+        Verkaufspreis: d.selling_price || 0,
+        Wareneinsatz: d.cost_price || 0,
+        Allergene: d.allergens || '',
+        Zubereitung: d.recipe || ''
       }));
       let worksheet = XLSX.utils.json_to_sheet(dataToExport);
       let workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Getränke");
-      XLSX.writeFile(workbook, `salonplafond_rezepte_${selectedExportSeason}.xlsx`);
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Gerichte");
+      XLSX.writeFile(workbook, `kueche_rezepte_${selectedExportSeason}.xlsx`);
     }
 
     function exportToCSV() {
-      if (!allDrinks || allDrinks.length === 0) return alert("Keine Getränke vorhanden.");
+      if (!allDishes || allDishes.length === 0) return alert("Keine Gerichte vorhanden.");
       let selectedExportSeason = document.getElementById('exportSeasonSelect').value;
       
       let filtered = selectedExportSeason === 'ALL' 
-        ? allDrinks 
-        : allDrinks.filter(d => (d.season || '') === selectedExportSeason);
+        ? allDishes 
+        : allDishes.filter(d => (d.season || '') === selectedExportSeason);
 
-      if (filtered.length === 0) return alert("Keine Getränke für diese Saison gefunden.");
+      if (filtered.length === 0) return alert("Keine Gerichte für diese Saison gefunden.");
 
-      let csvContent = "data:text/csv;charset=utf-8,Name;Category;Season;SellingPrice;CostPrice\r\n";
+      let csvContent = "data:text/csv;charset=utf-8,Name;Kategorie;Saison;Verkaufspreis;Wareneinsatz\r\n";
       filtered.forEach(d => {
         csvContent += `"${(d.name || '').replace(/"/g, '""')}";"${(d.category || '').replace(/"/g, '""')}";"${(d.season || '')}";${d.selling_price || 0};${d.cost_price || 0}\r\n`;
       });
       let link = document.createElement("a");
       link.setAttribute("href", encodeURI(csvContent));
-      link.setAttribute("download", `salonplafond_export_${selectedExportSeason}.csv`);
+      link.setAttribute("download", `kueche_export_${selectedExportSeason}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -55,7 +56,7 @@
 
     function openImportExportModal() {
       closeSettingsMenu();
-      checkDrinkEditAuth(() => {
+      checkDishEditAuth(() => {
         renderWizardSeasonSelect();
         renderExportSeasonSelect();
         document.getElementById('wizardExcelFile').value = '';
@@ -109,6 +110,22 @@
       }
     }
 
+    // Import: erste Tabelle der Excel-Datei, Kopfzeile mit diesen Spalten (Reihenfolge egal, nur "Name" ist Pflicht):
+    // Name | Kategorie | Geschirr | Garmethode | Garzeit | Garnitur | Zutaten | Verkaufspreis | Wareneinsatz | Allergene | Zubereitung
+    // Zutaten: "Zutat: Menge; Zutat: Menge"  (der Export erzeugt genau dieses Format)
+    function importNum(v) {
+      if (v === undefined || v === null || v === '') return null;
+      const n = parseFloat(String(v).replace('€', '').replace(',', '.').trim());
+      return isNaN(n) ? null : n;
+    }
+
+    function parseImportIngredients(text) {
+      return String(text || '').split(/[;\n]/).map(p => p.trim()).filter(Boolean).map(p => {
+        const i = p.indexOf(':');
+        return i === -1 ? { name: p, amount: '' } : { name: p.slice(0, i).trim(), amount: p.slice(i + 1).trim() };
+      }).filter(x => x.name);
+    }
+
     function executeWizardImport() {
       const fileInput = document.getElementById('wizardExcelFile');
       const file = fileInput.files[0];
@@ -119,86 +136,59 @@
 
       const targetSeason = document.getElementById('wizardSeasonSelect').value;
       const statusEl = document.getElementById('wizardStatus');
-      statusEl.innerText = "⏳ Import prebieha...";
+      statusEl.innerText = "⏳ Import läuft ...";
 
       const reader = new FileReader();
       reader.onload = async function(e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
 
-        let parsedDrinks = [];
-        let currentDrink = null;
-        let currentCat = "Cocktails";
-
-        for (let i = 0; i < rows.length; i++) {
-          const row = rows[i];
-          if (!row || row.length === 0) continue;
-
-          const col0 = row[0] ? String(row[0]).trim() : "";
-          const col1 = row[1] ? String(row[1]).trim() : "";
-
-          if (["APERITTIF", "MOCKTAILS", "Cocktails", "After Dinner Drinks", "Salonplafond Classic"].includes(col1)) {
-            currentCat = col1;
-            continue;
-          }
-
-          if (col0.startsWith("Glass:")) {
-            if (currentDrink) {
-              currentDrink.glass_type = col0.replace("Glass:", "").trim();
-              if (col1.startsWith("Method:")) currentDrink.method = col1.replace("Method:", "").trim();
+          const get = (r, ...keys) => {
+            for (const k of Object.keys(r)) {
+              if (keys.includes(k.trim().toLowerCase())) return String(r[k]).trim();
             }
-            continue;
-          }
+            return '';
+          };
 
-          if (col0.startsWith("Ice:")) {
-            if (currentDrink) currentDrink.ice = col0.replace("Ice:", "").trim();
-            continue;
-          }
-
-          if (col0 === "Garnish:") continue;
-
-          if (col1.startsWith("Preis") || col1.startsWith("Price")) {
-            if (currentDrink) {
-              currentDrink.garnish = col0;
-              let rawPrice = col1.replace("Preis", "").replace("Price", "").replace(",", ".").trim();
-              let parsedPrice = parseFloat(rawPrice);
-              currentDrink.selling_price = !isNaN(parsedPrice) ? parsedPrice : null;
-              parsedDrinks.push(currentDrink);
-              currentDrink = null;
-            }
-            continue;
-          }
-
-          if (col0 && !col0.startsWith("Ingredients:") && !currentDrink) {
-            currentDrink = {
-              name: col0,
-              category: currentCat,
+          const parsed = [];
+          rows.forEach(r => {
+            const name = get(r, 'name');
+            if (!name) return;
+            parsed.push({
+              name,
+              category: get(r, 'kategorie', 'category') || 'Hauptgerichte',
               season: targetSeason,
-              ingredients_json: [],
-              is_active: true
-            };
-            continue;
+              plate_type: get(r, 'geschirr'),
+              method: get(r, 'garmethode', 'method'),
+              cook_time: get(r, 'garzeit'),
+              garnish: get(r, 'garnitur', 'garnish'),
+              ingredients_json: parseImportIngredients(get(r, 'zutaten', 'ingredients')),
+              selling_price: importNum(get(r, 'verkaufspreis', 'sellingprice', 'preis')),
+              cost_price: importNum(get(r, 'wareneinsatz', 'costprice')),
+              allergens: get(r, 'allergene', 'allergens'),
+              recipe: get(r, 'zubereitung', 'recipe')
+            });
+          });
+
+          if (parsed.length === 0) {
+            statusEl.innerText = "Keine Gerichte in der Datei gefunden (Spalte „Name“ fehlt oder ist leer).";
+            return;
           }
 
-          if (currentDrink && col0 && col0 !== "Ingredients:") {
-            currentDrink.ingredients_json.push({ name: col0, amount: col1 });
-          }
-        }
-
-        if (parsedDrinks.length > 0) {
-          const { error } = await _supabase.from("drinks").insert(parsedDrinks);
+          const { error } = await _supabase.from("dishes").insert(parsed);
           if (error) {
             statusEl.innerText = "Fehler: " + error.message;
           } else {
             statusEl.innerText = "✔ Import erfolgreich abgeschlossen!";
-            alert(`Erfolg! ${parsedDrinks.length} Drinks für die Saison (${targetSeason}) importiert.`);
+            alert(`Erfolg! ${parsed.length} Gerichte für die Saison (${targetSeason}) importiert.`);
             closeImportExportModal();
-            loadDrinks();
+            loadDishes();
           }
-        } else {
-          statusEl.innerText = "Keine Drinks in der Datei gefunden.";
+        } catch (err) {
+          statusEl.innerText = "Fehler beim Lesen der Datei: " + err.message;
         }
       };
       reader.readAsArrayBuffer(file);

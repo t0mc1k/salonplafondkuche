@@ -1,6 +1,6 @@
 /* ============================================================
    js/tickets.js
-   Support-Tickets und Changelog
+   Support-Tickets (der Changelog liegt in js/changelog.js)
    ============================================================ */
     async function checkPendingTicketsBadge() {
       const { data, error } = await _supabase.from('support_tickets').select('*').eq('is_changelog', false);
@@ -34,34 +34,6 @@
       modal.classList.remove('flex');
       modal.classList.add('hidden');
       checkPendingTicketsBadge();
-    }
-
-    function openChangelogModal() {
-      closeSettingsMenu();
-      loadChangelogData();
-      const modal = document.getElementById('changelogModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-
-    function closeChangelogModal() {
-      const modal = document.getElementById('changelogModal');
-      modal.classList.remove('flex');
-      modal.classList.add('hidden');
-    }
-
-    function toggleChangelogHistory() {
-      const container = document.getElementById('changelogHistoryContainer');
-      const btn = document.getElementById('toggleHistoryBtn');
-      if (container.classList.contains('hidden')) {
-        container.classList.remove('hidden');
-        container.classList.add('flex');
-        btn.innerText = '📜 Versionshistorie / Archiv ausblenden';
-      } else {
-        container.classList.remove('flex');
-        container.classList.add('hidden');
-        btn.innerText = '📜 Versionshistorie / Archiv (v1.0 – v3.0.50) anzeigen';
-      }
     }
 
     async function submitNewTicket() {
@@ -197,104 +169,3 @@
       });
     }
 
-    async function submitNewChangelog() {
-      checkManagerAuth(async () => {
-        const textInput = document.getElementById('newChangelogText');
-        const text = textInput.value.trim();
-        if (!text) return alert("Bitte Neuigkeit eingeben.");
-
-        const { error } = await _supabase.from('support_tickets').insert([{
-          author_email: `${currentWaiterName} (Tomas Kardos)`,
-          message: text,
-          status: 'resolved',
-          is_changelog: true,
-          admin_comment: 'Veröffentlicht von Tomas Kardos (Developer)'
-        }]);
-
-        if (error) {
-          alert("Fehler: " + error.message);
-        } else {
-          textInput.value = '';
-          alert("Neuigkeit erfolgreich veröffentlicht!");
-          loadChangelogData();
-        }
-      });
-    }
-
-    async function loadChangelogData() {
-      const container = document.getElementById('changelogHistoryContainer');
-      container.innerHTML = `<p class="text-slate-500 italic text-xs text-center py-4">Lade Historie...</p>`;
-
-      const { data, error } = await _supabase.from('support_tickets').select('*').eq('is_changelog', true).order('created_at', { ascending: false }).limit(20);
-      
-      let html = '';
-      if (data && data.length > 0) {
-        html = data.map(item => {
-          let dateStr = new Date(item.created_at).toLocaleDateString();
-          return `
-            <div class="custom-box p-3.5 rounded-xl border text-xs shrink-0">
-              <div class="flex justify-between items-center mb-1 text-[11px] text-amber-600 dark:text-amber-400 font-bold">
-                <span>${escapeHtml(item.author_email || 'Update (Tomas Kardos - Developer)')}</span>
-                <span class="text-slate-500">${dateStr}</span>
-              </div>
-              <p class="leading-relaxed">${escapeHtml(item.message)}</p>
-            </div>
-          `;
-        }).join('');
-      }
-
-      // Kompletná história od v1.0 po v3.0.50
-      html += `
-        <div class="custom-box p-3.5 rounded-xl border text-xs shrink-0">
-          <div class="flex justify-between items-center mb-1 text-[11px] text-amber-600 dark:text-amber-400 font-bold">
-            <span>Version v3.0.50 (Tomas Kardos - Developer)</span>
-            <span class="text-slate-500">Oktober 2026</span>
-          </div>
-          <p class="leading-relaxed">Versionsupdate auf v3.0.50.</p>
-        </div>
-        <div class="custom-box p-3.5 rounded-xl border text-xs shrink-0">
-          <div class="flex justify-between items-center mb-1 text-[11px] text-amber-600 dark:text-amber-400 font-bold">
-            <span>Version v3.0.49 (Tomas Kardos - Developer)</span>
-            <span class="text-slate-500">Oktober 2026</span>
-          </div>
-          <p class="leading-relaxed">Persönlicher Arbeitsplan für das Servicepersonal mit Testhinweis sowie vollständige, gegliederte Versionshistorie von v1.0 bis v3.0.49.</p>
-        </div>
-        <div class="custom-box p-3.5 rounded-xl border text-xs shrink-0">
-          <div class="flex justify-between items-center mb-1 text-[11px] text-amber-600 dark:text-amber-400 font-bold">
-            <span>Version v3.0.47 (Tomas Kardos - Developer)</span>
-            <span class="text-slate-500">Oktober 2026</span>
-          </div>
-          <p class="leading-relaxed">Entfernen der Login-Benachrichtigungsanimation für Kollegen; kaskadierendes Löschen von Saisons (z. B. Summer 2026 inklusive aller zugehörigen Drinks).</p>
-        </div>
-        <div class="custom-box p-3.5 rounded-xl border text-xs shrink-0">
-          <div class="flex justify-between items-center mb-1 text-[11px] text-amber-600 dark:text-amber-400 font-bold">
-            <span>Version v3.0.40 – v3.0.46 (Tomas Kardos - Developer)</span>
-            <span class="text-slate-500">September - Oktober 2026</span>
-          </div>
-          <p class="leading-relaxed">Einführung des PIN-Login-Grids für das Personal, Speichern der Login-Historie (login_history), Online-Status-Erkennung, verbesserter Echtzeit-Team-Chat mit @Mentions sowie Profilen mit Bio und Fotos.</p>
-        </div>
-        <div class="custom-box p-3.5 rounded-xl border text-xs shrink-0">
-          <div class="flex justify-between items-center mb-1 text-[11px] text-amber-600 dark:text-amber-400 font-bold">
-            <span>Version v3.0.30 – v3.0.39 (Tomas Kardos - Developer)</span>
-            <span class="text-slate-500">August - September 2026</span>
-          </div>
-          <p class="leading-relaxed">Unterstützung mehrerer Saisons, dynamische Berechnung von Margen und Wareneinsatz, A3-Druckvorschau für 3 Drinks, verbesserter Excel/CSV-Import/Export-Assistent.</p>
-        </div>
-        <div class="custom-box p-3.5 rounded-xl border text-xs shrink-0">
-          <div class="flex justify-between items-center mb-1 text-[11px] text-amber-600 dark:text-amber-400 font-bold">
-            <span>Version v3.0.20 – v3.0.29 (Tomas Kardos - Developer)</span>
-            <span class="text-slate-500">Juli - August 2026</span>
-          </div>
-          <p class="leading-relaxed">Einführung des Bar Trays und des Multi-View-Rezeptvergleichs, Filter nach Allergien, vegan, glutenfrei, laktosefrei und Glastyp.</p>
-        </div>
-        <div class="custom-box p-3.5 rounded-xl border text-xs shrink-0">
-          <div class="flex justify-between items-center mb-1 text-[11px] text-amber-600 dark:text-amber-400 font-bold">
-            <span>Version v1.0 – v3.0.19 (Tomas Kardos - Developer)</span>
-            <span class="text-slate-500">2026</span>
-          </div>
-          <p class="leading-relaxed">Grundlegende Getränkeliste, Kategorien (Cocktails, Mocktails, Salonplafond Classic, After Dinner Drinks, APERITIF), dunkler/heller Modus und Fotos über Supabase Storage.</p>
-        </div>
-      `;
-
-      container.innerHTML = html;
-    }

@@ -1,20 +1,91 @@
 /* ============================================================
    js/ui.js
-   Allgemeine Oberfläche: Menü, Einstellungen, Theme, Vollbild, Foto-Vorschau, Motivations-Sprüche
+   Allgemeine Oberfläche: Menü, Hinweise (Toast), Vollbild, Foto-Vorschau, Motivations-Sprüche
    ============================================================ */
     function startLogoIconCycler() {
       setInterval(() => {
-        const charEl = document.getElementById('headerLogoChar');
-        if (!charEl) return;
-        if (charEl.innerText === 'O') {
-          charEl.innerText = '🍸';
-          setTimeout(() => {
-            if (document.getElementById('headerLogoChar')) {
-              document.getElementById('headerLogoChar').innerText = 'O';
-            }
-          }, 2500);
+        const box = document.querySelector('.header-logo-container');
+        if (!box || !currentWaiterName || getSetting('reduceMotion')) return;   // nur wenn jemand angemeldet ist
+        if (box.querySelector('.logo-avatar')) return;    // läuft gerade schon
+
+        const ov = document.createElement('div');
+        ov.className = 'logo-avatar';
+        if (currentWaiterAvatar) {
+          const img = document.createElement('img');
+          img.src = currentWaiterAvatar;
+          img.alt = currentWaiterName;
+          ov.appendChild(img);
+        } else {
+          ov.classList.add('logo-avatar-initial');
+          ov.textContent = currentWaiterName.charAt(0).toUpperCase();
         }
+        box.appendChild(ov);
+        setTimeout(() => ov.remove(), 2800);
       }, 9000);
+    }
+
+    // ---------- Hinweise (Toast), kurz sichtbar und dann automatisch weg ----------
+    function showAppToast(opts) {
+      const o = opts || {};
+      let host = document.getElementById('appToastHost');
+      if (!host) {
+        host = document.createElement('div');
+        host.id = 'appToastHost';
+        host.className = 'app-toast-host';
+        document.body.appendChild(host);
+      }
+      const toast = document.createElement('div');
+      toast.className = 'app-toast glass-surface';
+
+      const av = document.createElement('div');
+      av.className = 'app-toast-avatar';
+      if (o.avatarUrl) {
+        const img = document.createElement('img');
+        img.src = o.avatarUrl;
+        img.alt = '';
+        av.appendChild(img);
+      } else {
+        av.textContent = o.initial || '🔔';
+      }
+
+      const body = document.createElement('div');
+      body.className = 'app-toast-body';
+      const title = document.createElement('div');
+      title.className = 'app-toast-title';
+      title.textContent = o.title || '';
+      const text = document.createElement('div');
+      text.className = 'app-toast-text';
+      text.textContent = o.text || '';
+      body.appendChild(title);
+      if (o.text) body.appendChild(text);
+
+      toast.appendChild(av);
+      toast.appendChild(body);
+      host.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add('show'));
+
+      const close = () => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 350);
+      };
+      toast.addEventListener('click', close);
+      setTimeout(close, o.ms || 5000);
+    }
+
+    // ---------- Zeit als „vor 5 Min.“ ----------
+    function formatRelativeTime(iso) {
+      if (!iso) return 'noch nie';
+      const t = new Date(iso).getTime();
+      if (isNaN(t)) return 'unbekannt';
+      const min = Math.floor(Math.max(0, Date.now() - t) / 60000);
+      if (min < 1) return 'gerade eben';
+      if (min < 60) return `vor ${min} Min.`;
+      const h = Math.floor(min / 60);
+      if (h < 24) return `vor ${h} Std.`;
+      const d = Math.floor(h / 24);
+      if (d === 1) return 'gestern';
+      if (d < 7) return `vor ${d} Tagen`;
+      return new Date(t).toLocaleDateString('de-AT');
     }
 
     function handleScrollPosition() {
@@ -31,13 +102,13 @@
     }
 
     const motivationalQuotes = [
-      "„Frau gut? Ruhe bitte!“ 🤫",
+      "„Heiß und fettig! Ruhe bitte, Chef spricht!“ 🤫",
       "„Keine Zeit!“ ⏱️",
-      "„Shaken, einschenken, lächeln! Ihr macht das großartig!“ 🍸✨",
-      "„Kein Stress hinter der Bar – die Drinks schmecken besser mit Gelassenheit!“ 🧊",
-      "„Ein perfekter Drink ist wie Kunst. Und ihr seid die Künstler heute Abend!“ 🎨🍾",
-      "„Fokus, Teamwork und ein guter Cocktail – das Erfolgsrezept für jeden Abend!“ 🔥",
-      "„Egal wie lang die Schlange ist: Einen Drink nach dem anderen. Du schaffst das!“ 💪",
+      "„Anrichten, abschmecken, lächeln! Ihr macht das großartig!“ 🍽️✨",
+      "„Kein Stress am Pass – die Teller schmecken besser mit Gelassenheit!“ 🔪",
+      "„Ein perfekter Teller ist wie Kunst. Und ihr seid die Künstler heute Abend!“ 🎨👨‍🍳",
+      "„Fokus, Teamwork und gute Mise en place – das Erfolgsrezept für jeden Service!“ 🔥",
+      "„Egal wie viele Bons hängen: Ein Teller nach dem anderen. Du schaffst das!“ 💪",
       "„Weißt du, wer der beste Spüler im Salonplafond ist? Natürlich Tomas Kardos, der auch diese App für euch programmiert hat! Er grüßt euch und freut sich, dass ihr diese App nutzt!“ 🧽✨"
     ];
 
@@ -58,19 +129,6 @@
 
     function setQuickVal(fieldId, value) {
       document.getElementById(fieldId).value = value;
-    }
-
-    function toggleThemeMode() {
-      const body = document.body;
-      if (themeMode === 'dark') {
-        themeMode = 'light';
-        body.classList.remove('dark-mode');
-        body.classList.add('light-mode');
-      } else {
-        themeMode = 'dark';
-        body.classList.remove('light-mode');
-        body.classList.add('dark-mode');
-      }
     }
 
     function toggleFilterDrawer() {
@@ -114,53 +172,6 @@
       closeSettingsMenu();
     }
 
-    function openUnifiedSettingsModal() {
-      closeSettingsMenu();
-      renderUnifiedSeasonSelect();
-      updateUnifiedSettingsUI();
-      const modal = document.getElementById('unifiedSettingsModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-
-    function closeUnifiedSettingsModal() {
-      const modal = document.getElementById('unifiedSettingsModal');
-      modal.classList.remove('flex');
-      modal.classList.add('hidden');
-    }
-
-    function updateUnifiedSettingsUI() {
-      const themeBtn = document.getElementById('unifiedThemeBtn');
-      if (themeBtn) themeBtn.innerText = themeMode === 'dark' ? "Dunkel" : "Hell";
-
-      const gridBtn = document.getElementById('unifiedViewGrid');
-      const listBtn = document.getElementById('unifiedViewList');
-      if (gridBtn && listBtn) {
-        gridBtn.className = viewMode === 'grid' ? 'px-2.5 py-1 text-xs font-bold rounded bg-amber-500 text-slate-950' : 'px-2.5 py-1 text-xs font-bold rounded bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-300';
-        listBtn.className = viewMode === 'list' ? 'px-2.5 py-1 text-xs font-bold rounded bg-amber-500 text-slate-950' : 'px-2.5 py-1 text-xs font-bold rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300';
-      }
-    }
-
-    function renderUnifiedSeasonSelect() {
-      const seasons = getAllSeasons();
-      const select = document.getElementById('unifiedSeasonSelect');
-      let html = '';
-      seasons.forEach(s => {
-        html += `<option value="${escapeHtml(s)}" ${currentSeasonFilter === s ? 'selected' : ''}>📅 ${escapeHtml(s)}</option>`;
-      });
-      select.innerHTML = html;
-    }
-
-    function onUnifiedSeasonChange(selectEl) {
-      selectSeason(selectEl.value);
-    }
-
-    function setViewMode(mode) {
-      viewMode = mode;
-      updateUnifiedSettingsUI();
-      renderDrinks();
-    }
-
     function toggleFullscreen() {
       if (!document.fullscreenElement) document.documentElement.requestFullscreen();
       else if (document.exitFullscreen) document.exitFullscreen();
@@ -184,4 +195,27 @@
       if (currentPhotoPreviewUrl) {
         openPhotoPreview(currentPhotoPreviewUrl);
       }
+    }
+
+    // ---------- kurzer Signalton (ohne Audio-Datei) ----------
+    function playChatSound() {
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        const ac = new AC();
+        const now = ac.currentTime;
+        [880, 1175].forEach((f, i) => {
+          const o = ac.createOscillator();
+          const g = ac.createGain();
+          o.type = 'sine';
+          o.frequency.value = f;
+          g.gain.setValueAtTime(0.0001, now + i * 0.11);
+          g.gain.exponentialRampToValueAtTime(0.18, now + i * 0.11 + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.11 + 0.18);
+          o.connect(g); g.connect(ac.destination);
+          o.start(now + i * 0.11);
+          o.stop(now + i * 0.11 + 0.2);
+        });
+        setTimeout(() => { try { ac.close(); } catch (e) {} }, 700);
+      } catch (e) {}
     }

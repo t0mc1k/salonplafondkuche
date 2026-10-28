@@ -22,13 +22,13 @@
       gridContainer.innerHTML = data.map(staff => {
         let avatarHtml = staff.avatar_url 
           ? `<img src="${escapeHtml(staff.avatar_url)}" class="w-12 h-12 rounded-full object-cover border border-amber-500/50 shadow" alt="${escapeHtml(staff.name)}">` 
-          : `<div class="w-12 h-12 rounded-full bg-slate-800 text-amber-400 font-black flex items-center justify-center border border-slate-700 text-sm">${escapeHtml(staff.name.charAt(0).toUpperCase())}</div>`;
+          : `<div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-amber-700 dark:text-amber-400 font-black flex items-center justify-center border border-slate-300 dark:border-slate-700 text-sm">${escapeHtml(staff.name.charAt(0).toUpperCase())}</div>`;
 
         return `
-          <button type="button" onclick="selectWaiterForLogin(${jsArg(staff.name)})" class="p-3 bg-slate-950 hover:bg-amber-500/20 hover:border-amber-500 border border-slate-800 rounded-xl flex flex-col items-center justify-center gap-1.5 transition group">
+          <button type="button" onclick="selectWaiterForLogin(${jsArg(staff.name)})" class="p-3 bg-slate-100 dark:bg-slate-950 hover:bg-amber-500/20 hover:border-amber-500 border border-slate-300 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center gap-1.5 transition group">
             ${avatarHtml}
-            <span class="text-xs font-black text-white group-hover:text-amber-400 truncate w-full">${escapeHtml(staff.name)}</span>
-            <span class="text-[9px] text-slate-400 uppercase tracking-wider">${escapeHtml(staff.role || 'staff')}</span>
+            <span class="text-xs font-black text-slate-900 dark:text-white group-hover:text-amber-400 truncate w-full">${escapeHtml(staff.name)}</span>
+            <span class="text-[9px] text-slate-600 dark:text-slate-400 uppercase tracking-wider">${escapeHtml(staff.role || 'staff')}</span>
           </button>
         `;
       }).join('');
@@ -115,14 +115,14 @@
 
       setStaffSession(row.out_token);
       currentWaiterName = row.out_name;
-      sessionStorage.setItem('salon_waiter_name', currentWaiterName);
+      sessionStorage.setItem('kueche_waiter_name', currentWaiterName);
       currentEnteredPin = "";
       updatePinDisplay();
       await finalizeAppStartForStaff({
         name: row.out_name,
         role: row.out_role,
         avatar_url: row.out_avatar,
-        can_edit_drinks: row.out_can_edit_drinks
+        can_edit_recipes: row.out_can_edit_recipes
       });
     }
 
@@ -135,13 +135,57 @@
 
       currentStaffRole = staffRecord.role || 'staff';
       userIsAdmin = (currentStaffRole === 'manager' || currentStaffRole === 'developer');
-      userCanEdit = userIsAdmin || staffRecord.can_edit_drinks === true;
+      userCanEdit = userIsAdmin || staffRecord.can_edit_recipes === true;
       isAdmin = userIsAdmin || userCanEdit;   // Verwaltungsansicht standardmäßig an
       applyRoleUI();
 
-      await loadDrinks();
+      await loadDishes();
       await checkPendingTicketsBadge();
       setupChatRealtimeListener();
+      startLoginWatcher();
+    }
+
+    // ---------- Hinweis, wenn sich ein Kollege anmeldet ----------
+    let loginWatchTimer = null;
+    let loginWatchBaseline = null;   // Map: Name -> letzter Login (ms)
+
+    async function pollLoginWatcher() {
+      if (document.hidden || !currentWaiterName) return;
+      const { data, error } = await _supabase.rpc('list_staff');
+      if (error || !Array.isArray(data)) return;
+
+      const fresh = new Map(data.map(st => [st.name, st.last_used_at ? new Date(st.last_used_at).getTime() : 0]));
+      if (loginWatchBaseline) {
+        data.forEach(st => {
+          const before = loginWatchBaseline.get(st.name) || 0;
+          const now = fresh.get(st.name) || 0;
+          const isMe = st.name.toLowerCase() === currentWaiterName.toLowerCase();
+          const recent = (Date.now() - now) < 2 * 60 * 1000;
+          if (!isMe && now > before && recent && getSetting('loginToast')) {
+            showAppToast({
+              avatarUrl: st.avatar_url,
+              initial: st.name.charAt(0).toUpperCase(),
+              title: st.name + ' hat sich angemeldet',
+              text: '👋 Dein Kollege ist jetzt online.',
+              ms: 6000
+            });
+          }
+        });
+      }
+      loginWatchBaseline = fresh;
+      staffDatabaseRecords = data;   // aktuelle Fotos/Namen für Chat und @-Vorschläge
+    }
+
+    function startLoginWatcher() {
+      stopLoginWatcher();
+      pollLoginWatcher();
+      loginWatchTimer = setInterval(pollLoginWatcher, 15000);
+    }
+
+    function stopLoginWatcher() {
+      if (loginWatchTimer) clearInterval(loginWatchTimer);
+      loginWatchTimer = null;
+      loginWatchBaseline = null;
     }
 
     function setVisible(id, on, useFlex) {
@@ -155,11 +199,13 @@
       const showEdit = isAdmin && userCanEdit;
       const showAdmin = isAdmin && userIsAdmin;
       setVisible('btnMenuImportExport', showEdit, true);
-      setVisible('menuAddDrinkBtn', showEdit, true);
-      setVisible('addDrinkBtnContainer', showEdit, false);
+      setVisible('menuAddDishBtn', showEdit, true);
+      setVisible('addDishBtnContainer', showEdit, false);
       setVisible('menuStaffPinBtn', showAdmin, true);
-      setVisible('menuLoginHistoryBtn', showAdmin, true);
+      setVisible('menuAdminSection', showAdmin, true);
+      setVisible('menuNewSeasonBtn', showEdit, true);
       setVisible('adminChangelogFormContainer', showAdmin, false);
+      if (typeof updateHeaderAvatarUI === 'function') updateHeaderAvatarUI();
       const label = document.getElementById('currentUserEmail');
       if (label) {
         const roleTxt = (userIsAdmin || userCanEdit) && currentStaffRole && currentStaffRole !== 'staff' ? ` (${escapeHtml(currentStaffRole)})` : '';
@@ -169,9 +215,10 @@
 
     async function handleLogout() {
       closeSettingsMenu();
+      stopLoginWatcher();
       try { await _supabase.rpc('logout_staff'); } catch (e) {}
       clearStaffSession();
-      sessionStorage.removeItem('salon_waiter_name');
+      sessionStorage.removeItem('kueche_waiter_name');
       currentWaiterName = "";
       currentWaiterAvatar = "";
       currentStaffRole = "";
@@ -195,10 +242,10 @@
       alert("Diese Aktion ist nur für Manager und Developer erlaubt.");
     }
 
-    function checkDrinkEditAuth(callback) {
+    function checkDishEditAuth(callback) {
       if (userCanEdit) {
         if (callback) callback();
         return;
       }
-      alert("Du hast keine Berechtigung, Getränke zu bearbeiten.");
+      alert("Du hast keine Berechtigung, Gerichte zu bearbeiten.");
     }

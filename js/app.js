@@ -4,6 +4,9 @@
    ============================================================ */
     window.addEventListener("DOMContentLoaded", async () => {
       window.addEventListener('scroll', handleScrollPosition);
+      applyAllSettings();
+      initChatComposer();
+      applyVersionLabels();
       startLogoIconCycler();
       await loadStaffPresenceRecordsForLogin();
 
@@ -15,7 +18,7 @@
         }
       }
       clearStaffSession();
-      sessionStorage.removeItem('salon_waiter_name');
+      sessionStorage.removeItem('kueche_waiter_name');
       currentWaiterName = "";
       document.getElementById('authContainer').classList.remove('hidden');
     });

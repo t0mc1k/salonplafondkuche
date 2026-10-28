@@ -6,9 +6,9 @@
       closeSettingsMenu();
       document.getElementById('shoppingSeasonName').innerText = currentSeasonFilter;
       
-      let activeDrinks = allDrinks.filter(d => (d.season || '') === currentSeasonFilter);
+      let activeDishes = allDishes.filter(d => (d.season || '') === currentSeasonFilter);
       let ingredientsMap = {};
-      activeDrinks.forEach(d => {
+      activeDishes.forEach(d => {
         if (Array.isArray(d.ingredients_json)) {
           d.ingredients_json.forEach(ing => {
             let key = ing.name.toLowerCase().trim();
@@ -63,9 +63,9 @@
     }
 
     function exportShoppingListExcel() {
-      let activeDrinks = allDrinks.filter(d => (d.season || '') === currentSeasonFilter);
+      let activeDishes = allDishes.filter(d => (d.season || '') === currentSeasonFilter);
       let ingredientsMap = {};
-      activeDrinks.forEach(d => {
+      activeDishes.forEach(d => {
         if (Array.isArray(d.ingredients_json)) {
           d.ingredients_json.forEach(ing => {
             let key = ing.name.toLowerCase().trim();
@@ -91,5 +91,5 @@
       let worksheet = XLSX.utils.json_to_sheet(dataToExport);
       let workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Einkaufsliste");
-      XLSX.writeFile(workbook, `salonplafond_einkaufsliste_${currentSeasonFilter}.xlsx`);
+      XLSX.writeFile(workbook, `kueche_einkaufsliste_${currentSeasonFilter}.xlsx`);
     }
