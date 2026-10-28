@@ -26,7 +26,7 @@
       window.__salonDark = dark;
     } catch (e) { document.documentElement.classList.add('dark'); window.__salonDark = true; }
   </script>
-  <link rel="stylesheet" href="css/style.css?v=1.0.00">
+  <link rel="stylesheet" href="css/style.css?v=1.1.00">
 </head>
 <body class="dark-mode p-4 md:p-8 max-w-6xl mx-auto pb-32" onclick="closeDropdowns(event)">
   <script>if (window.__salonDark === false) { document.body.classList.remove('dark-mode'); document.body.classList.add('light-mode'); }</script>
@@ -433,6 +433,10 @@
 
             <div class="menu-section">Team & Arbeit</div>
 
+            <button type="button" onclick="openHandoverModal()" class="menu-item">
+              <span class="menu-ico">📋<span id="hoBadgeMenu" class="hidden menu-count">0</span></span>
+              <span class="menu-text"><span class="menu-label">Schichtübergabe</span><span class="menu-sub">Aufgaben für die nächste Schicht</span></span>
+            </button>
             <button type="button" onclick="openTeamChatModal()" class="menu-item">
               <span class="menu-ico">💬<span id="menuChatBadge" class="hidden menu-count">0</span></span>
               <span class="menu-text"><span class="menu-label">Team-Chat</span><span class="menu-sub">Nachrichten an das ganze Team</span></span>
@@ -503,6 +507,15 @@
       <div id="activeSeasonBadge" onclick="openSeasonModal()" title="Klicken, um Saison zu wechseln" class="hidden cursor-pointer px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center gap-2 transition shrink-0 shadow-sm">
         <span>📅 Saison:</span> <span id="activeSeasonName"></span>
       </div>
+    </div>
+
+    <div class="mb-4 flex flex-col sm:flex-row gap-2">
+      <button type="button" onclick="openHandoverModal()" class="flex-1 px-4 py-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 rounded-xl text-amber-700 dark:text-amber-400 text-sm font-bold flex items-center justify-center gap-2 transition">
+        📋 Schichtübergabe ansehen <span id="hoBadgeMain" class="hidden min-w-[1.4rem] px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[11px] font-black text-center">0</span>
+      </button>
+      <button type="button" onclick="openHandoverModal('add')" class="px-4 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition shadow-md">
+        ✍️ Übergabe schreiben
+      </button>
     </div>
 
     <div id="addDishBtnContainer" class="hidden mb-4">
@@ -755,6 +768,70 @@
   </div>
 
   <!-- Shopping List / Inventory Modal -->
+  <!-- Schichtübergabe -->
+  <div id="handoverModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-3 z-50">
+    <div class="card max-w-2xl w-full p-5 relative flex flex-col gap-3 max-h-[92vh] border-amber-500/50 shadow-2xl">
+      <button onclick="closeHandoverModal()" class="absolute top-3 right-4 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl font-bold" aria-label="Schließen">&times;</button>
+
+      <div>
+        <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">📋 Schichtübergabe</h3>
+        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Aufgaben und Vorbereitungen für die nächste Schicht. Tippe auf den Kreis: offen → in Arbeit → erledigt.</p>
+      </div>
+
+      <div class="flex gap-2">
+        <button type="button" id="hoTabList" class="ui-chip active" onclick="hoSetPane('list')">📋 Offene Aufgaben</button>
+        <button type="button" id="hoTabAdd" class="ui-chip" onclick="hoSetPane('add')">✍️ Übergabe schreiben</button>
+      </div>
+
+      <!-- Liste -->
+      <div id="hoPaneList" class="flex flex-col gap-2 overflow-y-auto min-h-0 pr-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-[11px] text-slate-500 font-semibold">Gruppieren:</span>
+          <button type="button" id="hoGroupStation" class="ui-chip active" onclick="hoSetGroup('station')">Nach Sektion</button>
+          <button type="button" id="hoGroupAuthor" class="ui-chip" onclick="hoSetGroup('author')">Nach Koch</button>
+          <button type="button" class="ui-chip ml-auto" onclick="hoRefresh()">🔄 Aktualisieren</button>
+        </div>
+        <div id="hoSummary" class="text-[11px] text-slate-500 font-semibold"></div>
+        <div id="hoListContainer" class="flex flex-col gap-2"></div>
+      </div>
+
+      <!-- Formular -->
+      <div id="hoPaneAdd" class="hidden flex-col gap-3 overflow-y-auto min-h-0 pr-1">
+        <div>
+          <label class="form-label">1 · Sektion</label>
+          <div id="hoStationChips" class="flex flex-wrap gap-1.5 mb-2"></div>
+          <div class="flex gap-2">
+            <input type="text" id="hoNewStation" maxlength="30" autocomplete="off" placeholder="Andere Sektion, z. B. Fisch" class="ui-field" onkeydown="if (event.key === 'Enter') { event.preventDefault(); hoAddCustomStation(); }">
+            <button type="button" class="ui-chip shrink-0" onclick="hoAddCustomStation()">＋ Sektion</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label" for="hoItemsText">2 · Aufgaben (eine pro Zeile)</label>
+          <textarea id="hoItemsText" rows="7" maxlength="6000" class="ui-field" placeholder="Schupfnudeln&#10;Maissuppe vak&#10;Evtl. Kräuteröl | wenn Zeit bleibt&#10;Rindsjus reduzieren | 2 Liter"></textarea>
+          <p class="text-[10px] text-slate-500 mt-1">Aufzählungszeichen (-, •, 1.) werden entfernt. Zeile mit „Evtl.“ am Anfang = optional. Mit „|“ trennst du eine eigene Notiz ab.</p>
+        </div>
+
+        <label class="switch-row prop-row">
+          <span>⏳ Alle als „Evtl.“ markieren (nur wenn Zeit bleibt)</span>
+          <span class="switch"><input type="checkbox" id="hoOptional"><span class="switch-track"></span></span>
+        </label>
+
+        <div>
+          <label class="form-label" for="hoNote">3 · Notiz (optional, gilt für Zeilen ohne eigene Notiz)</label>
+          <input type="text" id="hoNote" maxlength="300" autocomplete="off" placeholder="z. B. Menge?, im Kühlhaus links" class="ui-field">
+        </div>
+
+        <div id="hoAddError" class="text-xs text-red-600 dark:text-red-400 font-medium min-h-[1rem]"></div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+          <button type="button" onclick="hoSetPane('list')" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Abbrechen</button>
+          <button type="button" id="hoSubmitBtn" onclick="hoSubmit()" class="ui-btn-primary">💾 Übergabe speichern</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="shoppingModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="card max-w-3xl w-full p-6 relative flex flex-col gap-4 max-h-[85vh] overflow-y-auto border-amber-500/50 shadow-2xl">
       <button onclick="closeShoppingModal()" class="no-print absolute top-4 right-4 text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl font-bold">&times;</button>
@@ -1347,23 +1424,24 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=1.0.00"></script>
-  <script src="js/ui.js?v=1.0.00"></script>
-  <script src="js/settings.js?v=1.0.00"></script>
-  <script src="js/auth.js?v=1.0.00"></script>
-  <script src="js/profile.js?v=1.0.00"></script>
-  <script src="js/staff-admin.js?v=1.0.00"></script>
-  <script src="js/chat.js?v=1.0.00"></script>
-  <script src="js/tickets.js?v=1.0.00"></script>
-  <script src="js/changelog.js?v=1.0.00"></script>
-  <script src="js/schedule.js?v=1.0.00"></script>
-  <script src="js/seasons.js?v=1.0.00"></script>
-  <script src="js/dishes.js?v=1.0.00"></script>
-  <script src="js/dish-admin.js?v=1.0.00"></script>
-  <script src="js/tray.js?v=1.0.00"></script>
-  <script src="js/shopping.js?v=1.0.00"></script>
-  <script src="js/import-export.js?v=1.0.00"></script>
-  <script src="js/print-a3.js?v=1.0.00"></script>
-  <script src="js/app.js?v=1.0.00"></script>
+  <script src="js/config.js?v=1.1.00"></script>
+  <script src="js/ui.js?v=1.1.00"></script>
+  <script src="js/settings.js?v=1.1.00"></script>
+  <script src="js/auth.js?v=1.1.00"></script>
+  <script src="js/profile.js?v=1.1.00"></script>
+  <script src="js/staff-admin.js?v=1.1.00"></script>
+  <script src="js/chat.js?v=1.1.00"></script>
+  <script src="js/tickets.js?v=1.1.00"></script>
+  <script src="js/changelog.js?v=1.1.00"></script>
+  <script src="js/schedule.js?v=1.1.00"></script>
+  <script src="js/seasons.js?v=1.1.00"></script>
+  <script src="js/dishes.js?v=1.1.00"></script>
+  <script src="js/dish-admin.js?v=1.1.00"></script>
+  <script src="js/tray.js?v=1.1.00"></script>
+  <script src="js/shopping.js?v=1.1.00"></script>
+  <script src="js/handovers.js?v=1.1.00"></script>
+  <script src="js/import-export.js?v=1.1.00"></script>
+  <script src="js/print-a3.js?v=1.1.00"></script>
+  <script src="js/app.js?v=1.1.00"></script>
 </body>
 </html>

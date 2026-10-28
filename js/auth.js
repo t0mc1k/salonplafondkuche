@@ -141,6 +141,7 @@
 
       await loadDishes();
       await checkPendingTicketsBadge();
+      if (typeof startHandoverBadgePolling === 'function') startHandoverBadgePolling();
       setupChatRealtimeListener();
       startLoginWatcher();
     }

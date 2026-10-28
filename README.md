@@ -74,4 +74,6 @@ Die Datei im Supabase „SQL Editor“ ausführen, bevor die passende App-Versio
 3. Dateien auf GitHub Pages hochladen, Seite öffnen, mit dem Developer-Konto anmelden.
 4. Menü > Personal & PINs: Köche anlegen.
 
-Wichtige Namen in der Datenbank: Tabelle `dishes`, Recht `can_edit_recipes`, Storage-Bucket `kitchen`.
+Ab Version 1.1.00 zusätzlich: `sql/1.1.00_handovers.sql` ausführen (Schichtübergabe, js/handovers.js).
+
+Wichtige Namen in der Datenbank: Tabellen `dishes` und `kitchen_handovers`, Recht `can_edit_recipes`, Storage-Bucket `kitchen`.

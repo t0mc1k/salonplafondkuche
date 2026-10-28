@@ -10,9 +10,16 @@
    Änderungs-Typen: 'new' Neu, 'improved' Verbessert, 'fixed' Behoben,
                     'security' Sicherheit, 'info' Allgemein
    ============================================================ */
-    const APP_VERSION = '1.0.00';
+    const APP_VERSION = '1.1.00';
 
     const CHANGELOG = [
+  { version: '1.1.00', range: '', date: 'Oktober 2026', title: 'Schichtübergabe',
+    changes: [
+      ['new', 'Neues Modul „Schichtübergabe“ statt WhatsApp-Listen: Aufgaben und Vorbereitungen für die nächste Schicht eintragen, nach Sektion oder Koch gruppiert ansehen.'],
+      ['new', 'Mehrere Aufgaben auf einmal (eine pro Zeile), „Evtl.“ für optionale Aufgaben und Notizen pro Aufgabe.'],
+      ['new', 'Abhaken in drei Stufen: offen, in Arbeit, erledigt. Erledigtes wandert in den Bereich „Erledigt“.'],
+      ['new', 'Zähler offener Aufgaben im Menü und auf der Startseite.']
+    ] },
   { version: '1.0.00', range: '', date: 'Oktober 2026', title: 'Erste Version der Küchen-App',
     changes: [
       ['new', 'Neue App für die Küche, aufgebaut auf der Salonplafond-Bar-App: Rezeptkarte mit Fotos, Suche, Kategorien und Saisons.'],
