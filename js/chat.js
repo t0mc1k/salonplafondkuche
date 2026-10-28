@@ -33,6 +33,11 @@
       return (staffDatabaseRecords || []).find(s => String(s.name).toLowerCase() === String(name).toLowerCase());
     }
 
+    function chatJobTag(name) {
+      const rec = chatStaffByName(name);
+      return rec ? `<span class="chat-job">${escapeHtml(staffTitle(rec))}</span>` : '';
+    }
+
     function chatAvatarHtml(name, size, extra) {
       const rec = chatStaffByName(name);
       const url = rec && rec.avatar_url ? rec.avatar_url : '';
@@ -161,7 +166,7 @@
           <div class="chat-row ${mine ? 'mine' : ''} ${grouped ? 'grouped' : ''}" id="msg_${escapeHtml(m.id)}">
             ${mine ? '' : (grouped ? '<span class="chat-avatar-space"></span>' : chatAvatarHtml(m.author_name))}
             <div class="chat-col">
-              ${grouped ? '' : `<div class="chat-meta"><b class="chat-author" onclick="openUserDetailModal(${jsArg(m.author_name)})">${escapeHtml(mine ? 'Du' : m.author_name)}</b><span class="chat-time">${escapeHtml(time)}</span>${m.is_pinned ? '<span class="chat-pin-tag">📌</span>' : ''}</div>`}
+              ${grouped ? '' : `<div class="chat-meta"><b class="chat-author" onclick="openUserDetailModal(${jsArg(m.author_name)})">${escapeHtml(mine ? 'Du' : m.author_name)}</b>${chatJobTag(m.author_name)}<span class="chat-time">${escapeHtml(time)}</span>${m.is_pinned ? '<span class="chat-pin-tag">📌</span>' : ''}</div>`}
               <div class="chat-bubble ${mentionsMe ? 'mention' : ''}" title="${escapeHtml(d.toLocaleString('de-AT'))}">
                 ${quote}${image}${text}
                 ${m.edited_at ? '<span class="chat-edited">bearbeitet</span>' : ''}
@@ -252,7 +257,7 @@
         const avatar = s.avatar_url
           ? `<img src="${escapeHtml(s.avatar_url)}" alt="">`
           : escapeHtml(String(s.name).charAt(0).toUpperCase());
-        const role = ({ developer: 'Developer', manager: 'Manager' }[s.role]) || 'Koch';
+        const role = staffTitle(s);
         return `
           <div class="chat-member" onclick="appendChatMention(${jsArg(s.name)})" title="Klicken, um @${escapeHtml(s.name)} zu erwähnen">
             <span class="chat-member-av">${avatar}<span class="chat-dot ${online ? 'on' : ''}"></span></span>
@@ -626,7 +631,7 @@
         const nm = document.createElement('b');
         nm.textContent = '@' + s.name;
         const rl = document.createElement('small');
-        rl.textContent = ({ developer: 'Developer', manager: 'Manager' }[s.role]) || 'Koch';
+        rl.textContent = staffTitle(s);
         row.appendChild(av); row.appendChild(nm); row.appendChild(rl);
         row.addEventListener('mousedown', ev => { ev.preventDefault(); appendChatMention(s.name); });
         dd.appendChild(row);

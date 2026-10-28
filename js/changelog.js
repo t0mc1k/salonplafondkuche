@@ -10,9 +10,16 @@
    Änderungs-Typen: 'new' Neu, 'improved' Verbessert, 'fixed' Behoben,
                     'security' Sicherheit, 'info' Allgemein
    ============================================================ */
-    const APP_VERSION = '1.1.00';
+    const APP_VERSION = '1.1.01';
 
     const CHANGELOG = [
+  { version: '1.1.01', range: '', date: 'Oktober 2026', title: 'Rollen, Funktionen und neue Übergabe-Ansicht',
+    changes: [
+      ['new', 'Neue Rolle „Sous Chef“ mit denselben Rechten wie der Küchenchef. Die bisherige Rolle „Manager“ heißt jetzt „Küchenchef“.'],
+      ['new', 'Funktionen für Köche: Breakfast / Lunch, Mittag, Lehrling, Saucier, Garde / Saucier, Entre, Garde / Entre. Küchenchef und Sous Chef weisen sie unter „Personal & PINs“ zu, sie erscheinen neben dem Namen (Login, Chat, Profil, Übergabe).'],
+      ['improved', 'Schichtübergabe: übersichtlicher Dialog mit Zählern, Sektionsfilter, klaren Buttons (Starten / Fertig / Wieder öffnen), Pflicht und „Evtl.“ getrennt und Live-Vorschau beim Schreiben.'],
+      ['improved', 'Die Buttons „Übergabe ansehen“ und „Übergabe schreiben“ sitzen jetzt oben neben „Benutzer wechseln“.']
+    ] },
   { version: '1.1.00', range: '', date: 'Oktober 2026', title: 'Schichtübergabe',
     changes: [
       ['new', 'Neues Modul „Schichtübergabe“ statt WhatsApp-Listen: Aufgaben und Vorbereitungen für die nächste Schicht eintragen, nach Sektion oder Koch gruppiert ansehen.'],

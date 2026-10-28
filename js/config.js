@@ -27,6 +27,14 @@
       const n = String(name || 'foto').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       return n.replace(/[^A-Za-z0-9._-]+/g, '_').slice(-80);
     }
+    // Rollen & Funktionen (Rolle = Rechte, Funktion = Position in der Küche, nur für Köche)
+    const ROLE_LABELS = { developer: 'Developer', manager: 'Küchenchef', souschef: 'Sous Chef', staff: 'Koch' };
+    const JOB_FUNCTIONS = ['Breakfast / Lunch', 'Mittag', 'Lehrling', 'Saucier', 'Garde / Saucier', 'Entre', 'Garde / Entre'];
+    function roleLabel(role) { return ROLE_LABELS[role] || ROLE_LABELS.staff; }
+    function isAdminRole(role) { return role === 'manager' || role === 'souschef' || role === 'developer'; }
+    function rolePillClass(role) { return role === 'developer' ? 'pill-dev' : (isAdminRole(role) ? 'pill-manager' : 'pill-staff'); }
+    // Text unter dem Namen: Funktion (Köche) oder Rolle (Leitung)
+    function staffTitle(s) { return (s && s.role === 'staff' && s.job_title) ? s.job_title : roleLabel(s && s.role); }
     function escapeHtml(v) {
       return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
@@ -56,7 +64,8 @@
     let currentWaiterName = sessionStorage.getItem('kueche_waiter_name') || "";
     let currentWaiterAvatar = "";
     let currentStaffRole = "";
-    let userIsAdmin = false;   // manager / developer (vom Server)
+    let userIsAdmin = false;   // Küchenchef / Sous Chef / Developer (vom Server)
+    let currentStaffJob = "";  // eigene Funktion (z. B. Saucier)
     let userCanEdit = false;   // darf Rezepte bearbeiten (vom Server)
     let staffDatabaseRecords = [];
     let currentEnteredPin = "";

@@ -535,6 +535,7 @@ body.dark-mode .chat-day span { background: #334155; color: #cbd5e1; }
 .chat-meta { display: flex; align-items: baseline; gap: .5rem; margin: 0 .5rem .15rem; font-size: .68rem; }
 .chat-author { font-weight: 800; color: var(--ui-accent); cursor: pointer; }
 .chat-author:hover { text-decoration: underline; }
+.chat-job { font-size: .58rem; font-weight: 700; padding: .05rem .4rem; border-radius: 999px; background: var(--ui-surface); color: var(--ui-muted); border: 1px solid var(--ui-border); white-space: nowrap; }
 .chat-time { color: var(--ui-muted); font-size: .62rem; }
 .chat-pin-tag { font-size: .65rem; }
 .chat-bubble { position: relative; padding: .5rem .8rem; border-radius: 1.05rem; border-bottom-left-radius: .3rem; font-size: .84rem; line-height: 1.4; background: var(--ui-surface-hover); color: var(--ui-text); word-break: break-word; border: 1px solid var(--ui-border); }

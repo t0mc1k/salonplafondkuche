@@ -8,7 +8,7 @@
       const menuName = document.getElementById('menuUserName');
       const menuRole = document.getElementById('menuUserRole');
       if (menuName) menuName.textContent = currentWaiterName || 'Mein Profil';
-      if (menuRole) menuRole.textContent = ({ developer: 'Developer', manager: 'Manager' }[currentStaffRole] || 'Koch') + ' · Profil bearbeiten';
+      if (menuRole) menuRole.textContent = (currentStaffRole === 'staff' && currentStaffJob ? 'Koch · ' + currentStaffJob : roleLabel(currentStaffRole)) + ' · Profil bearbeiten';
 
       if (currentWaiterAvatar) {
         container.innerHTML = `<img src="${escapeHtml(currentWaiterAvatar)}" class="w-full h-full object-cover" alt="${escapeHtml(currentWaiterName)}">`;
@@ -27,8 +27,8 @@
     let profileSnapshot = { bio: '', avatar: '' };
     let profilePinVisible = false;
 
-    function profileRoleLabel(role) {
-      return ({ developer: 'Developer', manager: 'Manager' }[role]) || 'Koch';
+    function profileRoleLabel(role, job) {
+      return (role === 'staff' && job) ? 'Koch · ' + job : roleLabel(role);
     }
 
     function renderProfileAvatar(url, name) {
@@ -129,8 +129,8 @@
 
       document.getElementById('profileModalName').innerText = data.name;
       const roleEl = document.getElementById('profileModalRole');
-      roleEl.innerText = profileRoleLabel(data.role);
-      roleEl.className = 'staff-pill ' + (data.role === 'developer' ? 'pill-dev' : data.role === 'manager' ? 'pill-manager' : 'pill-staff');
+      roleEl.innerText = profileRoleLabel(data.role, data.job_title);
+      roleEl.className = 'staff-pill ' + (rolePillClass(data.role));
       const last = document.getElementById('profileLastLogin');
       if (last) last.textContent = 'Zuletzt angemeldet: ' + formatRelativeTime(data.last_used_at);
 

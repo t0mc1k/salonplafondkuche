@@ -75,5 +75,6 @@ Die Datei im Supabase „SQL Editor“ ausführen, bevor die passende App-Versio
 4. Menü > Personal & PINs: Köche anlegen.
 
 Ab Version 1.1.00 zusätzlich: `sql/1.1.00_handovers.sql` ausführen (Schichtübergabe, js/handovers.js).
+Ab Version 1.1.01 zusätzlich: `sql/1.1.01_roles_functions.sql` ausführen (Rolle Sous Chef, Funktionen der Köche).
 
 Wichtige Namen in der Datenbank: Tabellen `dishes` und `kitchen_handovers`, Recht `can_edit_recipes`, Storage-Bucket `kitchen`.

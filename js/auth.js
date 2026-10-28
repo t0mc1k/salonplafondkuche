@@ -28,7 +28,7 @@
           <button type="button" onclick="selectWaiterForLogin(${jsArg(staff.name)})" class="p-3 bg-slate-100 dark:bg-slate-950 hover:bg-amber-500/20 hover:border-amber-500 border border-slate-300 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center gap-1.5 transition group">
             ${avatarHtml}
             <span class="text-xs font-black text-slate-900 dark:text-white group-hover:text-amber-400 truncate w-full">${escapeHtml(staff.name)}</span>
-            <span class="text-[9px] text-slate-600 dark:text-slate-400 uppercase tracking-wider">${escapeHtml(staff.role || 'staff')}</span>
+            <span class="text-[9px] text-slate-600 dark:text-slate-400 uppercase tracking-wider text-center leading-tight">${escapeHtml(staffTitle(staff))}</span>
           </button>
         `;
       }).join('');
@@ -122,7 +122,8 @@
         name: row.out_name,
         role: row.out_role,
         avatar_url: row.out_avatar,
-        can_edit_recipes: row.out_can_edit_recipes
+        can_edit_recipes: row.out_can_edit_recipes,
+        job_title: row.out_job_title
       });
     }
 
@@ -134,7 +135,8 @@
       updateHeaderAvatarUI();
 
       currentStaffRole = staffRecord.role || 'staff';
-      userIsAdmin = (currentStaffRole === 'manager' || currentStaffRole === 'developer');
+      userIsAdmin = isAdminRole(currentStaffRole);
+      currentStaffJob = staffRecord.job_title || '';
       userCanEdit = userIsAdmin || staffRecord.can_edit_recipes === true;
       isAdmin = userIsAdmin || userCanEdit;   // Verwaltungsansicht standardmäßig an
       applyRoleUI();
@@ -209,7 +211,7 @@
       if (typeof updateHeaderAvatarUI === 'function') updateHeaderAvatarUI();
       const label = document.getElementById('currentUserEmail');
       if (label) {
-        const roleTxt = (userIsAdmin || userCanEdit) && currentStaffRole && currentStaffRole !== 'staff' ? ` (${escapeHtml(currentStaffRole)})` : '';
+        const roleTxt = (userIsAdmin || userCanEdit) && currentStaffRole && currentStaffRole !== 'staff' ? ` (${escapeHtml(roleLabel(currentStaffRole))})` : (currentStaffJob ? ` (${escapeHtml(currentStaffJob)})` : '');
         label.innerHTML = `<span class="text-amber-600 dark:text-amber-400 font-black">${escapeHtml(currentWaiterName)}${roleTxt}</span>`;
       }
     }
@@ -224,6 +226,7 @@
       currentWaiterAvatar = "";
       currentStaffRole = "";
       userIsAdmin = false;
+      currentStaffJob = "";
       userCanEdit = false;
       isAdmin = false;
       currentEnteredPin = "";
@@ -240,7 +243,7 @@
         if (callback) callback();
         return;
       }
-      alert("Diese Aktion ist nur für Manager und Developer erlaubt.");
+      alert("Diese Aktion ist nur für Küchenchef, Sous Chef und Developer erlaubt.");
     }
 
     function checkDishEditAuth(callback) {

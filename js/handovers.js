@@ -8,8 +8,7 @@
   'use strict';
 
   const TABLE = 'kitchen_handovers';
-  const DEFAULT_STATIONS = ['Entre', 'Garde/Pati', 'Warme Küche', 'Allgemein'];
-  const NEXT_STATUS = { open: 'in_progress', in_progress: 'done', done: 'open' };
+  const DEFAULT_STATIONS = ['Entre', 'Garde/Pati', 'Saucier', 'Garde / Saucier', 'Breakfast / Lunch', 'Allgemein'];
   const POLL_LIST_MS = 20000;
   const POLL_BADGE_MS = 60000;
   const DONE_VISIBLE_DAYS = 2;
@@ -18,7 +17,9 @@
     items: [],
     pane: 'list',          // 'list' | 'add'
     group: 'station',      // 'station' | 'author'
-    station: '',
+    station: '',            // gewählte Sektion im Formular
+    filterStation: '',      // Filter in der Liste ('' = alle)
+    hideOptional: false,
     extraStations: [],
     busy: new Set(),
     loadError: '',
@@ -94,34 +95,46 @@
     return String(a.created_at).localeCompare(String(b.created_at));
   }
 
+  function actionBtn(label, cls, id, status) {
+    return '<button type="button" onclick="hoSetStatus(' + jsArg(id) + ',' + jsArg(status) + ')" ' +
+      'class="px-3 py-2 rounded-lg text-xs font-bold transition ' + cls + '">' + label + '</button>';
+  }
+
   function itemHtml(it) {
     const done = it.status === 'done';
     const prog = it.status === 'in_progress';
-    const icon = done ? '✔' : (prog ? '◐' : '');
-    const circle = done
-      ? 'bg-emerald-500 border-emerald-500 text-white'
-      : (prog ? 'bg-amber-500/20 border-amber-500 text-amber-600 dark:text-amber-400'
-              : 'bg-transparent border-slate-400 dark:border-slate-500 text-transparent');
-    const title = done ? 'Wieder öffnen' : (prog ? 'Als erledigt markieren' : 'In Arbeit setzen');
+    const stripe = done ? 'border-l-emerald-500' : (prog ? 'border-l-amber-500' : (it.is_optional ? 'border-l-sky-400' : 'border-l-slate-400 dark:border-l-slate-500'));
     const busy = state.busy.has(it.id) ? ' opacity-50 pointer-events-none' : '';
-    const author = state.group === 'author' ? escapeHtml(it.station || '') : escapeHtml(it.author_name || '?');
-    const badges =
-      (it.is_optional ? '<span class="px-1.5 py-0.5 rounded-md bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30 text-[10px] font-bold">Evtl.</span>' : '') +
-      (prog ? '<span class="px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[10px] font-bold">In Arbeit</span>' : '');
+    const primary = 'bg-amber-500 hover:bg-amber-600 text-slate-950';
+    const success = 'bg-emerald-500 hover:bg-emerald-600 text-white';
+    const ghost = 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200';
+    let actions;
+    if (done) actions = actionBtn('↩ Wieder öffnen', ghost, it.id, 'open');
+    else if (prog) actions = actionBtn('✔ Fertig', success, it.id, 'done') + actionBtn('↩ Offen', ghost, it.id, 'open');
+    else actions = actionBtn('▶ Starten', primary, it.id, 'in_progress') + actionBtn('✔ Fertig', success, it.id, 'done');
+
+    const rec = (typeof chatStaffByName === 'function') ? chatStaffByName(it.author_name || '') : null;
+    const who = escapeHtml(it.author_name || '?') + (rec && rec.role === 'staff' && rec.job_title ? ' (' + escapeHtml(rec.job_title) + ')' : '');
+    const meta = (state.group === 'author' ? escapeHtml(it.station || '') : who) + ' · ' + escapeHtml(dayLabel(it.shift_date));
+    const badge =
+      (prog ? '<span class="px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[10px] font-bold">In Arbeit</span>' : '') +
+      (it.is_optional ? '<span class="px-1.5 py-0.5 rounded-md bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30 text-[10px] font-bold">Evtl.</span>' : '');
+
     return (
-      '<div class="custom-box border rounded-xl p-2.5 flex items-start gap-3' + busy + '">' +
-        '<button type="button" onclick="hoCycleStatus(' + jsArg(it.id) + ')" title="' + title + '" aria-label="' + title + '" ' +
-          'class="shrink-0 w-9 h-9 rounded-full border-2 flex items-center justify-center text-base font-black transition ' + circle + '">' + icon + '</button>' +
-        '<div class="min-w-0 flex-1">' +
-          '<div class="flex flex-wrap items-center gap-1.5">' +
-            '<span class="text-sm font-bold break-words ' + (done ? 'line-through opacity-60' : '') + '">' + escapeHtml(it.item_name) + '</span>' + badges +
+      '<div class="custom-box border border-l-4 ' + stripe + ' rounded-xl p-3 flex flex-col gap-2' + busy + '">' +
+        '<div class="flex items-start gap-2">' +
+          '<div class="min-w-0 flex-1">' +
+            '<div class="flex flex-wrap items-center gap-1.5">' +
+              '<span class="text-sm font-bold break-words ' + (done ? 'line-through opacity-60' : '') + '">' + escapeHtml(it.item_name) + '</span>' + badge +
+            '</div>' +
+            (it.notes ? '<div class="text-xs text-slate-600 dark:text-slate-400 mt-1 break-words">📝 ' + escapeHtml(it.notes) + '</div>' : '') +
+            '<div class="text-[10px] text-slate-500 mt-1">' + meta + '</div>' +
           '</div>' +
-          (it.notes ? '<div class="text-xs text-slate-600 dark:text-slate-400 mt-0.5 break-words">📝 ' + escapeHtml(it.notes) + '</div>' : '') +
-          '<div class="text-[10px] text-slate-500 mt-0.5">' + author + ' · ' + escapeHtml(dayLabel(it.shift_date)) + '</div>' +
+          (canDelete(it)
+            ? '<button type="button" onclick="hoDeleteItem(' + jsArg(it.id) + ')" title="Löschen" aria-label="Löschen" class="shrink-0 w-8 h-8 rounded-lg text-slate-500 hover:text-red-500 hover:bg-red-500/10 text-sm">🗑️</button>'
+            : '') +
         '</div>' +
-        (canDelete(it)
-          ? '<button type="button" onclick="hoDeleteItem(' + jsArg(it.id) + ')" title="Löschen" aria-label="Löschen" class="shrink-0 w-8 h-8 rounded-lg text-slate-500 hover:text-red-500 hover:bg-red-500/10 text-sm">🗑️</button>'
-          : '') +
+        '<div class="flex flex-wrap gap-2">' + actions + '</div>' +
       '</div>'
     );
   }
@@ -136,17 +149,35 @@
     });
     return Array.from(groups.entries())
       .sort((a, b) => a[0].localeCompare(b[0], 'de'))
-      .map(([name, list]) =>
-        '<div class="flex flex-col gap-1.5">' +
-          '<div class="flex items-center gap-2 mt-1">' +
-            '<span class="text-xs font-black uppercase tracking-wide text-amber-700 dark:text-amber-400">' + escapeHtml(name) + '</span>' +
-            '<span class="text-[10px] text-slate-500">' + list.length + '</span>' +
+      .map(([name, list]) => {
+        const req = list.filter((i) => !i.is_optional);
+        const opt = list.filter((i) => i.is_optional);
+        // Pflicht und Evtl. getrennt: so sieht man sofort, was wirklich gemacht werden muss
+        const inner =
+          req.map(itemHtml).join('') +
+          (opt.length ? '<div class="text-[10px] font-bold uppercase tracking-wide text-sky-700 dark:text-sky-300 mt-1">Evtl. – wenn Zeit bleibt</div>' + opt.map(itemHtml).join('') : '');
+        return '<div class="flex flex-col gap-2">' +
+          '<div class="flex items-center gap-2 pt-1">' +
+            '<span class="text-sm font-black text-amber-700 dark:text-amber-400">' + escapeHtml(name) + '</span>' +
+            '<span class="px-1.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 text-[10px] font-bold">' + list.length + '</span>' +
             '<span class="flex-1 border-t border-slate-300 dark:border-slate-700"></span>' +
-          '</div>' +
-          list.map(itemHtml).join('') +
-        '</div>'
-      ).join('');
+          '</div>' + inner + '</div>';
+      }).join('');
   }
+
+  function renderFilters(active) {
+    const box = $('hoStationFilter');
+    if (!box) return;
+    const counts = new Map();
+    active.forEach((i) => { const k = String(i.station || '–').trim() || '–'; counts.set(k, (counts.get(k) || 0) + 1); });
+    if (state.filterStation && !counts.has(state.filterStation)) state.filterStation = '';
+    const chip = (label, val, n) =>
+      '<button type="button" class="ui-chip' + (state.filterStation === val ? ' active' : '') + '" onclick="hoFilterStation(' + jsArg(val) + ')">' + escapeHtml(label) + ' <span class="opacity-70">' + n + '</span></button>';
+    box.innerHTML = chip('Alle', '', active.length) +
+      Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0], 'de')).map(([k, n]) => chip(k, k, n)).join('');
+  }
+
+  function setStat(id, n) { const el = $(id); if (el) el.textContent = String(n); }
 
   function renderList() {
     const box = $('hoListContainer');
@@ -157,27 +188,33 @@
         '<div class="custom-box border border-red-500/40 rounded-xl p-4 text-xs text-red-600 dark:text-red-400">' +
         '⚠️ Die Übergaben konnten nicht geladen werden:<br><b>' + escapeHtml(state.loadError) + '</b><br>' +
         '<span class="text-slate-600 dark:text-slate-400">Wurde sql/1.1.00_handovers.sql in Supabase ausgeführt?</span></div>';
-      $('hoSummary').textContent = '';
       return;
     }
     if (!state.loaded) { box.innerHTML = '<div class="text-xs text-slate-500 p-3">Lade ...</div>'; return; }
 
-    const active = state.items.filter((i) => i.status !== 'done');
+    const allActive = state.items.filter((i) => i.status !== 'done');
     const done = state.items.filter((i) => i.status === 'done');
-    const nOpen = active.filter((i) => i.status === 'open').length;
-    const nProg = active.filter((i) => i.status === 'in_progress').length;
-    const nReq = active.filter((i) => !i.is_optional).length;
-    $('hoSummary').textContent = nOpen + ' offen · ' + nProg + ' in Arbeit · ' + nReq + ' Pflicht · ' + done.length + ' erledigt';
+    setStat('hoStatOpen', allActive.filter((i) => i.status === 'open').length);
+    setStat('hoStatProg', allActive.filter((i) => i.status === 'in_progress').length);
+    setStat('hoStatReq', allActive.filter((i) => !i.is_optional).length);
+    setStat('hoStatDone', done.length);
+    renderFilters(allActive);
+
+    const visible = (i) => (!state.filterStation || String(i.station || '–').trim() === state.filterStation) && !(state.hideOptional && i.is_optional);
+    const active = allActive.filter(visible);
+    const doneVisible = done.filter(visible);
 
     let html = '';
     if (active.length === 0) {
-      html += '<div class="custom-box border rounded-xl p-5 text-center text-xs text-slate-600 dark:text-slate-400">🎉 Keine offenen Aufgaben.<br>Über „Übergabe schreiben“ kannst du Aufgaben für die nächste Schicht eintragen.</div>';
+      html += '<div class="custom-box border rounded-xl p-6 text-center text-sm text-slate-600 dark:text-slate-400">' +
+        (allActive.length === 0 ? '🎉 Alles erledigt – keine offenen Aufgaben.' : 'Keine Aufgaben für diesen Filter.') +
+        '<br><span class="text-xs">Neue Aufgaben trägst du unter „Übergabe schreiben“ ein.</span></div>';
     } else {
       html += groupHtml(active);
     }
-    if (done.length) {
-      html += '<details class="mt-2"><summary class="cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-400 select-none">✔ Erledigt (' + done.length + ')</summary>' +
-        '<div class="flex flex-col gap-1.5 mt-2">' + done.slice().sort((a, b) => sortItems(b, a)).map(itemHtml).join('') + '</div></details>';
+    if (doneVisible.length) {
+      html += '<details class="mt-1"><summary class="cursor-pointer text-xs font-bold text-slate-600 dark:text-slate-400 select-none py-1">✔ Erledigt (' + doneVisible.length + ')</summary>' +
+        '<div class="flex flex-col gap-2 mt-2">' + doneVisible.slice().sort((a, b) => sortItems(b, a)).map(itemHtml).join('') + '</div></details>';
     }
     box.innerHTML = html;
   }
@@ -192,11 +229,10 @@
   }
 
   // ---------- Status ändern ----------
-  async function cycleStatus(id) {
+  async function setStatus(id, next) {
     const it = state.items.find((x) => x.id === id);
-    if (!it || state.busy.has(id)) return;
+    if (!it || state.busy.has(id) || it.status === next) return;
     const prev = it.status;
-    const next = NEXT_STATUS[prev] || 'open';
     state.busy.add(id);
     it.status = next;
     renderList();
@@ -298,13 +334,14 @@
     btn.disabled = true; btn.textContent = 'Speichere ...';
     const { error } = await _supabase.from(TABLE).insert(payload);
     state.saving = false;
-    btn.disabled = false; btn.textContent = '💾 Übergabe speichern';
+    btn.disabled = false;
 
     if (error) { err.textContent = 'Fehler: ' + error.message; return; }
 
     $('hoItemsText').value = '';
     $('hoNote').value = '';
     $('hoOptional').checked = false;
+    updatePreview();
     toast('Übergabe gespeichert', payload.length + (payload.length === 1 ? ' Aufgabe' : ' Aufgaben') + ' · ' + state.station, '📋');
     setPane('list');
     load(false);
@@ -314,13 +351,45 @@
   function setPane(p) {
     state.pane = p;
     $('hoPaneList').classList.toggle('hidden', p !== 'list');
+    $('hoPaneList').classList.toggle('flex', p === 'list');
     $('hoPaneAdd').classList.toggle('hidden', p !== 'add');
+    $('hoPaneAdd').classList.toggle('flex', p === 'add');
     $('hoTabList').classList.toggle('active', p === 'list');
     $('hoTabAdd').classList.toggle('active', p === 'add');
     if (p === 'add') {
       renderStationChips();
+      updatePreview();
       setTimeout(() => { const t = $('hoItemsText'); if (t) t.focus(); }, 50);
     }
+  }
+
+  function filterStation(v) { state.filterStation = v || ''; renderList(); }
+  function toggleHideOptional() {
+    state.hideOptional = !state.hideOptional;
+    const b = $('hoHideOpt');
+    if (b) { b.classList.toggle('active', state.hideOptional); }
+    renderList();
+  }
+
+  // Live-Vorschau: zeigt, wie die Zeilen erkannt werden
+  function updatePreview() {
+    const rows = parseLines($('hoItemsText').value, $('hoOptional').checked, ($('hoNote').value || '').trim());
+    const box = $('hoPreview');
+    const btn = $('hoSubmitBtn');
+    if (!box || !btn) return;
+    if (rows.length === 0) {
+      box.innerHTML = '<span class="text-[11px] text-slate-500">Hier erscheint die Vorschau deiner Aufgaben.</span>';
+    } else {
+      const nOpt = rows.filter((r) => r.is_optional).length;
+      box.innerHTML =
+        '<div class="text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1.5">' + rows.length + (rows.length === 1 ? ' Aufgabe' : ' Aufgaben') + (nOpt ? ' · davon ' + nOpt + ' Evtl.' : '') + '</div>' +
+        '<div class="flex flex-col gap-1">' + rows.map((r) =>
+          '<div class="flex items-start gap-2 text-xs"><span class="mt-0.5">' + (r.is_optional ? '◌' : '●') + '</span><span class="min-w-0 break-words"><b>' + escapeHtml(r.item_name) + '</b>' +
+          (r.is_optional ? ' <span class="px-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 text-[10px] font-bold">Evtl.</span>' : '') +
+          (r.notes ? ' <span class="text-slate-500">· ' + escapeHtml(r.notes) + '</span>' : '') + '</span></div>'
+        ).join('') + '</div>';
+    }
+    if (!state.saving) btn.textContent = rows.length ? '💾 ' + rows.length + (rows.length === 1 ? ' Aufgabe speichern' : ' Aufgaben speichern') : '💾 Übergabe speichern';
   }
 
   function setGroup(g) {
@@ -385,8 +454,11 @@
   window.hoSelectStation = selectStation;
   window.hoAddCustomStation = addCustomStation;
   window.hoSubmit = submitHandover;
-  window.hoCycleStatus = cycleStatus;
+  window.hoSetStatus = setStatus;
   window.hoDeleteItem = deleteItem;
+  window.hoFilterStation = filterStation;
+  window.hoToggleOptional = toggleHideOptional;
+  window.hoUpdatePreview = updatePreview;
   window.hoRefresh = function () { load(false); };
   window.startHandoverBadgePolling = startBadgePolling;
 })();

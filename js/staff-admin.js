@@ -1,6 +1,6 @@
 /* ============================================================
    js/staff-admin.js
-   Verwaltung (nur Manager/Developer): Personal & PINs, Login-Protokoll, Online-Übersicht
+   Verwaltung (nur Küchenchef, Sous Chef und Developer): Personal & PINs, Login-Protokoll, Online-Übersicht
    ============================================================ */
     async function openLoginHistoryModal() {
       closeSettingsMenu();
@@ -52,7 +52,7 @@
       container.innerHTML = onlineUsers.map(user => {
         return `
           <span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/30 text-[11px] flex items-center gap-1">
-            🟢 ${escapeHtml(user.name)} <span class="text-[9px] opacity-75 uppercase">(${escapeHtml(user.role || 'staff')})</span>
+            🟢 ${escapeHtml(user.name)} <span class="text-[9px] opacity-75 uppercase">(${escapeHtml(staffTitle(user))})</span>
           </span>
         `;
       }).join('');
@@ -77,7 +77,7 @@
 
       container.innerHTML = data.map(item => {
         let dateStr = new Date(item.logged_in_at).toLocaleString();
-        let roleBadge = `<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] uppercase font-bold">${escapeHtml(item.role || 'staff')}</span>`;
+        let roleBadge = `<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] uppercase font-bold">${escapeHtml(roleLabel(item.role))}</span>`;
         return `
           <div class="custom-box p-3 rounded-xl border flex items-center justify-between gap-2 text-xs">
             <div class="flex items-center gap-2">
@@ -172,6 +172,7 @@
       document.getElementById('staffInputPin').value = '';
       document.getElementById('staffInputPin').type = 'password';
       document.getElementById('staffInputCanEdit').checked = false;
+      document.getElementById('staffInputJob').value = '';
       document.getElementById('staffInputAvatar').value = '';
       document.getElementById('staffAvatarFile').value = '';
       document.getElementById('staffAvatarStatus').innerText = '';
@@ -184,19 +185,39 @@
     function setStaffRole(role) {
       const sel = document.getElementById('staffInputRole');
       if (sel) sel.value = role;
-      ['staff', 'manager', 'developer'].forEach(r => {
+      ['staff', 'manager', 'souschef', 'developer'].forEach(r => {
         const b = document.getElementById('staffRoleBtn_' + r);
         if (b) b.classList.toggle('active', r === role);
       });
+      // Funktion (Saucier, Entre ...) gibt es nur für Köche
+      const jobSec = document.getElementById('staffJobSection');
+      if (jobSec) jobSec.classList.toggle('hidden', role !== 'staff');
+      if (role !== 'staff') document.getElementById('staffInputJob').value = '';
+      renderStaffJobChips();
       // Manager/Developer dürfen immer Rezepte bearbeiten
       const canEdit = document.getElementById('staffInputCanEdit');
       const note = document.getElementById('staffCanEditNote');
-      const always = (role === 'manager' || role === 'developer');
+      const always = isAdminRole(role);
       if (canEdit) {
         if (always) canEdit.checked = true;
         canEdit.disabled = always;
       }
-      if (note) note.innerText = always ? 'Manager und Developer dürfen Gerichte immer bearbeiten.' : 'Erlaubt dem Mitarbeiter, Gerichte anzulegen, zu ändern und zu löschen.';
+      if (note) note.innerText = always ? 'Küchenchef, Sous Chef und Developer dürfen Gerichte immer bearbeiten.' : 'Erlaubt dem Mitarbeiter, Gerichte anzulegen, zu ändern und zu löschen.';
+    }
+
+    function setStaffJob(job) {
+      const inp = document.getElementById('staffInputJob');
+      inp.value = (inp.value === job) ? '' : job;   // nochmal klicken = Funktion entfernen
+      renderStaffJobChips();
+    }
+
+    function renderStaffJobChips() {
+      const box = document.getElementById('staffJobChips');
+      if (!box) return;
+      const cur = document.getElementById('staffInputJob').value;
+      box.innerHTML = JOB_FUNCTIONS.map(j =>
+        `<button type="button" class="ui-chip${j === cur ? ' active' : ''}" onclick="setStaffJob(${jsArg(j)})">${escapeHtml(j)}</button>`
+      ).join('');
     }
 
     function updateStaffAvatarPreview() {
@@ -270,9 +291,7 @@
     }
 
     function staffRolePill(role) {
-      if (role === 'developer') return `<span class="staff-pill pill-dev">Developer</span>`;
-      if (role === 'manager') return `<span class="staff-pill pill-manager">Manager</span>`;
-      return `<span class="staff-pill pill-staff">Koch</span>`;
+      return `<span class="staff-pill ${rolePillClass(role)}">${escapeHtml(roleLabel(role))}</span>`;
     }
 
     function renderStaffList() {
@@ -284,7 +303,7 @@
 
       // Zusammenfassung
       const total = staffListCache.length;
-      const admins = staffListCache.filter(s => s.role === 'manager' || s.role === 'developer').length;
+      const admins = staffListCache.filter(s => isAdminRole(s.role)).length;
       const online = staffListCache.filter(s => s.last_used_at && (nowMs - new Date(s.last_used_at).getTime()) <= 15 * 60 * 1000).length;
       const withoutPin = staffListCache.filter(s => !s.has_pin).length;
       const sum = document.getElementById('staffSummary');
@@ -297,7 +316,7 @@
       }
 
       // Filter-Chips
-      ['all', 'staff', 'manager', 'developer'].forEach(r => {
+      ['all', 'staff', 'manager', 'souschef', 'developer'].forEach(r => {
         const chip = document.getElementById('staffChip_' + r);
         if (chip) chip.classList.toggle('active', r === staffRoleFilter);
       });
@@ -330,6 +349,7 @@
               <div class="staff-name">${escapeHtml(staff.name)}</div>
               <div class="staff-badges">
                 ${staffRolePill(staff.role)}
+                ${staff.role === 'staff' && staff.job_title ? `<span class="staff-pill pill-ok" title="Funktion">🔪 ${escapeHtml(staff.job_title)}</span>` : ''}
                 ${staff.can_edit_recipes ? '<span class="staff-pill pill-ok" title="Darf Rezepte bearbeiten">🍽️ Rezepte</span>' : ''}
                 ${staff.has_pin ? '<span class="staff-pill pill-ok" title="PIN ist gesetzt">🔑 PIN</span>' : '<span class="staff-pill pill-warn" title="Es ist kein PIN gesetzt">⚠ PIN fehlt</span>'}
               </div>
@@ -356,9 +376,10 @@
       document.getElementById('staffPinHint').innerText = staff.has_pin
         ? "Leer lassen = PIN bleibt unverändert. Zum Ändern 4 bis 6 Ziffern eingeben."
         : "Für diesen Mitarbeiter ist noch kein PIN gesetzt: bitte 4 bis 6 Ziffern eingeben.";
+      document.getElementById('staffInputJob').value = staff.job_title || '';
       setStaffRole(staff.role || 'staff');
       // „Darf Rezepte bearbeiten“ nach setStaffRole erneut korrekt setzen (Admins immer)
-      if (!(staff.role === 'manager' || staff.role === 'developer')) {
+      if (!isAdminRole(staff.role)) {
         document.getElementById('staffInputCanEdit').checked = !!staff.can_edit_recipes;
       }
       updateStaffAvatarPreview();
@@ -372,6 +393,7 @@
       const role = document.getElementById('staffInputRole').value;
       const avatar_url = document.getElementById('staffInputAvatar').value.trim();
       const canEdit = document.getElementById('staffInputCanEdit').checked;
+      const jobTitle = role === 'staff' ? document.getElementById('staffInputJob').value.trim() : '';
 
       if (!newName) return alert("Bitte Name eingeben.");
       if (pin && !/^\d{4,6}$/.test(pin)) return alert("Der PIN muss aus 4 bis 6 Ziffern bestehen.");
@@ -383,7 +405,8 @@
         p_pin: pin,
         p_role: role,
         p_avatar: avatar_url,
-        p_can_edit: canEdit
+        p_can_edit: canEdit,
+        p_job_title: jobTitle
       });
       if (error) return alert("Fehler beim Speichern: " + error.message);
 
