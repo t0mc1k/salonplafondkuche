@@ -623,3 +623,16 @@ body.dark-mode .chat-mention-dd { background: #1e293b; }
 .chat-indicator.hidden, .chat-emoji-panel.hidden, .chat-mention-dd.hidden, .chat-picker.hidden,
 .menu-item.hidden, .menu-primary.hidden, .menu-count.hidden, .menu-dot.hidden, #menuAdminSection.hidden,
 .staff-card.hidden, .set-card.hidden, .profile-dirty.hidden { display: none !important; }
+
+
+/* ===== Handy-Ansicht (1.1.02): ruhiger und kompakter ===== */
+@media (max-width: 767px) {
+  #addDishBtnContainer { display: none !important; }        /* ersetzt durch den runden ＋-Button unten rechts */
+  #addDishFab:not(.hidden) { display: flex; }
+  body.has-tray #addDishFab { bottom: 5.5rem !important; }  /* nicht unter die Multi-View-Leiste */
+  #appContainer { padding-bottom: 5rem; }                    /* Platz für den ＋-Button */
+}
+@media (min-width: 768px) { #addDishFab { display: none !important; } }
+@media (max-width: 767px) {
+  .header-logo-container { width: 2.6rem; height: 2.6rem; }
+}

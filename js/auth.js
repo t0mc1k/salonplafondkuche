@@ -204,6 +204,7 @@
       setVisible('btnMenuImportExport', showEdit, true);
       setVisible('menuAddDishBtn', showEdit, true);
       setVisible('addDishBtnContainer', showEdit, false);
+      setVisible('addDishFab', showEdit, true);
       setVisible('menuStaffPinBtn', showAdmin, true);
       setVisible('menuAdminSection', showAdmin, true);
       setVisible('menuNewSeasonBtn', showEdit, true);

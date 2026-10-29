@@ -78,3 +78,8 @@ Ab Version 1.1.00 zusätzlich: `sql/1.1.00_handovers.sql` ausführen (Schichtüb
 Ab Version 1.1.01 zusätzlich: `sql/1.1.01_roles_functions.sql` ausführen (Rolle Sous Chef, Funktionen der Köche).
 
 Wichtige Namen in der Datenbank: Tabellen `dishes` und `kitchen_handovers`, Recht `can_edit_recipes`, Storage-Bucket `kitchen`.
+
+## App installieren (ab 1.1.02)
+
+Dateien `manifest.webmanifest`, `sw.js`, `js/pwa.js` und der Ordner `icons/` müssen **im selben Ordner wie index.html** liegen (GitHub Pages, HTTPS).
+In der App: Menü > App installieren (oder Einstellungen > App). Nach einem Update einmal neu laden (Ctrl+F5), der Service Worker holt immer zuerst die neueste Version.

@@ -10,9 +10,16 @@
    Änderungs-Typen: 'new' Neu, 'improved' Verbessert, 'fixed' Behoben,
                     'security' Sicherheit, 'info' Allgemein
    ============================================================ */
-    const APP_VERSION = '1.1.01';
+    const APP_VERSION = '1.1.02';
 
     const CHANGELOG = [
+  { version: '1.1.02', range: '', date: 'Oktober 2026', title: 'Übersichtliche Handy-Ansicht und App-Installation',
+    changes: [
+      ['improved', 'Handy-Ansicht aufgeräumt: kompakte Kopfzeile mit Logo, Chat und Menü, darunter Benutzer mit „Wechseln“ und die zwei Übergabe-Buttons nebeneinander.'],
+      ['improved', 'Neues Gericht anlegen geht am Handy über den runden ＋-Button unten rechts. Mein Arbeitsplan und Vollbild sind nur noch im Menü bzw. am Computer sichtbar.'],
+      ['new', 'App installieren: unter Menü > Einstellungen > App (und direkt im Menü) lässt sich die Küchen-App auf dem Startbildschirm oder Desktop ablegen. Android/Chrome/Edge mit einem Klick, iPhone mit Anleitung.'],
+      ['new', 'Eigenes App-Symbol und App-Modus ohne Browserleiste.']
+    ] },
   { version: '1.1.01', range: '', date: 'Oktober 2026', title: 'Rollen, Funktionen und neue Übergabe-Ansicht',
     changes: [
       ['new', 'Neue Rolle „Sous Chef“ mit denselben Rechten wie der Küchenchef. Die bisherige Rolle „Manager“ heißt jetzt „Küchenchef“.'],

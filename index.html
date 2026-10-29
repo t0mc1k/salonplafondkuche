@@ -2,8 +2,8 @@
 <html lang="de" id="htmlRoot">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Salonplafond KÜCHE v1.0.00</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Salonplafond KÜCHE v1.1.02</title>
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- SheetJS für Excel Import & Export -->
@@ -12,6 +12,14 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' };</script>
   <meta name="theme-color" content="#0f172a">
+  <!-- App installieren (PWA) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Küche">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <script>
     // Vor dem ersten Zeichnen: Blur-Einstellung, Schriftgröße und Design setzen (kein Flackern)
     try {
@@ -26,7 +34,7 @@
       window.__salonDark = dark;
     } catch (e) { document.documentElement.classList.add('dark'); window.__salonDark = true; }
   </script>
-  <link rel="stylesheet" href="css/style.css?v=1.1.01">
+  <link rel="stylesheet" href="css/style.css?v=1.1.02">
 </head>
 <body class="dark-mode p-4 md:p-8 max-w-6xl mx-auto pb-32" onclick="closeDropdowns(event)">
   <script>if (window.__salonDark === false) { document.body.classList.remove('dark-mode'); document.body.classList.add('light-mode'); }</script>
@@ -44,7 +52,7 @@
       <div>
         <h1 class="text-lg md:text-xl font-black tracking-wider text-slate-900 dark:text-white uppercase">Anmeldung</h1>
         <h2 class="text-xl md:text-2xl font-extrabold text-amber-700 dark:text-amber-400 tracking-tight mt-1">Salonplafond KÜCHE</h2>
-        <span class="text-xs text-slate-600 dark:text-slate-400 font-medium mt-0.5 block"><span data-app-version>v1.1.01</span> • Touch-Grid PIN-Login</span>
+        <span class="text-xs text-slate-600 dark:text-slate-400 font-medium mt-0.5 block"><span data-app-version>v1.1.02</span> • Touch-Grid PIN-Login</span>
       </div>
 
       <div id="pinLoginForm" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-5 rounded-2xl shadow-2xl space-y-4 text-left mt-1">
@@ -367,44 +375,35 @@
   <div id="appContainer" class="hidden">
 
     <!-- Header -->
-    <header class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4 pb-4 border-b border-slate-300 dark:border-slate-700">
-      <div class="flex items-center gap-3">
-        <div class="header-logo-container" onclick="showRandomMotivation(event)" title="Klick mich für Osterei-Motivation! 👨‍🍳">
+    <header class="mb-4 pb-3 border-b border-slate-300 dark:border-slate-700 flex flex-col gap-3">
+
+      <!-- Zeile 1: Logo, Titel, Chat, Menü -->
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="header-logo-container" onclick="showRandomMotivation(event)" title="Klick mich für Osterei-Motivation! 👨‍🍳">
           <span class="logo-macron" id="headerLogoMacron"></span>
           <span class="logo-main-char" id="headerLogoChar">O</span>
           <span class="logo-dot" id="headerLogoDot">•</span>
         </div>
-
-        <div class="flex flex-col justify-center">
-          <h1 class="text-3xl font-bold tracking-tight text-amber-700 dark:text-amber-400 leading-none">Salonplafond KÜCHE</h1>
-          <span class="text-xs text-slate-600 dark:text-slate-400 font-medium block mt-0.5" data-app-version>v1.1.01</span>
+          <div class="flex flex-col justify-center min-w-0">
+            <h1 class="text-xl sm:text-3xl font-bold tracking-tight text-amber-700 dark:text-amber-400 leading-none truncate">Salonplafond KÜCHE</h1>
+            <span class="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 font-medium block mt-0.5" data-app-version>v1.1.02</span>
+          </div>
         </div>
-      </div>
 
-      <div class="flex flex-wrap items-center gap-2">
-        <button onclick="handleLogout()" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Benutzer wechseln">
-          🚪 Benutzer wechseln
-        </button>
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="openTeamChatModal()" id="headerChatEnvelopeBtn" class="relative w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-amber-600 dark:text-amber-400 rounded-xl sm:rounded-lg text-sm sm:text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm" title="Team-Chat" aria-label="Chat">
+            <span>✉️<span class="hidden sm:inline"> Chat</span></span>
+            <span id="headerChatBadgeDot" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-950 pulse-badge-dot"></span>
+          </button>
 
-        <button onclick="openHandoverModal()" class="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/40 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Offene Aufgaben der Schichtübergabe ansehen">
-          📋 Übergabe ansehen <span id="hoBadgeMain" class="hidden min-w-[1.25rem] px-1 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black text-center leading-none">0</span>
-        </button>
-        <button onclick="openHandoverModal('add')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Übergabe für die nächste Schicht schreiben">
-          ✍️ Übergabe schreiben
-        </button>
+          <button onclick="toggleFullscreen()" class="hidden md:flex px-3 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 items-center gap-1 transition">
+            ⛶ Vollbild
+          </button>
 
-        <button onclick="openTeamChatModal()" id="headerChatEnvelopeBtn" class="relative px-3 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Team-Chat öffnen">
-          <span>✉️ Chat</span>
-          <span id="headerChatBadgeDot" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-950 pulse-badge-dot"></span>
-        </button>
-
-        <button onclick="toggleFullscreen()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 flex items-center gap-1 transition">
-          ⛶ Vollbild
-        </button>
-
-        <div class="relative">
-          <button onclick="toggleSettingsMenu(event)" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1 shadow-md transition relative">
-            ⚙️ Menü
+          <div class="relative">
+          <button onclick="toggleSettingsMenu(event)" class="h-10 px-3.5 sm:h-auto sm:py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl sm:rounded-lg text-sm sm:text-xs flex items-center justify-center gap-1 shadow-md transition relative" aria-label="Menü">
+            ⚙️<span class="hidden sm:inline"> Menü</span>
             <span id="menuNotificationDot" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-amber-500 dark:bg-amber-400 rounded-full border-2 border-white dark:border-slate-950 pulse-badge-dot"></span>
           </button>
 
@@ -479,13 +478,17 @@
               <span class="menu-ico">⚙️</span>
               <span class="menu-text"><span class="menu-label">Einstellungen & Zentrale</span><span class="menu-sub">Design, Schrift, Hinweise, Sortierung</span></span>
             </button>
+            <button type="button" id="menuInstallBtn" onclick="openInstallFromMenu()" class="menu-item">
+              <span class="menu-ico">📲</span>
+              <span class="menu-text"><span class="menu-label">App installieren</span><span class="menu-sub">Auf dem Startbildschirm ablegen</span></span>
+            </button>
             <button type="button" onclick="refreshData()" class="menu-item">
               <span class="menu-ico">🔄</span>
               <span class="menu-text"><span class="menu-label">Daten aktualisieren</span><span class="menu-sub">Gerichte neu laden</span></span>
             </button>
             <button type="button" onclick="openChangelogModal()" class="menu-item">
               <span class="menu-ico">🚀</span>
-              <span class="menu-text"><span class="menu-label">Was ist neu?</span><span class="menu-sub">Neuigkeiten in <span data-app-version>v1.1.01</span></span></span>
+              <span class="menu-text"><span class="menu-label">Was ist neu?</span><span class="menu-sub">Neuigkeiten in <span data-app-version>v1.1.02</span></span></span>
             </button>
             <button type="button" onclick="openSupportModal()" class="menu-item">
               <span class="menu-ico">🛟<span id="menuDropdownTicketDot" class="hidden menu-dot pulse-badge-dot"></span></span>
@@ -501,24 +504,38 @@
 
           </div>
         </div>
+        </div>
+      </div>
+
+      <!-- Zeile 2: Angemeldeter Benutzer + Wechseln -->
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div id="headerUserAvatarContainer" onclick="openUserProfileModal()" class="w-8 h-8 rounded-full border-2 border-amber-500 bg-slate-100 dark:bg-slate-800 overflow-hidden flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition shadow" title="Klicken, um mein Profil zu öffnen">
+          <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400" id="headerAvatarFallback">?</span>
+        </div>
+          <span class="text-xs text-slate-800 dark:text-slate-200 font-bold truncate"><span class="hidden sm:inline">Angemeldet: </span><span id="currentUserEmail" class="text-amber-600 dark:text-amber-300"></span></span>
+        </div>
+        <button onclick="handleLogout()" class="shrink-0 px-3 py-2 sm:py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5" title="Benutzer wechseln">
+          🚪 <span class="hidden sm:inline">Benutzer wechseln</span><span class="sm:hidden">Wechseln</span>
+        </button>
+      </div>
+
+      <!-- Zeile 3: Schichtübergabe -->
+      <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+        <button onclick="openHandoverModal()" class="py-3 sm:py-1.5 sm:px-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/40 rounded-xl sm:rounded-lg text-sm sm:text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm" title="Offene Aufgaben der Schichtübergabe ansehen">
+          📋 <span>Übergabe<span class="hidden sm:inline"> ansehen</span></span> <span id="hoBadgeMain" class="hidden min-w-[1.25rem] px-1 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black text-center leading-none">0</span>
+        </button>
+        <button onclick="openHandoverModal('add')" class="py-3 sm:py-1.5 sm:px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl sm:rounded-lg text-sm sm:text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm" title="Übergabe für die nächste Schicht schreiben">
+          ✍️ <span class="sm:hidden">Schreiben</span><span class="hidden sm:inline">Übergabe schreiben</span>
+        </button>
+        <button onclick="openWorkScheduleModal()" class="hidden sm:flex sm:ml-auto px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-bold transition items-center gap-1.5">
+          📅 Mein Arbeitsplan
+        </button>
       </div>
     </header>
 
-    <div class="mb-6 flex items-center justify-between flex-wrap gap-3">
-      <div class="inline-flex items-center gap-3">
-        <div id="headerUserAvatarContainer" onclick="openUserProfileModal()" class="w-8 h-8 rounded-full border-2 border-amber-500 bg-slate-100 dark:bg-slate-800 overflow-hidden flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition shadow" title="Klicken, um mein Profil zu öffnen">
-          <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400" id="headerAvatarFallback">?</span>
-        </div>
-        <span class="text-xs text-slate-800 dark:text-slate-200 font-bold">Angemeldet: <span id="currentUserEmail" class="text-amber-600 dark:text-amber-300"></span></span>
-      </div>
-
-      <button onclick="openWorkScheduleModal()" class="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-        📅 Mein Arbeitsplan anzeigen
-      </button>
-    </div>
-
     <!-- Vyhľadávacie pole -->
-    <div class="mb-6 flex flex-col md:flex-row justify-between items-center gap-3">
+    <div class="mb-4 flex flex-col md:flex-row justify-between items-center gap-3">
       <div class="relative w-full">
         <input type="text" id="searchInput" autocomplete="off" oninput="onSearchInput()" placeholder="🔍 Gericht oder Zutat suchen..." class="px-4 py-3 pr-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white w-full focus:outline-none focus:border-amber-500 text-sm shadow-md font-medium">
         <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-sm font-bold bg-slate-200/70 dark:bg-slate-700/50 hover:bg-slate-300 dark:hover:bg-slate-700 w-5 h-5 rounded-full items-center justify-center">&times;</button>
@@ -574,7 +591,7 @@
     </div>
 
     <footer class="mt-20 pt-6 border-t border-slate-300 dark:border-slate-800 text-center text-xs text-slate-500">
-      Salonplafond KÜCHE App <span data-app-version>v1.1.01</span> • Erstellt von <span class="text-amber-600 dark:text-amber-400 font-semibold">© T0mc1k (Tomas Kardos)</span>
+      Salonplafond KÜCHE App <span data-app-version>v1.1.02</span> • Erstellt von <span class="text-amber-600 dark:text-amber-400 font-semibold">© T0mc1k (Tomas Kardos)</span>
     </footer>
 
   </div>
@@ -585,6 +602,9 @@
   </button>
 
   <!-- Multi-View-Korb -->
+  <!-- Neues Gericht (nur Handy) -->
+  <button type="button" id="addDishFab" onclick="openAddDishModal()" class="hidden fixed z-30 right-4 w-14 h-14 rounded-full bg-amber-500 hover:bg-amber-600 text-slate-950 text-3xl font-black shadow-2xl items-center justify-center" style="bottom: max(1.25rem, env(safe-area-inset-bottom, 0px))" aria-label="Neues Gericht hinzufügen" title="Neues Gericht hinzufügen">＋</button>
+
   <div id="trayBar" class="hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 border-t border-amber-500/40 backdrop-blur-md p-3 px-4 shadow-2xl flex items-center justify-between gap-3 max-w-5xl mx-auto rounded-t-2xl">
     <div class="flex items-center gap-2 overflow-x-auto py-1 flex-1" id="trayItems"></div>
     <div class="flex items-center gap-2 shrink-0 border-l border-slate-300 dark:border-slate-700 pl-3">
@@ -1001,8 +1021,13 @@
 
         <section class="set-card">
           <h4 class="set-head">🧰 App</h4>
+          <div class="set-row" id="pwaInstallRow">
+            <div class="set-text"><b>App installieren</b><small id="pwaInstallStatus">Als App auf dem Startbildschirm ablegen.</small></div>
+            <button type="button" id="pwaInstallBtn" onclick="installApp()" class="ui-btn-primary">📲 Installieren</button>
+          </div>
+          <div id="pwaInstallHelp" class="hidden custom-box border border-amber-500/30 rounded-xl p-3 text-xs text-slate-700 dark:text-slate-300 leading-relaxed"></div>
           <div class="set-row">
-            <div class="set-text"><b>Version</b><small>Salonplafond KÜCHE <span data-app-version>v1.1.01</span></small></div>
+            <div class="set-text"><b>Version</b><small>Salonplafond KÜCHE <span data-app-version>v1.1.02</span></small></div>
             <button type="button" onclick="closeUnifiedSettingsModal(); openChangelogModal();" class="ui-btn-ghost">🚀 Was ist neu?</button>
           </div>
           <div class="set-row">
@@ -1454,24 +1479,25 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=1.1.01"></script>
-  <script src="js/ui.js?v=1.1.01"></script>
-  <script src="js/settings.js?v=1.1.01"></script>
-  <script src="js/auth.js?v=1.1.01"></script>
-  <script src="js/profile.js?v=1.1.01"></script>
-  <script src="js/staff-admin.js?v=1.1.01"></script>
-  <script src="js/chat.js?v=1.1.01"></script>
-  <script src="js/tickets.js?v=1.1.01"></script>
-  <script src="js/changelog.js?v=1.1.01"></script>
-  <script src="js/schedule.js?v=1.1.01"></script>
-  <script src="js/seasons.js?v=1.1.01"></script>
-  <script src="js/dishes.js?v=1.1.01"></script>
-  <script src="js/dish-admin.js?v=1.1.01"></script>
-  <script src="js/tray.js?v=1.1.01"></script>
-  <script src="js/shopping.js?v=1.1.01"></script>
-  <script src="js/handovers.js?v=1.1.01"></script>
-  <script src="js/import-export.js?v=1.1.01"></script>
-  <script src="js/print-a3.js?v=1.1.01"></script>
-  <script src="js/app.js?v=1.1.01"></script>
+  <script src="js/config.js?v=1.1.02"></script>
+  <script src="js/ui.js?v=1.1.02"></script>
+  <script src="js/settings.js?v=1.1.02"></script>
+  <script src="js/pwa.js?v=1.1.02"></script>
+  <script src="js/auth.js?v=1.1.02"></script>
+  <script src="js/profile.js?v=1.1.02"></script>
+  <script src="js/staff-admin.js?v=1.1.02"></script>
+  <script src="js/chat.js?v=1.1.02"></script>
+  <script src="js/tickets.js?v=1.1.02"></script>
+  <script src="js/changelog.js?v=1.1.02"></script>
+  <script src="js/schedule.js?v=1.1.02"></script>
+  <script src="js/seasons.js?v=1.1.02"></script>
+  <script src="js/dishes.js?v=1.1.02"></script>
+  <script src="js/dish-admin.js?v=1.1.02"></script>
+  <script src="js/tray.js?v=1.1.02"></script>
+  <script src="js/shopping.js?v=1.1.02"></script>
+  <script src="js/handovers.js?v=1.1.02"></script>
+  <script src="js/import-export.js?v=1.1.02"></script>
+  <script src="js/print-a3.js?v=1.1.02"></script>
+  <script src="js/app.js?v=1.1.02"></script>
 </body>
 </html>

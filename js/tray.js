@@ -33,6 +33,7 @@
       
       if (countBadge) countBadge.innerText = traySelection.length;
 
+      document.body.classList.toggle('has-tray', traySelection.length > 0);
       if (traySelection.length === 0) {
         bar.classList.add('hidden');
         bar.classList.remove('flex');
