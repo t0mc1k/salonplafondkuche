@@ -153,14 +153,17 @@
   }
 
   async function sendTest() {
-    const ok = await notify({ title: '🔔 Test', body: 'So sehen Mitteilungen der Küchen-App aus.', tag: 'ho-test', url: './?view=handover' });
+    const ok = await notify({ title: '📋 Neue Übergabe · Entre (Test)', body: 'Anna:\n• Schupfnudeln\n• Evtl. Maissuppe vak (frisch?)\n• Rindsjus (2 Liter)', tag: 'ho-test', url: './?view=handover' });
     if (!ok && typeof showAppToast === 'function') showAppToast({ initial: '⚠️', title: 'Test nicht möglich', text: 'Bitte Benachrichtigungen erst aktivieren.' });
   }
 
   // Klick auf eine Mitteilung, während die App schon offen ist (vom Service Worker)
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (e) => {
-      if (e.data && e.data.type === 'open-handover' && typeof openHandoverModal === 'function') openHandoverModal('list');
+      const d = e.data || {};
+      if (d.type === 'open-handover' && typeof openHandoverModal === 'function') openHandoverModal('list');
+      if (d.type === 'open' && d.view === 'chat' && typeof openTeamChatModal === 'function') openTeamChatModal();
+      if (d.type === 'open' && d.view === 'handover' && typeof openHandoverModal === 'function') openHandoverModal('list');
     });
   }
 

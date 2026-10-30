@@ -10,9 +10,16 @@
    Änderungs-Typen: 'new' Neu, 'improved' Verbessert, 'fixed' Behoben,
                     'security' Sicherheit, 'info' Allgemein
    ============================================================ */
-    const APP_VERSION = '1.2.00';
+    const APP_VERSION = '1.2.01';
 
     const CHANGELOG = [
+  { version: '1.2.01', range: '', date: 'Oktober 2026', title: 'Mitteilungen mit Absender und Text',
+    changes: [
+      ['improved', 'Mitteilungen zur Schichtübergabe zeigen jetzt, wer was geschrieben hat: Autor, Sektion und jede Aufgabe mit „Evtl.“ und Notiz.'],
+      ['new', 'Chat-Nachrichten kommen ebenfalls als Mitteilung mit Absender und Text.'],
+      ['improved', 'Tippen auf eine Mitteilung öffnet direkt die Übergabe bzw. den Chat. Der Test-Knopf zeigt ein Beispiel.'],
+      ['new', 'Hilfsprogramm tools/vapid-keys.html erzeugt die Push-Schlüssel direkt im Browser, ohne Installation.']
+    ] },
   { version: '1.2.00', range: '', date: 'Oktober 2026', title: 'WhatsApp und Benachrichtigungen',
     changes: [
       ['new', 'Schichtübergabe an WhatsApp senden: Sektion und Aufgaben werden als fertige Nachricht (mit „Evtl.“ und Notizen) kopiert und WhatsApp öffnet sich, die Gruppe wählst du selbst. Klappt das nicht, öffnet sich die Team-Gruppe.'],

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VAPID-Schlüssel erzeugen</title>
+<style>
+  body { font-family: system-ui, sans-serif; background:#0f172a; color:#e2e8f0; max-width:640px; margin:0 auto; padding:20px; line-height:1.5; }
+  h1 { color:#fbbf24; font-size:1.3rem; }
+  button { background:#f59e0b; color:#0f172a; font-weight:800; border:0; border-radius:10px; padding:12px 18px; font-size:1rem; }
+  button.sec { background:#334155; color:#e2e8f0; padding:6px 10px; font-size:.8rem; margin-left:8px; }
+  .box { background:#1e293b; border:1px solid #334155; border-radius:10px; padding:12px; margin:12px 0; word-break:break-all; font-family:ui-monospace,monospace; font-size:.8rem; }
+  .lab { font-weight:700; font-family:system-ui,sans-serif; display:block; margin-bottom:4px; }
+  .warn { color:#fca5a5; font-size:.85rem; }
+  .ok { color:#86efac; font-size:.85rem; }
+</style>
+</head>
+<body>
+<h1>🔑 VAPID-Schlüssel für Push-Mitteilungen</h1>
+<p>Der Schlüssel entsteht nur in diesem Browser, nichts wird gesendet. Öffne diese Datei am besten lokal (nicht auf der Webseite hochladen).</p>
+<button onclick="gen()">Schlüssel erzeugen</button>
+<div id="out" style="display:none">
+  <div class="box"><span class="lab">Öffentlicher Schlüssel → in js/config.js bei VAPID_PUBLIC_KEY und in Supabase als Secret VAPID_PUBLIC_KEY <button class="sec" onclick="cp('pub')">Kopieren</button></span><span id="pub"></span></div>
+  <div class="box"><span class="lab">Privater Schlüssel → NUR als Supabase Secret VAPID_PRIVATE_KEY <button class="sec" onclick="cp('priv')">Kopieren</button></span><span id="priv"></span></div>
+  <p class="warn">Den privaten Schlüssel niemals in die App-Dateien, ins Chat oder auf GitHub schreiben. Wer ihn hat, kann in deinem Namen Mitteilungen senden.</p>
+  <p id="msg" class="ok"></p>
+</div>
+<script>
+  const b64u = (buf) => btoa(String.fromCharCode.apply(null, new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  async function gen() {
+    const kp = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+    const pub = await crypto.subtle.exportKey('raw', kp.publicKey);       // 65 Bytes
+    const jwk = await crypto.subtle.exportKey('jwk', kp.privateKey);      // jwk.d = privater Schlüssel (base64url)
+    document.getElementById('pub').textContent = b64u(pub);
+    document.getElementById('priv').textContent = jwk.d;
+    document.getElementById('out').style.display = 'block';
+    document.getElementById('msg').textContent = '';
+  }
+  async function cp(id) {
+    try { await navigator.clipboard.writeText(document.getElementById(id).textContent); document.getElementById('msg').textContent = '✔ Kopiert'; }
+    catch (e) { document.getElementById('msg').textContent = 'Kopieren nicht möglich – bitte den Text markieren und manuell kopieren.'; }
+  }
+</script>
+</body>
+</html>

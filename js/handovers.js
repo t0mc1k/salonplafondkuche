@@ -104,25 +104,37 @@
   }
 
   function announce(added, changed) {
-    const listTxt = (arr, max) => arr.slice(0, max).map((r) => r.item_name).join(', ') + (arr.length > max ? ' +' + (arr.length - max) : '');
-    let title, body;
+    const short = (arr, max) => arr.slice(0, max).map((r) => r.item_name).join(', ') + (arr.length > max ? ' +' + (arr.length - max) : '');
+    const taskLine = (r) => '• ' + (r.is_optional ? 'Evtl. ' : '') + r.item_name + (r.notes ? ' (' + r.notes + ')' : '');
+    const lab = { done: '✔ erledigt', in_progress: '▶ in Arbeit', open: '↩ wieder offen' };
+    let title, body, toastText;
+
     if (added.length) {
+      // Wer hat was geschrieben: Autor + jede Aufgabe mit Notiz, nach Sektion gruppiert
+      const stations = Array.from(new Set(added.map((r) => r.station)));
+      title = '📋 Neue Übergabe · ' + stations.slice(0, 2).join(', ') + (stations.length > 2 ? ' +' + (stations.length - 2) : '');
       const authors = Array.from(new Set(added.map((r) => r.author_name))).join(', ');
-      const stations = Array.from(new Set(added.map((r) => r.station))).join(', ');
-      title = '📋 Neue Übergabe' + (stations ? ' · ' + stations : '');
-      body = authors + ': ' + listTxt(added, 3) + (changed.length ? ' · ' + changed.length + ' Änderung(en)' : '');
+      const lines = [authors + ':'];
+      added.slice(0, 5).forEach((r) => lines.push(taskLine(r)));
+      if (added.length > 5) lines.push('+ ' + (added.length - 5) + ' weitere');
+      if (changed.length) lines.push(changed.length + ' Statusänderung(en)');
+      body = lines.join('\n');
+      toastText = authors + ': ' + short(added, 3);
     } else {
-      const lab = { done: 'erledigt', in_progress: 'in Arbeit', open: 'wieder offen' };
       title = '🔄 Übergabe aktualisiert';
-      body = changed.slice(0, 3).map((r) => r.item_name + ' ' + (lab[r.status] || '')).join(' · ') + (changed.length > 3 ? ' +' + (changed.length - 3) : '');
+      const lines = changed.slice(0, 5).map((r) => r.item_name + ' (' + (r.station || '–') + ') ' + (lab[r.status] || ''));
+      if (changed.length > 5) lines.push('+ ' + (changed.length - 5) + ' weitere');
+      body = lines.join('\n');
+      toastText = changed.slice(0, 3).map((r) => r.item_name + ' ' + (lab[r.status] || '')).join(' · ');
     }
+
     if (document.hidden) {
-      // App im Hintergrund: System-Benachrichtigung (der Push-Server meldet sonst selbst)
+      // App im Hintergrund: System-Mitteilung (der Push-Server meldet sonst selbst)
       if (typeof window.kuecheNotify === 'function' && !(typeof window.kuechePushActive === 'function' && window.kuechePushActive())) {
         window.kuecheNotify({ title: title, body: body, tag: 'ho-local', url: './?view=handover' });
       }
     } else {
-      toast(title, body, '📋', function () { openModal('list'); });
+      toast(title, toastText, '📋', function () { openModal('list'); });
     }
   }
 
@@ -635,9 +647,13 @@
   function consumeDeepLink() {
     try {
       const p = new URLSearchParams(location.search);
-      if (p.get('view') === 'handover') {
+      const v = p.get('view');
+      if (v === 'handover' || v === 'chat') {
         history.replaceState(null, '', location.pathname + location.hash);
-        setTimeout(() => openModal('list'), 300);
+        setTimeout(() => {
+          if (v === 'chat' && typeof openTeamChatModal === 'function') openTeamChatModal();
+          else openModal('list');
+        }, 300);
       }
     } catch (e) {}
   }

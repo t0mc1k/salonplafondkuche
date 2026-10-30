@@ -755,6 +755,16 @@
           ms: 6000
         });
       }
+      // App im Hintergrund: System-Mitteilung mit Absender und Text (Push-Server meldet sonst selbst)
+      if (document.hidden && typeof window.kuecheNotify === 'function' &&
+          !(typeof window.kuechePushActive === 'function' && window.kuechePushActive())) {
+        window.kuecheNotify({
+          title: mention ? '💬 ' + msg.author_name + ' hat dich erwähnt' : '💬 ' + msg.author_name,
+          body: (chatStripFormat(msg.message) || '📷 Foto').slice(0, 200),
+          tag: 'chat-' + msg.author_name,
+          url: './?view=chat'
+        });
+      }
       if (getSetting('chatSound')) playChatSound();
     }
 

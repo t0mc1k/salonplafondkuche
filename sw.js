@@ -1,8 +1,8 @@
-/* Salonplafond KÜCHE – Service Worker (Version 1.2.00)
+/* Salonplafond KÜCHE – Service Worker (Version 1.2.01)
    Zweck: App installierbar machen und die App-Dateien offline bereithalten.
    Strategie: Netzwerk zuerst (immer die neueste Version), Cache nur als Notlösung.
    Daten aus Supabase und Fremd-Server (CDN) werden nie zwischengespeichert. */
-const CACHE = 'kueche-1.2.00';
+const CACHE = 'kueche-1.2.01';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/config.js', 'js/auth.js', 'js/ui.js', 'js/settings.js', 'js/dishes.js', 'js/dish-admin.js',
@@ -73,7 +73,7 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       for (const c of list) {
-        if ('focus' in c) { c.postMessage({ type: 'open-handover' }); return c.focus(); }
+        if ('focus' in c) { c.postMessage({ type: 'open', view: new URL(target).searchParams.get('view') || 'handover' }); return c.focus(); }
       }
       return self.clients.openWindow(target);
     })

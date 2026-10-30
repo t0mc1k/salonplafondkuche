@@ -1,9 +1,10 @@
 // Supabase Edge Function: send-push
-// Wird vom Datenbank-Trigger (sql/1.2.00_push.sql) aufgerufen, wenn in der Schichtübergabe
-// eine Aufgabe neu ist oder ihren Status ändert. Schickt Web-Push an alle Geräte außer dem Auslöser.
+// Wird von Datenbank-Triggern (sql/1.2.00_push.sql, 1.2.01_push_details.sql) aufgerufen, wenn in der Schichtübergabe
+// eine Aufgabe neu ist oder ihren Status ändert oder im Chat eine Nachricht kommt.
+// Schickt Web-Push mit Absender und Text an alle Geräte außer dem Auslöser.
 //
 // Deploy:  supabase functions deploy send-push --no-verify-jwt
-// Secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:...)
+// Secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:...), WEBHOOK_SECRET
 // (SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY stellt Supabase automatisch bereit.)
 
 import webpush from 'npm:web-push@3.6.7';
@@ -26,51 +27,60 @@ type Item = {
   station: string;
   author_name?: string;
   is_optional?: boolean;
+  notes?: string | null;
   status?: string;
   old_status?: string;
 };
 
 const STATUS_TEXT: Record<string, string> = { done: '✔ erledigt', in_progress: '▶ in Arbeit', open: '↩ wieder offen' };
+const MAX_LINES = 5;
 
-function list(names: string[], max = 3): string {
-  const head = names.slice(0, max).join(', ');
-  return names.length > max ? `${head} +${names.length - max}` : head;
+function moreLine(total: number): string[] {
+  return total > MAX_LINES ? [`+ ${total - MAX_LINES} weitere`] : [];
 }
 
-function buildPayload(kind: string, actor: string, items: Item[]) {
+// Baut Titel und Text der Mitteilung: wer hat was geschrieben
+function buildPayload(kind: string, actor: string, items: Item[], message: string, hasImage: boolean) {
+  if (kind === 'chat') {
+    return {
+      title: `💬 ${actor}`,
+      body: (message.trim() || (hasImage ? '📷 Foto' : 'Neue Nachricht')).slice(0, 200),
+      tag: `chat-${actor}`,
+      url: './?view=chat',
+    };
+  }
   if (kind === 'insert') {
     const stations = [...new Set(items.map((i) => i.station))];
+    const lines = [`${actor}:`].concat(
+      items.slice(0, MAX_LINES).map((i) => `• ${i.is_optional ? 'Evtl. ' : ''}${i.item_name}${i.notes ? ` (${i.notes})` : ''}`),
+      moreLine(items.length),
+    );
     return {
-      title: `📋 Neue Übergabe · ${stations.join(', ')}`,
-      body: `${actor}: ${list(items.map((i) => (i.is_optional ? 'Evtl. ' : '') + i.item_name))}`,
+      title: `📋 Neue Übergabe · ${stations.slice(0, 2).join(', ')}${stations.length > 2 ? ` +${stations.length - 2}` : ''}`,
+      body: lines.join('\n'),
       tag: `ho-new-${actor}`,
       url: './?view=handover',
     };
   }
-  return {
-    title: '🔄 Übergabe aktualisiert',
-    body: list(items.map((i) => `${i.item_name} ${STATUS_TEXT[i.status ?? ''] ?? ''}`.trim())),
-    tag: 'ho-status',
-    url: './?view=handover',
-  };
+  const lines = items.slice(0, MAX_LINES).map((i) => `${i.item_name} (${i.station}) ${STATUS_TEXT[i.status ?? ''] ?? ''}`.trim())
+    .concat(moreLine(items.length));
+  return { title: '🔄 Übergabe aktualisiert', body: lines.join('\n'), tag: 'ho-status', url: './?view=handover' };
 }
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
-  
-  // Pevne zadaný kľúč, ktorý sa zhoduje s databázou
-  const webhookSecret = req.headers.get('x-webhook-secret');
-  if (webhookSecret !== '85c99c410029c44cbceb25100d1ec43e38a10629bca47d41') {
+  if (req.headers.get('x-webhook-secret') !== Deno.env.get('WEBHOOK_SECRET')) {
     return new Response('Forbidden', { status: 403 });
   }
 
-  let body: { kind?: string; actor?: string; items?: Item[] };
+  let body: { kind?: string; actor?: string; items?: Item[]; message?: string; has_image?: boolean };
   try { body = await req.json(); } catch { return new Response('Bad request', { status: 400 }); }
+  const kind = String(body.kind ?? 'insert');
   const items = Array.isArray(body.items) ? body.items : [];
-  if (items.length === 0) return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
+  if (kind !== 'chat' && items.length === 0) return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
 
   const actor = String(body.actor ?? '');
-  const payload = JSON.stringify(buildPayload(String(body.kind ?? 'insert'), actor, items));
+  const payload = JSON.stringify(buildPayload(kind, actor, items, String(body.message ?? ''), !!body.has_image));
 
   const { data: subs, error } = await supabase
     .from('push_subscriptions')

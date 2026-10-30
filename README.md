@@ -92,13 +92,18 @@ In der App: Menü > App installieren (oder Einstellungen > App). Nach einem Upda
 
 **Push bei geschlossener App** (einmalige Einrichtung):
 1. `sql/1.2.00_push.sql` in Supabase ausführen. Das Ergebnis `webhook_secret` am Ende kopieren.
-2. VAPID-Schlüssel erzeugen: `npx web-push generate-vapid-keys`
+2. VAPID-Schlüssel erzeugen: Datei `tools/vapid-keys.html` im Browser öffnen und „Schlüssel erzeugen“ klicken (alternativ `npx web-push generate-vapid-keys`).
 3. Den **öffentlichen** Schlüssel in `js/config.js` bei `VAPID_PUBLIC_KEY` eintragen.
 4. Edge Function bereitstellen (Supabase CLI): 
    `supabase link --project-ref rdymkhkowbyslhfnbubk`
    `supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:deine@mail.at WEBHOOK_SECRET=<webhook_secret aus Schritt 1>`
    `supabase functions deploy send-push --no-verify-jwt`
-5. App neu hochladen, in der App Benachrichtigungen aktivieren.
+5. Ab Version 1.2.01 zusätzlich `sql/1.2.01_push_details.sql` ausführen und die Edge Function neu bereitstellen (Mitteilungen mit Text, Chat).
+6. App neu hochladen, in der App Benachrichtigungen aktivieren.
 
 Der private Schlüssel gehört nur in die Supabase-Secrets, niemals in die App-Dateien.
 iPhone: Push funktioniert erst ab iOS 16.4 und nur, wenn die App über „Zum Home-Bildschirm“ installiert ist.
+
+Ohne Kommandozeile geht die Bereitstellung auch im Supabase-Dashboard: **Edge Functions → Deploy a new function → Via Editor**, Name `send-push`, Inhalt von `supabase/functions/send-push/index.ts` einfügen, bei den Einstellungen „Verify JWT“ ausschalten. Die vier Secrets stehen unter **Edge Functions → Secrets**.
+
+Hinweis Android: Die graue Mitteilung „Küche – Tippen kopiert die URL dieser App“ stammt von Edge/Chrome selbst (Anzeige für installierte Web-Apps) und nicht von der App. Mitteilungen der App erscheinen separat, mit Titel und Text.
