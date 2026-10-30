@@ -3,7 +3,7 @@
 // eine Aufgabe neu ist oder ihren Status ändert. Schickt Web-Push an alle Geräte außer dem Auslöser.
 //
 // Deploy:  supabase functions deploy send-push --no-verify-jwt
-// Secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:...), WEBHOOK_SECRET
+// Secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:...)
 // (SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY stellt Supabase automatisch bereit.)
 
 import webpush from 'npm:web-push@3.6.7';
@@ -57,7 +57,10 @@ function buildPayload(kind: string, actor: string, items: Item[]) {
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
-  if (req.headers.get('x-webhook-secret') !== Deno.env.get('WEBHOOK_SECRET')) {
+  
+  // Pevne zadaný kľúč, ktorý sa zhoduje s databázou
+  const webhookSecret = req.headers.get('x-webhook-secret');
+  if (webhookSecret !== '85c99c410029c44cbceb25100d1ec43e38a10629bca47d41') {
     return new Response('Forbidden', { status: 403 });
   }
 
