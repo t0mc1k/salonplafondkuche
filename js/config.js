@@ -27,6 +27,10 @@
       const n = String(name || 'foto').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       return n.replace(/[^A-Za-z0-9._-]+/g, '_').slice(-80);
     }
+    // Web-Push (Benachrichtigungen bei geschlossener App). Öffentlicher VAPID-Schlüssel hier eintragen
+    // (erzeugen mit: npx web-push generate-vapid-keys). Leer = nur Mitteilungen bei geöffneter App.
+    const VAPID_PUBLIC_KEY = '';
+
     // Rollen & Funktionen (Rolle = Rechte, Funktion = Position in der Küche, nur für Köche)
     const ROLE_LABELS = { developer: 'Developer', manager: 'Küchenchef', souschef: 'Sous Chef', staff: 'Koch' };
     const JOB_FUNCTIONS = ['Breakfast / Lunch', 'Mittag', 'Lehrling', 'Saucier', 'Garde / Saucier', 'Entre', 'Garde / Entre'];

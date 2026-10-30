@@ -83,3 +83,22 @@ Wichtige Namen in der Datenbank: Tabellen `dishes` und `kitchen_handovers`, Rech
 
 Dateien `manifest.webmanifest`, `sw.js`, `js/pwa.js` und der Ordner `icons/` müssen **im selben Ordner wie index.html** liegen (GitHub Pages, HTTPS).
 In der App: Menü > App installieren (oder Einstellungen > App). Nach einem Update einmal neu laden (Ctrl+F5), der Service Worker holt immer zuerst die neueste Version.
+
+## WhatsApp und Benachrichtigungen (ab 1.2.00)
+
+**WhatsApp**: funktioniert ohne Einrichtung. Die Nachricht wird kopiert und `https://wa.me/?text=...` geöffnet. Der Ersatz-Gruppenlink steht in `js/handovers.js` (Konstante `WA_FALLBACK_GROUP`).
+
+**Benachrichtigungen bei geöffneter App**: funktioniert sofort (Einstellungen > App > Benachrichtigungen > Aktivieren).
+
+**Push bei geschlossener App** (einmalige Einrichtung):
+1. `sql/1.2.00_push.sql` in Supabase ausführen. Das Ergebnis `webhook_secret` am Ende kopieren.
+2. VAPID-Schlüssel erzeugen: `npx web-push generate-vapid-keys`
+3. Den **öffentlichen** Schlüssel in `js/config.js` bei `VAPID_PUBLIC_KEY` eintragen.
+4. Edge Function bereitstellen (Supabase CLI): 
+   `supabase link --project-ref rdymkhkowbyslhfnbubk`
+   `supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:deine@mail.at WEBHOOK_SECRET=<webhook_secret aus Schritt 1>`
+   `supabase functions deploy send-push --no-verify-jwt`
+5. App neu hochladen, in der App Benachrichtigungen aktivieren.
+
+Der private Schlüssel gehört nur in die Supabase-Secrets, niemals in die App-Dateien.
+iPhone: Push funktioniert erst ab iOS 16.4 und nur, wenn die App über „Zum Home-Bildschirm“ installiert ist.

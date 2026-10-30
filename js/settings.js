@@ -163,6 +163,7 @@
       renderUnifiedSeasonSelect();
       updateUnifiedSettingsUI();
       if (typeof renderInstallUI === 'function') renderInstallUI();
+      if (typeof renderPushUI === 'function') renderPushUI();
       const modal = document.getElementById('unifiedSettingsModal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');

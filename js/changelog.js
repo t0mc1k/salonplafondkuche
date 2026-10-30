@@ -10,9 +10,17 @@
    Änderungs-Typen: 'new' Neu, 'improved' Verbessert, 'fixed' Behoben,
                     'security' Sicherheit, 'info' Allgemein
    ============================================================ */
-    const APP_VERSION = '1.1.02';
+    const APP_VERSION = '1.2.00';
 
     const CHANGELOG = [
+  { version: '1.2.00', range: '', date: 'Oktober 2026', title: 'WhatsApp und Benachrichtigungen',
+    changes: [
+      ['new', 'Schichtübergabe an WhatsApp senden: Sektion und Aufgaben werden als fertige Nachricht (mit „Evtl.“ und Notizen) kopiert und WhatsApp öffnet sich, die Gruppe wählst du selbst. Klappt das nicht, öffnet sich die Team-Gruppe.'],
+      ['new', 'Buttons „📲 WhatsApp“ pro Sektion und für alle offenen Aufgaben in der Liste sowie „Nur WhatsApp“ im Formular.'],
+      ['new', 'Benachrichtigungen: neue Aufgaben und Statusänderungen erscheinen als Hinweis in der App und als Mitteilung auf dem Handy. Ein-/Ausschalten unter Einstellungen > App.'],
+      ['new', 'Push auch bei geschlossener App (nach einmaliger Server-Einrichtung, siehe README). Tippen auf die Mitteilung öffnet die Schichtübergabe. Zähler am App-Symbol.'],
+      ['fixed', 'Beim Umbenennen eines Mitarbeiters werden Chat-Nachrichten und Übergaben jetzt wirklich auf den neuen Namen umgestellt.']
+    ] },
   { version: '1.1.02', range: '', date: 'Oktober 2026', title: 'Übersichtliche Handy-Ansicht und App-Installation',
     changes: [
       ['improved', 'Handy-Ansicht aufgeräumt: kompakte Kopfzeile mit Logo, Chat und Menü, darunter Benutzer mit „Wechseln“ und die zwei Übergabe-Buttons nebeneinander.'],

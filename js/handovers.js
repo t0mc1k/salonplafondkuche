@@ -13,6 +13,12 @@
   const POLL_BADGE_MS = 60000;
   const DONE_VISIBLE_DAYS = 2;
 
+  // WhatsApp: universeller Link (Gruppe wird in WhatsApp gewählt). Zweite Wahl: feste Gruppe.
+  const WA_FALLBACK_GROUP = 'https://chat.whatsapp.com/KHtZegqDJJhFjjlkEuQP52';
+  const WA_MAX_ENCODED = 1800;   // längere Texte passen nicht sicher in einen wa.me-Link
+  const WA_CLOSING = 'Danke, bis dann!';
+  const OWN_CHANGE_IGNORE_MS = 120000;
+
   const state = {
     items: [],
     pane: 'list',          // 'list' | 'add'
@@ -26,7 +32,10 @@
     loaded: false,
     listTimer: null,
     badgeTimer: null,
-    saving: false
+    saving: false,
+    snap: null,              // letzter bekannter Stand (id -> status), für Benachrichtigungen
+    ownChange: new Map(),    // eigene Statusänderungen (nicht als "neu" melden)
+    pendingShare: ''         // Text, falls WhatsApp nicht automatisch geöffnet werden konnte
   };
 
   const $ = (id) => document.getElementById(id);
@@ -47,8 +56,8 @@
   }
 
   // ---------- Hilfen ----------
-  function toast(title, text, icon) {
-    if (typeof showAppToast === 'function') showAppToast({ initial: icon || '📋', title: title, text: text || '' });
+  function toast(title, text, icon, onClick) {
+    if (typeof showAppToast === 'function') showAppToast({ initial: icon || '📋', title: title, text: text || '', onClick: onClick });
     else alert(title + (text ? '\n' + text : ''));
   }
   function canDelete(it) {
@@ -65,16 +74,66 @@
   }
 
   // ---------- Laden ----------
-  async function load(silent) {
-    if (typeof currentWaiterName !== 'string' || !currentWaiterName) return;
+  async function fetchItems() {
     const since = localISO(addDays(new Date(), -DONE_VISIBLE_DAYS));
-    const { data, error } = await _supabase
+    return _supabase
       .from(TABLE)
       .select('*')
       .or('status.neq.done,shift_date.gte.' + since)
       .order('shift_date', { ascending: true })
       .order('created_at', { ascending: true })
       .limit(500);
+  }
+
+  function meLower() { return (typeof currentWaiterName === 'string' ? currentWaiterName : '').toLowerCase(); }
+
+  // Vergleicht mit dem letzten Stand und meldet Neues/Änderungen anderer (Toast + System-Benachrichtigung)
+  function detectChanges(rows) {
+    const prev = state.snap;
+    state.snap = new Map(rows.map((r) => [r.id, r.status]));
+    if (!prev) return;                                   // erster Abruf: nichts melden
+    const me = meLower();
+    const now = Date.now();
+    const added = rows.filter((r) => !prev.has(r.id) && r.status !== 'done' && String(r.author_name || '').toLowerCase() !== me);
+    const changed = rows.filter((r) => {
+      if (!prev.has(r.id) || prev.get(r.id) === r.status) return false;
+      const t = state.ownChange.get(r.id);
+      return !(t && now - t < OWN_CHANGE_IGNORE_MS);
+    });
+    if (added.length || changed.length) announce(added, changed);
+  }
+
+  function announce(added, changed) {
+    const listTxt = (arr, max) => arr.slice(0, max).map((r) => r.item_name).join(', ') + (arr.length > max ? ' +' + (arr.length - max) : '');
+    let title, body;
+    if (added.length) {
+      const authors = Array.from(new Set(added.map((r) => r.author_name))).join(', ');
+      const stations = Array.from(new Set(added.map((r) => r.station))).join(', ');
+      title = '📋 Neue Übergabe' + (stations ? ' · ' + stations : '');
+      body = authors + ': ' + listTxt(added, 3) + (changed.length ? ' · ' + changed.length + ' Änderung(en)' : '');
+    } else {
+      const lab = { done: 'erledigt', in_progress: 'in Arbeit', open: 'wieder offen' };
+      title = '🔄 Übergabe aktualisiert';
+      body = changed.slice(0, 3).map((r) => r.item_name + ' ' + (lab[r.status] || '')).join(' · ') + (changed.length > 3 ? ' +' + (changed.length - 3) : '');
+    }
+    if (document.hidden) {
+      // App im Hintergrund: System-Benachrichtigung (der Push-Server meldet sonst selbst)
+      if (typeof window.kuecheNotify === 'function' && !(typeof window.kuechePushActive === 'function' && window.kuechePushActive())) {
+        window.kuecheNotify({ title: title, body: body, tag: 'ho-local', url: './?view=handover' });
+      }
+    } else {
+      toast(title, body, '📋', function () { openModal('list'); });
+    }
+  }
+
+  function applyRows(rows) {
+    if (state.busy.size === 0) state.items = rows || [];
+    updateBadge((rows || []).filter((i) => i.status !== 'done').length);
+  }
+
+  async function load(silent) {
+    if (typeof currentWaiterName !== 'string' || !currentWaiterName) return;
+    const { data, error } = await fetchItems();
     if (error) {
       state.loadError = error.message || 'Unbekannter Fehler';
       if (!silent || !state.loaded) renderList();
@@ -82,10 +141,9 @@
     }
     state.loadError = '';
     state.loaded = true;
-    // Während einer Änderung nicht überschreiben (verhindert Flackern)
-    if (state.busy.size === 0) state.items = data || [];
+    detectChanges(data || []);
+    applyRows(data || []);
     renderList();
-    updateBadge(state.items.filter((i) => i.status !== 'done').length);
   }
 
   // ---------- Anzeige: Liste ----------
@@ -161,6 +219,7 @@
             '<span class="text-sm font-black text-amber-700 dark:text-amber-400">' + escapeHtml(name) + '</span>' +
             '<span class="px-1.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 text-[10px] font-bold">' + list.length + '</span>' +
             '<span class="flex-1 border-t border-slate-300 dark:border-slate-700"></span>' +
+            '<button type="button" onclick="hoShareGroup(' + jsArg(name) + ')" class="px-2 py-1 rounded-lg text-[11px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25" title="Diese Aufgaben an WhatsApp senden">📲 WhatsApp</button>' +
           '</div>' + inner + '</div>';
       }).join('');
   }
@@ -179,6 +238,10 @@
 
   function setStat(id, n) { const el = $(id); if (el) el.textContent = String(n); }
 
+  function visibleItem(i) {
+    return (!state.filterStation || String(i.station || '–').trim() === state.filterStation) && !(state.hideOptional && i.is_optional);
+  }
+
   function renderList() {
     const box = $('hoListContainer');
     if (!box) return;
@@ -190,6 +253,7 @@
         '<span class="text-slate-600 dark:text-slate-400">Wurde sql/1.1.00_handovers.sql in Supabase ausgeführt?</span></div>';
       return;
     }
+    renderShareBanner();
     if (!state.loaded) { box.innerHTML = '<div class="text-xs text-slate-500 p-3">Lade ...</div>'; return; }
 
     const allActive = state.items.filter((i) => i.status !== 'done');
@@ -200,7 +264,7 @@
     setStat('hoStatDone', done.length);
     renderFilters(allActive);
 
-    const visible = (i) => (!state.filterStation || String(i.station || '–').trim() === state.filterStation) && !(state.hideOptional && i.is_optional);
+    const visible = visibleItem;
     const active = allActive.filter(visible);
     const doneVisible = done.filter(visible);
 
@@ -220,6 +284,7 @@
   }
 
   function updateBadge(n) {
+    try { if (navigator.setAppBadge) { n > 0 ? navigator.setAppBadge(n) : navigator.clearAppBadge(); } } catch (e) {}
     ['hoBadgeMenu', 'hoBadgeMain'].forEach((id) => {
       const el = $(id);
       if (!el) return;
@@ -234,12 +299,15 @@
     if (!it || state.busy.has(id) || it.status === next) return;
     const prev = it.status;
     state.busy.add(id);
+    state.ownChange.set(id, Date.now());
     it.status = next;
     renderList();
     const { data, error } = await _supabase.from(TABLE).update({ status: next }).eq('id', id).select('id');
     state.busy.delete(id);
+    if (!error && data && data.length > 0 && state.snap) state.snap.set(id, next);
     if (error || !data || data.length === 0) {
       it.status = prev;
+      state.ownChange.delete(id);
       toast('Nicht gespeichert', error ? error.message : 'Keine Berechtigung oder Eintrag existiert nicht mehr.', '⚠️');
     }
     renderList();
@@ -261,6 +329,127 @@
     }
     renderList();
     updateBadge(state.items.filter((i) => i.status !== 'done').length);
+  }
+
+  // ---------- WhatsApp ----------
+  // Format:  *Sektion*  /  • Aufgabe  /  • Evtl. Aufgabe (Notiz)  /  Danke, bis dann!
+  function buildWhatsAppText(groups) {
+    const blocks = groups
+      .filter((g) => g.items && g.items.length)
+      .map((g) => '*' + String(g.station || 'Allgemein').replace(/\*/g, '').trim() + '*\n' +
+        g.items.map((i) => '• ' + (i.is_optional ? 'Evtl. ' : '') + i.item_name + (i.notes ? ' (' + i.notes + ')' : '')).join('\n'));
+    if (!blocks.length) return '';
+    return blocks.join('\n\n') + '\n\n' + WA_CLOSING;
+  }
+
+  function groupsFromItems(items) {
+    const map = new Map();
+    items.slice().sort(sortItems).forEach((it) => {
+      const k = String(it.station || 'Allgemein').trim() || 'Allgemein';
+      if (!map.has(k)) map.set(k, []);
+      map.get(k).push(it);
+    });
+    return Array.from(map.entries()).map(([station, list]) => ({ station: station, items: list }));
+  }
+
+  // Kopiert in die Zwischenablage (läuft auch ohne Clipboard-API über die alte Methode)
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
+    } catch (e) { /* weiter mit Ersatzweg */ }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+      document.body.appendChild(ta);
+      ta.select(); ta.setSelectionRange(0, text.length);
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return !!ok;
+    } catch (e) { return false; }
+  }
+
+  // 1) Text kopieren  2) wa.me-Link mit vorausgefülltem Text öffnen (Gruppe wählt der Koch selbst)
+  // 3) Falls das nicht geht (blockiert oder Text zu lang): Einladungslink der Gruppe öffnen
+  // Wichtig: Muss direkt aus einem Klick heraus aufgerufen werden, sonst blockieren Browser das Öffnen.
+  function shareWhatsApp(text) {
+    if (!text) { toast('Nichts zu senden', 'Es gibt keine Aufgaben für die Nachricht.', '⚠️'); return false; }
+    const copying = copyText(text);                      // startet sofort
+    const encoded = encodeURIComponent(text);
+    const tooLong = encoded.length > WA_MAX_ENCODED;
+
+    let win = null;
+    if (!tooLong) { try { win = window.open('https://wa.me/?text=' + encoded, '_blank'); } catch (e) { win = null; } }
+    let usedFallback = false;
+    if (!win) {
+      usedFallback = true;
+      try { win = window.open(WA_FALLBACK_GROUP, '_blank'); } catch (e) { win = null; }
+    }
+
+    copying.then((copied) => {
+      if (!win) {
+        state.pendingShare = text;
+        renderShareBanner();
+        toast('WhatsApp wurde blockiert', copied ? 'Text ist kopiert. Tippe auf „WhatsApp öffnen“.' : 'Tippe auf „WhatsApp öffnen“.', '⚠️');
+        return;
+      }
+      state.pendingShare = '';
+      renderShareBanner();
+      if (usedFallback) {
+        toast('Gruppe wird geöffnet', (copied ? 'Text kopiert – in der Gruppe einfügen.' : 'Bitte Text manuell kopieren.') + (tooLong ? ' (Nachricht ist lang)' : ''), '📲');
+      } else {
+        toast('An WhatsApp übergeben', (copied ? 'Text kopiert. ' : '') + 'Gruppe wählen und senden.', '📲');
+      }
+    });
+    return !!win;
+  }
+
+  function renderShareBanner() {
+    const box = $('hoShareBanner');
+    if (!box) return;
+    if (!state.pendingShare) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    box.classList.remove('hidden');
+    box.innerHTML =
+      '<div class="custom-box border border-emerald-500/40 rounded-xl p-3 flex items-center gap-3">' +
+        '<div class="text-xs flex-1"><b>Übergabe gespeichert.</b><br><span class="text-slate-600 dark:text-slate-400">WhatsApp konnte nicht automatisch geöffnet werden.</span></div>' +
+        '<button type="button" onclick="hoSharePending()" class="px-3 py-2 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white">📲 WhatsApp öffnen</button>' +
+        '<button type="button" onclick="hoDismissPending()" class="w-8 h-8 text-slate-500 hover:text-slate-800 dark:hover:text-white" aria-label="Schließen">&times;</button>' +
+      '</div>';
+  }
+
+  function shareItems(items) {
+    const text = buildWhatsAppText(groupsFromItems(items));
+    if (!text) { toast('Nichts zu senden', 'Keine offenen Aufgaben vorhanden.', '📋'); return; }
+    shareWhatsApp(text);
+  }
+
+  function shareVisible() {
+    shareItems(state.items.filter((i) => i.status !== 'done' && visibleItem(i)));
+  }
+
+  function shareGroup(name) {
+    const key = state.group === 'author' ? 'author_name' : 'station';
+    shareItems(state.items.filter((i) => i.status !== 'done' && visibleItem(i) && (String(i[key] || '–').trim() || '–') === name));
+  }
+
+  // Nur teilen, ohne zu speichern (aus dem Formular)
+  function shareFromForm() {
+    const err = $('hoAddError');
+    err.textContent = '';
+    if (!state.station) { err.textContent = 'Bitte eine Sektion wählen.'; return; }
+    const rows = parseLines($('hoItemsText').value, $('hoOptional').checked, ($('hoNote').value || '').trim());
+    if (rows.length === 0) { err.textContent = 'Bitte mindestens eine Aufgabe eintragen (eine pro Zeile).'; return; }
+    shareWhatsApp(buildWhatsAppText([{ station: state.station, items: rows }]));
+  }
+
+  function saveWaPref() {
+    try { localStorage.setItem('kueche_ho_wa', $('hoAutoWa').checked ? '1' : '0'); } catch (e) {}
+  }
+  function loadWaPref() {
+    let v = '1';
+    try { v = localStorage.getItem('kueche_ho_wa') || '1'; } catch (e) {}
+    const el = $('hoAutoWa'); if (el) el.checked = (v !== '0');
   }
 
   // ---------- Formular: Übergabe schreiben ----------
@@ -338,12 +527,17 @@
 
     if (error) { err.textContent = 'Fehler: ' + error.message; return; }
 
+    const waText = buildWhatsAppText([{ station: state.station, items: rows }]);
+    const sendWa = $('hoAutoWa') && $('hoAutoWa').checked;
+
     $('hoItemsText').value = '';
     $('hoNote').value = '';
     $('hoOptional').checked = false;
     updatePreview();
     toast('Übergabe gespeichert', payload.length + (payload.length === 1 ? ' Aufgabe' : ' Aufgaben') + ' · ' + state.station, '📋');
     setPane('list');
+    // Kann der Browser WhatsApp hier nicht öffnen, erscheint oben in der Liste ein Button
+    if (sendWa) shareWhatsApp(waText);
     load(false);
   }
 
@@ -408,6 +602,7 @@
     }
     const m = $('handoverModal');
     m.classList.remove('hidden'); m.classList.add('flex');
+    loadWaPref();
     setPane(pane || 'list');
     setGroup(state.group);
     load(false);
@@ -423,21 +618,37 @@
     m.classList.remove('flex'); m.classList.add('hidden');
   }
 
-  // ---------- Zähler (Menü + Hauptseite) ----------
-  async function refreshBadge() {
-    if (typeof currentWaiterName !== 'string' || !currentWaiterName) return;
-    const { count, error } = await _supabase.from(TABLE).select('id', { count: 'exact', head: true }).neq('status', 'done');
-    if (!error && typeof count === 'number') updateBadge(count);
+  // ---------- Hintergrund-Abfrage: Zähler + Benachrichtigungen ----------
+  async function poll() {
+    if (typeof currentWaiterName !== 'string' || !currentWaiterName) { updateBadge(0); state.snap = null; return; }
+    // Bei offener Liste und gerade laufender Änderung nichts überschreiben
+    const { data, error } = await fetchItems();
+    if (error) return;
+    state.loaded = true; state.loadError = '';
+    detectChanges(data || []);
+    applyRows(data || []);
+    const m = $('handoverModal');
+    if (m && !m.classList.contains('hidden') && state.pane === 'list') renderList();
+  }
+
+  // Öffnet die Übergabe, wenn die App über eine Benachrichtigung gestartet wurde (?view=handover)
+  function consumeDeepLink() {
+    try {
+      const p = new URLSearchParams(location.search);
+      if (p.get('view') === 'handover') {
+        history.replaceState(null, '', location.pathname + location.hash);
+        setTimeout(() => openModal('list'), 300);
+      }
+    } catch (e) {}
   }
 
   function startBadgePolling() {
-    refreshBadge();
+    state.snap = null;
+    poll();
+    consumeDeepLink();
     if (state.badgeTimer) return;
-    state.badgeTimer = setInterval(() => {
-      if (document.hidden) return;
-      if (typeof currentWaiterName !== 'string' || !currentWaiterName) { updateBadge(0); return; }
-      refreshBadge();
-    }, POLL_BADGE_MS);
+    state.badgeTimer = setInterval(poll, POLL_BADGE_MS);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
   }
 
   // Esc schließt das Fenster
@@ -459,6 +670,13 @@
   window.hoFilterStation = filterStation;
   window.hoToggleOptional = toggleHideOptional;
   window.hoUpdatePreview = updatePreview;
+  window.hoShareGroup = shareGroup;
+  window.hoShareVisible = shareVisible;
+  window.hoShareForm = shareFromForm;
+  window.hoSaveWaPref = saveWaPref;
+  window.hoSharePending = function () { if (state.pendingShare) shareWhatsApp(state.pendingShare); };
+  window.hoDismissPending = function () { state.pendingShare = ''; renderShareBanner(); };
+  window.hoBuildWhatsAppText = buildWhatsAppText;
   window.hoRefresh = function () { load(false); };
   window.startHandoverBadgePolling = startBadgePolling;
 })();

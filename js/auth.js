@@ -144,6 +144,7 @@
       await loadDishes();
       await checkPendingTicketsBadge();
       if (typeof startHandoverBadgePolling === 'function') startHandoverBadgePolling();
+      if (typeof pushSyncAfterLogin === 'function') pushSyncAfterLogin();
       setupChatRealtimeListener();
       startLoginWatcher();
     }
@@ -220,6 +221,7 @@
     async function handleLogout() {
       closeSettingsMenu();
       stopLoginWatcher();
+      if (typeof pushDetachBeforeLogout === 'function') { try { await pushDetachBeforeLogout(); } catch (e) {} }
       try { await _supabase.rpc('logout_staff'); } catch (e) {}
       clearStaffSession();
       sessionStorage.removeItem('kueche_waiter_name');

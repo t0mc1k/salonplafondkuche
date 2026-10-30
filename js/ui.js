@@ -68,7 +68,7 @@
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 350);
       };
-      toast.addEventListener('click', close);
+      toast.addEventListener('click', () => { close(); if (typeof o.onClick === 'function') { try { o.onClick(); } catch (e) {} } });
       setTimeout(close, o.ms || 5000);
     }
 
