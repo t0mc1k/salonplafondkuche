@@ -2,8 +2,8 @@
    js/config.js
    Grundeinstellungen: Supabase-Verbindung, Login-Token, Hilfsfunktionen (escapeHtml, jsArg) und gemeinsame Variablen
    ============================================================ */
-    const SUPABASE_URL = "https://rdymkhkowbyslhfnbubk.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_LcNoUZdhjjZQVGd5ng5RpA_n5m7T3Cr";
+    const SUPABASE_URL = "https://jhirewwpsehqrmbnuspt.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_CcQaQXBhDYFVHUUl4IQv2w_zB1ks42J";
     const STAFF_TOKEN_KEY = 'salon_staff_token';
     const STAFF_TOKEN_EXP_KEY = 'salon_staff_token_exp';
     function getStaffToken() {
