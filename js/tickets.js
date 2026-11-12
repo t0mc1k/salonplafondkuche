@@ -10,6 +10,8 @@
       const dropdownDot = document.getElementById('menuDropdownTicketDot');
       
       const hasPending = (data || []).some(t => t.status === 'pending');
+      window.dashPendingTickets = (data || []).filter(t => t.status === 'pending').length;
+      if (typeof refreshDashboardBadges === 'function') refreshDashboardBadges();
       
       if (hasPending) {
         if (menuDot) menuDot.classList.remove('hidden');

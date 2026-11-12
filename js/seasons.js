@@ -16,22 +16,22 @@
 
     function createNewSeasonPrompt() {
       closeSettingsMenu();
-      checkDishEditAuth(async () => {
+      checkDrinkEditAuth(async () => {
         let newSeasonName = prompt("Namen für die neue Saison eingeben (z. B. Sommer 2027 oder 01.05.2027 - 31.10.2027):");
         if (!newSeasonName || newSeasonName.trim() === '') return;
 
         let formatted = newSeasonName.trim();
         
-        const { error } = await _supabase.from('dishes').insert([{
-          name: "Willkommens-Gericht (Saison-Start)",
-          category: "Hauptgerichte",
+        const { error } = await _supabase.from('drinks').insert([{
+          name: "Willkommens-Drink (Saison-Start)",
+          category: "Cocktails",
           season: formatted,
-          plate_type: "Teller",
-          method: "",
-          cook_time: "",
-          garnish: "",
-          ingredients_json: [{ name: "Neue Saison", amount: "1x" }],
-          recipe: "Erstes Gericht dieser neuen Saison. Bitte bearbeiten oder löschen.",
+          glass_type: "Coupette",
+          method: "Build",
+          ice: "Cubed",
+          garnish: "Mint",
+          ingredients_json: [{ name: "Saison-Eröffnung", amount: "1x" }],
+          recipe: "Erster Drink dieser neuen Saison.",
           is_featured: false
         }]);
 
@@ -39,7 +39,7 @@
           alert("Fehler beim Erstellen der Saison: " + error.message);
         } else {
           alert(`Saison "${formatted}" wurde erfolgreich erstellt!`);
-          await loadDishes();
+          await loadDrinks();
           selectSeason(formatted);
         }
       });
@@ -47,7 +47,7 @@
 
     function getAllSeasons() {
       let seasons = [];
-      allDishes.forEach(d => {
+      allDrinks.forEach(d => {
         if (d.season && d.season !== 'current' && !seasons.includes(d.season)) seasons.push(d.season);
       });
       return seasons;
@@ -60,7 +60,8 @@
 
     function updateActiveSeasonBadgeUI() {
       const menuSub = document.getElementById('menuSeasonSub');
-      if (menuSub) menuSub.textContent = currentSeasonFilter ? 'Aktiv: ' + currentSeasonFilter : 'Aktive Karte wechseln';
+      if (menuSub) menuSub.textContent = currentSeasonFilter ? t('menu.seasonActive', { name: currentSeasonFilter }) : t('menu.seasonSub');
+      if (typeof renderDashboard === 'function' && !isDrinksViewOpen()) renderDashboard();
       const badge = document.getElementById('activeSeasonBadge');
       const seasonNameEl = document.getElementById('activeSeasonName');
       if (!currentSeasonFilter) {
@@ -75,12 +76,12 @@
 
     async function renameSeason(oldSeasonName, event) {
       if (event) event.stopPropagation();
-      checkDishEditAuth(async () => {
+      checkDrinkEditAuth(async () => {
         const newSeasonName = prompt(`Neuen Namen für die Saison "${oldSeasonName}" eingeben:`, oldSeasonName);
         if (!newSeasonName || newSeasonName.trim() === '' || newSeasonName.trim() === oldSeasonName) return;
 
         const formattedNewName = newSeasonName.trim();
-        const { error } = await _supabase.from('dishes').update({ season: formattedNewName }).eq('season', oldSeasonName);
+        const { error } = await _supabase.from('drinks').update({ season: formattedNewName }).eq('season', oldSeasonName);
         
         if (error) {
           alert("Fehler beim Umbenennen: " + error.message);
@@ -89,25 +90,25 @@
 
         alert(`Saison erfolgreich in "${formattedNewName}" umbenannt!`);
         currentSeasonFilter = formattedNewName;
-        await loadDishes();
+        await loadDrinks();
         closeSeasonModal();
       });
     }
 
     async function deleteEntireSeason(seasonKey, event) {
       if (event) event.stopPropagation();
-      checkDishEditAuth(async () => {
-        if (!confirm(`Möchten Sie wirklich die gesamte Saison "${seasonKey}" und alle darin enthaltenen Gerichte permanent löschen?`)) return;
+      checkDrinkEditAuth(async () => {
+        if (!confirm(`Möchten Sie wirklich die gesamte Saison "${seasonKey}" und alle darin enthaltenen Getränke permanent löschen?`)) return;
 
-        const { error: dishesErr } = await _supabase.from('dishes').delete().eq('season', seasonKey);
-        if (dishesErr) {
-          alert("Fehler beim Löschen der Gerichte der Saison: " + dishesErr.message);
+        const { error: drinksErr } = await _supabase.from('drinks').delete().eq('season', seasonKey);
+        if (drinksErr) {
+          alert("Fehler beim Löschen der Getränke der Saison: " + drinksErr.message);
           return;
         }
 
         alert(`Saison "${seasonKey}" wurde erfolgreich gelöscht!`);
         currentSeasonFilter = null;
-        await loadDishes();
+        await loadDrinks();
         closeSeasonModal();
       });
     }
@@ -174,5 +175,5 @@
       closeSeasonModal();
       updateActiveSeasonBadgeUI();
       renderCategories();
-      renderDishes();
+      renderDrinks();
     }

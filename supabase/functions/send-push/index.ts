@@ -1,117 +1,116 @@
-// Supabase Edge Function: send-push
-// Wird von Datenbank-Triggern (sql/1.2.00_push.sql, 1.2.01_push_details.sql) aufgerufen, wenn in der Schichtübergabe
-// eine Aufgabe neu ist oder ihren Status ändert oder im Chat eine Nachricht kommt.
-// Schickt Web-Push mit Absender und Text an alle Geräte außer dem Auslöser.
-//
-// Deploy:  supabase functions deploy send-push --no-verify-jwt
-// Secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:...), WEBHOOK_SECRET
-// (SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY stellt Supabase automatisch bereit.)
+// Supabase Edge Function: send-push  (Version 4.1.00)
+// Sendet die fälligen Einträge aus public.push_queue als Web-Push an die Geräte der Mitarbeiter.
+// Wird von der Datenbank aufgerufen (pg_net + pg_cron), NICHT von der App.
+// Einstellungen (Secrets): VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT, PUSH_SHARED_SECRET
+// Deploy: "Verify JWT" AUSSCHALTEN (der Aufruf kommt von der Datenbank mit dem Header x-push-secret).
+import { createClient } from "npm:@supabase/supabase-js@2";
+import webpush from "npm:web-push@3.6.7";
 
-import webpush from 'npm:web-push@3.6.7';
-import { createClient } from 'npm:@supabase/supabase-js@2';
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
+const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
+const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:admin@example.com";
+const SHARED_SECRET = Deno.env.get("PUSH_SHARED_SECRET") ?? "";
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  { auth: { persistSession: false } },
-);
+if (VAPID_PUBLIC && VAPID_PRIVATE) webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 
-webpush.setVapidDetails(
-  Deno.env.get('VAPID_SUBJECT') ?? 'mailto:admin@example.com',
-  Deno.env.get('VAPID_PUBLIC_KEY')!,
-  Deno.env.get('VAPID_PRIVATE_KEY')!,
-);
+const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-type Item = {
-  item_name: string;
-  station: string;
-  author_name?: string;
-  is_optional?: boolean;
-  notes?: string | null;
-  status?: string;
-  old_status?: string;
+// Kategorien, die immer gesendet werden (nicht abschaltbar)
+const ALWAYS = new Set(["test"]);
+const URGENT = new Set(["fault_urgent", "mgr_swap", "test"]);
+
+type Sub = { id: string; staff_name: string; endpoint: string; p256dh: string; auth: string; lang: string; is_admin: boolean };
+type Row = {
+  id: number; target_type: "user" | "admins" | "all"; target_name: string | null; exclude_name: string | null;
+  category: string; payload: any; url: string | null; tag: string | null;
 };
 
-const STATUS_TEXT: Record<string, string> = { done: '✔ erledigt', in_progress: '▶ in Arbeit', open: '↩ wieder offen' };
-const MAX_LINES = 5;
+const low = (s: string | null | undefined) => String(s ?? "").trim().toLowerCase();
 
-function moreLine(total: number): string[] {
-  return total > MAX_LINES ? [`+ ${total - MAX_LINES} weitere`] : [];
+export function pickRecipients(row: Row, subs: Sub[]): Sub[] {
+  const ex = low(row.exclude_name);
+  return subs.filter((s) => {
+    if (ex && low(s.staff_name) === ex) return false;
+    if (row.target_type === "user") return low(s.staff_name) === low(row.target_name);
+    if (row.target_type === "admins") return !!s.is_admin;
+    return true;
+  });
 }
 
-// Baut Titel und Text der Mitteilung: wer hat was geschrieben
-function buildPayload(kind: string, actor: string, items: Item[], message: string, hasImage: boolean) {
-  if (kind === 'chat') {
-    return {
-      title: `💬 ${actor}`,
-      body: (message.trim() || (hasImage ? '📷 Foto' : 'Neue Nachricht')).slice(0, 200),
-      tag: `chat-${actor}`,
-      url: './?view=chat',
-    };
+// Bestimmt Kategorie + Text für genau diese Person (Erwähnungen im Chat haben Vorrang)
+export function buildFor(row: Row, sub: Sub, prefs: Record<string, boolean>) {
+  const lang = sub.lang === "en" ? "en" : "de";
+  const mentions: string[] = Array.isArray(row.payload?.mentions) ? row.payload.mentions : [];
+  let category = row.category;
+  let msg = row.payload?.[lang] ?? row.payload?.de ?? {};
+  if (row.category === "chat" && mentions.includes(low(sub.staff_name))) {
+    // Wer mit @Name erwähnt wurde, bekommt eine eigene Meldung (Kategorie „mention“), auch wenn „Chat“ ausgeschaltet ist
+    category = "mention";
+    msg = row.payload?.[`mention_${lang}`] ?? msg;
   }
-  if (kind === 'insert') {
-    const stations = [...new Set(items.map((i) => i.station))];
-    const lines = [`${actor}:`].concat(
-      items.slice(0, MAX_LINES).map((i) => `• ${i.is_optional ? 'Evtl. ' : ''}${i.item_name}${i.notes ? ` (${i.notes})` : ''}`),
-      moreLine(items.length),
-    );
-    return {
-      title: `📋 Neue Übergabe · ${stations.slice(0, 2).join(', ')}${stations.length > 2 ? ` +${stations.length - 2}` : ''}`,
-      body: lines.join('\n'),
-      tag: `ho-new-${actor}`,
-      url: './?view=handover',
-    };
-  }
-  const lines = items.slice(0, MAX_LINES).map((i) => `${i.item_name} (${i.station}) ${STATUS_TEXT[i.status ?? ''] ?? ''}`.trim())
-    .concat(moreLine(items.length));
-  return { title: '🔄 Übergabe aktualisiert', body: lines.join('\n'), tag: 'ho-status', url: './?view=handover' };
+  if (!ALWAYS.has(category) && prefs[category] === false) return null;
+  return {
+    category,
+    body: JSON.stringify({
+      title: msg.title ?? "Salonplafond",
+      body: msg.body ?? "",
+      groupTitle: msg.groupTitle ?? null,
+      groupBody: msg.groupBody ?? null,
+      tag: row.tag ?? category,
+      url: row.url ?? "",
+      cat: category,
+    }),
+    urgent: URGENT.has(category),
+  };
 }
 
 Deno.serve(async (req) => {
-  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
-  if (req.headers.get('x-webhook-secret') !== Deno.env.get('WEBHOOK_SECRET')) {
-    return new Response('Forbidden', { status: 403 });
+  if (!SHARED_SECRET || req.headers.get("x-push-secret") !== SHARED_SECRET) {
+    return new Response("forbidden", { status: 403 });
   }
+  if (!VAPID_PUBLIC || !VAPID_PRIVATE) return new Response("VAPID keys missing", { status: 500 });
 
-  let body: { kind?: string; actor?: string; items?: Item[]; message?: string; has_image?: boolean };
-  try { body = await req.json(); } catch { return new Response('Bad request', { status: 400 }); }
-  const kind = String(body.kind ?? 'insert');
-  const items = Array.isArray(body.items) ? body.items : [];
-  if (kind !== 'chat' && items.length === 0) return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
+  const { data: batch, error } = await db.rpc("push_claim_batch", { p_limit: 40 });
+  if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+  const rows = (batch ?? []) as Row[];
+  if (!rows.length) return new Response(JSON.stringify({ processed: 0 }), { headers: { "content-type": "application/json" } });
 
-  const actor = String(body.actor ?? '');
-  const payload = JSON.stringify(buildPayload(kind, actor, items, String(body.message ?? ''), !!body.has_image));
+  const { data: subsData } = await db.from("push_subscriptions").select("*");
+  const subs = (subsData ?? []) as Sub[];
+  const { data: prefData } = await db.from("push_prefs").select("*");
+  const prefs = new Map<string, Record<string, boolean>>();
+  for (const p of prefData ?? []) prefs.set(low(p.staff_name), p.prefs ?? {});
 
-  const { data: subs, error } = await supabase
-    .from('push_subscriptions')
-    .select('endpoint, p256dh, auth, staff:staff_id(name)');
-  if (error) return new Response(error.message, { status: 500 });
-
-  const recipients = (subs ?? []).filter((s: any) => {
-    const name = Array.isArray(s.staff) ? s.staff[0]?.name : s.staff?.name;
-    return String(name ?? '').toLowerCase() !== actor.toLowerCase();   // Auslöser selbst nicht benachrichtigen
-  });
-
-  let sent = 0;
-  await Promise.allSettled(recipients.map(async (s: any) => {
+  let sent = 0, failed = 0;
+  for (const row of rows) {
     try {
-      await webpush.sendNotification(
-        { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-        payload,
-        { TTL: 60 * 60 * 12, urgency: 'high' },
-      );
-      sent++;
-    } catch (e: any) {
-      // Gerät existiert nicht mehr (App deinstalliert, Berechtigung entzogen): Eintrag löschen
-      if (e?.statusCode === 404 || e?.statusCode === 410) {
-        await supabase.from('push_subscriptions').delete().eq('endpoint', s.endpoint);
-      } else {
-        console.error('Push-Fehler', e?.statusCode, e?.body ?? e?.message);
+      const recipients = pickRecipients(row, subs);
+      let ok = 0, bad = 0, lastErr = "";
+      for (const sub of recipients) {
+        const built = buildFor(row, sub, prefs.get(low(sub.staff_name)) ?? {});
+        if (!built) continue;
+        try {
+          await webpush.sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            built.body,
+            { TTL: 6 * 3600, urgency: built.urgent ? "high" : "normal" },
+          );
+          ok++;
+        } catch (e: any) {
+          const code = e?.statusCode;
+          if (code === 404 || code === 410) {
+            await db.from("push_subscriptions").delete().eq("id", sub.id);   // Gerät existiert nicht mehr
+          } else { bad++; lastErr = `${code ?? ""} ${e?.message ?? e}`.slice(0, 250); }
+        }
       }
+      if (ok > 0 || bad === 0) { await db.rpc("push_finish", { p_id: row.id, p_status: ok > 0 ? "sent" : "skipped", p_error: "" }); sent++; }
+      else { await db.rpc("push_finish", { p_id: row.id, p_status: "failed", p_error: lastErr }); failed++; }
+    } catch (e: any) {
+      await db.rpc("push_finish", { p_id: row.id, p_status: "failed", p_error: String(e?.message ?? e) });
+      failed++;
     }
-  }));
-
-  return new Response(JSON.stringify({ sent, recipients: recipients.length }), {
-    status: 200, headers: { 'Content-Type': 'application/json' },
-  });
+  }
+  return new Response(JSON.stringify({ processed: rows.length, sent, failed }), { headers: { "content-type": "application/json" } });
 });

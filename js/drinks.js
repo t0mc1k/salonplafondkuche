@@ -51,7 +51,7 @@
       });
       const container = document.getElementById('glassFilterContainer');
       if (glasses.length === 0) {
-        container.innerHTML = `<span class="text-slate-500 italic">Keine Glas-Typen vorhanden</span>`;
+        container.innerHTML = `<span class="text-slate-500 italic">${escapeHtml(t('dv.noGlass'))}</span>`;
         return;
       }
       container.innerHTML = glasses.map(g => {
@@ -83,16 +83,32 @@
       }
       updateActiveSeasonBadgeUI();
       renderSeasonFormSelect(currentSeasonFilter);
+      renderCategories();
       renderGlassFilterButtons();
       renderDrinks();
       renderBarTrayUI();
     }
 
+    const DEFAULT_CATEGORIES = ['Cocktails', 'Mocktails', 'Salonplafond Classic', 'After Dinner Drinks', 'APERITTIF'];
+
+    // Standard-Kategorien + alle Kategorien, die in Getränken vorkommen (neue Kategorien erscheinen automatisch)
+    function getAllCategories(extra) {
+      const list = DEFAULT_CATEGORIES.slice();
+      const seen = new Set(list.map(c => c.toLowerCase()));
+      const others = [];
+      (allDrinks || []).concat((extra || []).map(c => ({ category: c }))).forEach(d => {
+        const c = String(d.category || '').trim();
+        if (c && !seen.has(c.toLowerCase())) { seen.add(c.toLowerCase()); others.push(c); }
+      });
+      others.sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }));
+      return list.concat(others);
+    }
+
     function renderCategories() {
-      const fixedCategories = ['Alle', 'Cocktails', 'Mocktails', 'Salonplafond Classic', 'After Dinner Drinks', 'APERITTIF'];
-      if (!fixedCategories.includes(selectedCat)) selectedCat = 'Alle';
-      document.getElementById('categories').innerHTML = fixedCategories.map(c => `
-        <button onclick="setCategory(${jsArg(c)})" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap ${selectedCat === c ? 'bg-amber-500 text-slate-950 font-bold' : 'custom-box hover:bg-slate-200 dark:hover:bg-slate-700'}">${c}</button>
+      const cats = ['Alle'].concat(getAllCategories());
+      if (!cats.includes(selectedCat)) selectedCat = 'Alle';
+      document.getElementById('categories').innerHTML = cats.map(c => `
+        <button onclick="setCategory(${jsArg(c)})" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap ${selectedCat === c ? 'bg-amber-500 text-slate-950 font-bold' : 'custom-box hover:bg-slate-200 dark:hover:bg-slate-700'}">${escapeHtml(c === 'Alle' ? t('cat.all') : c)}</button>
       `).join('');
     }
 
@@ -120,24 +136,26 @@
         return matchesSeason && matchesCat && matchesSearch && matchesFilter && matchesGlass;
       });
 
+      filtered = sortDrinks(filtered);
+
       const container = document.getElementById('drinksGrid');
       if (filtered.length === 0) {
         container.className = 'block';
-        container.innerHTML = '<p class="text-center text-slate-500 py-12">Keine Getränke in dieser Saison gefunden.</p>';
+        container.innerHTML = '<p class="text-center text-slate-500 py-12">' + escapeHtml(t('dv.empty')) + '</p>';
         return;
       }
 
       if (viewMode === 'grid') {
         container.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
         container.innerHTML = filtered.map(d => {
-          let photoHtml = d.photo_url ? `<img src="${escapeHtml(d.photo_url)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" alt="">` : `<div class="flex items-center justify-center h-full text-slate-500 text-xs">Kein Bild</div>`;
+          let photoHtml = d.photo_url ? `<img src="${escapeHtml(d.photo_url)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" alt="">` : `<div class="flex items-center justify-center h-full text-slate-500 text-xs">${escapeHtml(t('dv.noImage'))}</div>`;
           let badgeHtml = d.is_featured ? '<span class="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500 text-slate-950 shadow">⭐ TOP</span>' : '';
           let isFav = shiftFavorites.includes(d.id);
-          let favBtnHtml = `<button onclick="toggleShiftFavorite(${jsArg(d.id)}, event)" class="absolute top-2 left-2 text-sm p-1 rounded-full bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-900 ${isFav ? 'text-red-500' : 'text-slate-400'}">${isFav ? '❤️' : '🤍'}</button>`;
+          let favBtnHtml = `<button onclick="toggleShiftFavorite(${jsArg(d.id)}, event)" class="absolute top-2 left-2 text-sm p-1 rounded-full bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-900 ${isFav ? 'text-red-500' : 'text-slate-600 dark:text-slate-400'}">${isFav ? '❤️' : '🤍'}</button>`;
           let isTray = barTraySelection.includes(d.id);
           let trayBtnHtml = `<button onclick="toggleBarTrayItem(${jsArg(d.id)}, event)" class="absolute bottom-2 right-2 text-xs px-2.5 py-1.5 rounded-xl font-black shadow-lg transition ${isTray ? 'bg-amber-500 text-slate-950 ring-2 ring-amber-300' : 'bg-white/90 dark:bg-slate-900/90 text-amber-600 dark:text-amber-400 border border-amber-500/50 hover:bg-white dark:hover:bg-slate-900'}" title="In Multi-View werfen">⚡</button>`;
-          let priceText = d.selling_price ? ` (€ ${parseFloat(d.selling_price).toFixed(2)})` : '';
-          return `<div data-drink-id="${escapeHtml(d.id)}" onclick="openDrinkModal(${jsArg(d.id)})" class="card overflow-hidden cursor-pointer flex flex-col justify-between group"><div class="relative h-48 bg-slate-200 dark:bg-slate-800">${photoHtml}${badgeHtml}${favBtnHtml}${trayBtnHtml}<span class="absolute bottom-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded bg-white/90 dark:bg-slate-900/85 text-amber-600 dark:text-amber-400 border border-amber-500/30">${escapeHtml(d.category || 'Getränk')}</span></div><div class="p-4 text-center"><h3 class="text-lg font-bold group-hover:text-amber-500 transition">${escapeHtml(d.name)}${priceText}</h3><span class="text-xs text-slate-500 dark:text-slate-400 mt-1 inline-block">Klicken für Rezept</span></div></div>`;
+          let priceText = (d.selling_price && getSetting('showPrices')) ? ` (€ ${parseFloat(d.selling_price).toFixed(2)})` : '';
+          return `<div data-drink-id="${escapeHtml(d.id)}" onclick="openDrinkModal(${jsArg(d.id)})" class="card overflow-hidden cursor-pointer flex flex-col justify-between group"><div class="relative h-48 bg-slate-200 dark:bg-slate-800">${photoHtml}${badgeHtml}${favBtnHtml}${trayBtnHtml}<span class="absolute bottom-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded bg-white/90 dark:bg-slate-900/85 text-amber-600 dark:text-amber-400 border border-amber-500/30">${escapeHtml(d.category || t('dv.drinkWord'))}</span></div><div class="p-4 text-center"><h3 class="text-lg font-bold group-hover:text-amber-500 transition">${escapeHtml(d.name)}${priceText}</h3><span class="text-xs text-slate-500 dark:text-slate-400 mt-1 inline-block">Klicken für Rezept</span></div></div>`;
         }).join('');
       } else {
         container.className = 'flex flex-col gap-3';
@@ -147,19 +165,48 @@
           let isFav = shiftFavorites.includes(d.id);
           let isTray = barTraySelection.includes(d.id);
           let trayBtnHtml = `<button onclick="toggleBarTrayItem(${jsArg(d.id)}, event)" class="text-xs px-2.5 py-1.5 rounded-xl font-bold transition ${isTray ? 'bg-amber-500 text-slate-950' : 'custom-box hover:bg-slate-200 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 border'}" title="In Multi-View werfen">⚡</button>`;
-          let priceText = d.selling_price ? ` (€ ${parseFloat(d.selling_price).toFixed(2)})` : '';
-          return `<div data-drink-id="${escapeHtml(d.id)}" onclick="openDrinkModal(${jsArg(d.id)})" class="list-item p-3 cursor-pointer flex items-center justify-between gap-4 group"><div class="flex items-center gap-4 min-w-0">${photoHtml}<div class="min-w-0"><div class="flex items-center gap-2 flex-wrap"><h3 class="text-base font-bold group-hover:text-amber-500 transition truncate">${escapeHtml(d.name)}${priceText}</h3>${badgeHtml}</div><p class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">${escapeHtml(d.method ? 'Method: ' + d.method : (d.category || ''))}</p></div></div><div class="flex items-center gap-2 shrink-0">${trayBtnHtml}<button onclick="toggleShiftFavorite(${jsArg(d.id)}, event)" class="text-sm p-1.5 rounded-lg custom-box border hover:bg-slate-200 dark:hover:bg-slate-700">${isFav ? '❤️' : '🤍'}</button><span class="text-xs font-semibold px-2.5 py-1 rounded custom-box border">${escapeHtml(d.category || 'Getränk')}</span></div></div>`;
+          let priceText = (d.selling_price && getSetting('showPrices')) ? ` (€ ${parseFloat(d.selling_price).toFixed(2)})` : '';
+          return `<div data-drink-id="${escapeHtml(d.id)}" onclick="openDrinkModal(${jsArg(d.id)})" class="list-item p-3 cursor-pointer flex items-center justify-between gap-4 group"><div class="flex items-center gap-4 min-w-0">${photoHtml}<div class="min-w-0"><div class="flex items-center gap-2 flex-wrap"><h3 class="text-base font-bold group-hover:text-amber-500 transition truncate">${escapeHtml(d.name)}${priceText}</h3>${badgeHtml}</div><p class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">${escapeHtml(d.method ? 'Method: ' + d.method : (d.category || ''))}</p></div></div><div class="flex items-center gap-2 shrink-0">${trayBtnHtml}<button onclick="toggleShiftFavorite(${jsArg(d.id)}, event)" class="text-sm p-1.5 rounded-lg custom-box border hover:bg-slate-200 dark:hover:bg-slate-700">${isFav ? '❤️' : '🤍'}</button><span class="text-xs font-semibold px-2.5 py-1 rounded custom-box border">${escapeHtml(d.category || t('dv.drinkWord'))}</span></div></div>`;
         }).join('');
       }
+    }
+
+    // Alle Fotos eines Getränks (höchstens 3, das Hauptfoto steht immer zuerst)
+    function getDrinkPhotos(d) {
+      let list = [];
+      let raw = d.photo_urls;
+      if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch (e) { raw = []; } }
+      if (Array.isArray(raw)) list = raw.filter(u => typeof u === 'string' && u.trim());
+      // das Hauptfoto (photo_url) steht immer an erster Stelle
+      if (d.photo_url) list = [d.photo_url].concat(list.filter(u => u !== d.photo_url));
+      return list.slice(0, 3);
+    }
+
+    let currentDrinkPhotos = [];
+    let currentDrinkPhotoIndex = 0;
+
+    function showDrinkPhoto(i) {
+      if (!currentDrinkPhotos[i]) return;
+      currentDrinkPhotoIndex = i;
+      currentPhotoPreviewUrl = currentDrinkPhotos[i];
+      const img = document.getElementById('printModalImage');
+      if (img) img.src = currentDrinkPhotos[i];
+      document.querySelectorAll('.gallery-thumb').forEach((b, idx) => b.classList.toggle('active', idx === i));
+    }
+
+    function openCurrentDrinkPhoto() {
+      if (currentDrinkPhotos[currentDrinkPhotoIndex]) openPhotoPreview(currentDrinkPhotos[currentDrinkPhotoIndex]);
     }
 
     function openDrinkModal(id) {
       const d = allDrinks.find(item => item.id === id);
       if (!d) return;
       
-      currentPhotoPreviewUrl = d.photo_url || null;
+      currentDrinkPhotos = getDrinkPhotos(d);
+      currentDrinkPhotoIndex = 0;
+      currentPhotoPreviewUrl = currentDrinkPhotos[0] || null;
       const photoBtn = document.getElementById('modalPhotoBtn');
-      if (d.photo_url) {
+      if (currentDrinkPhotos.length) {
         photoBtn.classList.remove('hidden');
         photoBtn.classList.add('flex');
       } else {
@@ -168,9 +215,15 @@
       }
 
       let html = '';
-      if (d.photo_url) html += `<img id="printModalImage" src="${escapeHtml(d.photo_url)}" onclick="openPhotoPreview(${jsArg(d.photo_url)})" class="w-full h-64 object-cover rounded-xl mb-4 shadow cursor-pointer hover:opacity-95 transition" title="Klicken für Großansicht" alt="${escapeHtml(d.name)}">`;
-      let priceText = d.selling_price ? ` (€ ${parseFloat(d.selling_price).toFixed(2)})` : '';
-      html += `<div class="flex items-center gap-2 mb-2 flex-wrap"><span class="text-xs font-semibold px-2.5 py-1 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">${escapeHtml(d.category || 'Getränk')}</span></div>`;
+      if (currentDrinkPhotos.length) {
+        html += `<div class="drink-gallery"><img id="printModalImage" src="${escapeHtml(currentDrinkPhotos[0])}" onclick="openCurrentDrinkPhoto()" class="w-full h-64 object-cover rounded-xl shadow cursor-pointer hover:opacity-95 transition" title="${escapeHtml(t('drm.bigPhoto'))}" alt="${escapeHtml(d.name)}">`;
+        if (currentDrinkPhotos.length > 1) {
+          html += `<div class="gallery-thumbs no-print">${currentDrinkPhotos.map((u, i) => `<button type="button" class="gallery-thumb ${i === 0 ? 'active' : ''}" onclick="showDrinkPhoto(${i})" aria-label="Foto ${i + 1}"><img src="${escapeHtml(u)}" alt=""></button>`).join('')}</div>`;
+        }
+        html += `</div>`;
+      }
+      let priceText = (d.selling_price && getSetting('showPrices')) ? ` (€ ${parseFloat(d.selling_price).toFixed(2)})` : '';
+      html += `<div class="flex items-center gap-2 mb-2 flex-wrap"><span class="text-xs font-semibold px-2.5 py-1 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">${escapeHtml(d.category || t('dv.drinkWord'))}</span></div>`;
       html += `<h2 class="text-3xl font-bold mb-4">${escapeHtml(d.name)}${priceText}</h2>`;
 
       if (userIsAdmin && isAdmin && d.selling_price && d.cost_price && parseFloat(d.selling_price) > 0) {
@@ -190,30 +243,30 @@
           html += `<div class="grid grid-cols-2 py-1 border-b border-slate-200 dark:border-slate-800/50 last:border-0"><span class="font-medium">${escapeHtml(ing.name)}</span><span class="text-amber-600 dark:text-amber-300 font-semibold">${escapeHtml(ing.amount || '-')}</span></div>`;
         });
       } else {
-        html += `<div class="py-1 text-slate-500 italic">Keine Zutaten angegeben</div>`;
+        html += `<div class="py-1 text-slate-500 italic">${escapeHtml(t('drm.noIng'))}</div>`;
       }
       html += `</div>`;
       
       if (d.allergens) {
-        html += `<div class="p-2.5 custom-box border-b border-slate-200 dark:border-slate-800"><span class="text-amber-600 dark:text-amber-400 font-semibold block mb-0.5">⚠️ Allergene:</span> <span>${escapeHtml(d.allergens)}</span></div>`;
+        html += `<div class="p-2.5 custom-box border-b border-slate-200 dark:border-slate-800"><span class="text-amber-600 dark:text-amber-400 font-semibold block mb-0.5">⚠️ ${escapeHtml(t('drm.allergens'))}</span> <span>${escapeHtml(d.allergens)}</span></div>`;
       }
 
       html += `<div class="p-2.5 bg-slate-100/30 dark:bg-slate-900/30"><span class="text-slate-500 dark:text-slate-400 font-semibold block">Garnish:</span> ${escapeHtml(d.garnish || '-')}</div>`;
       html += `</div>`;
 
       if (d.recipe) {
-        html += `<div class="mb-4 custom-box p-3 rounded-xl text-xs border"><p class="font-bold text-amber-600 dark:text-amber-400 mb-1">Zubereitung</p><p class="whitespace-pre-line">${escapeHtml(d.recipe)}</p></div>`;
+        html += `<div class="mb-4 custom-box p-3 rounded-xl text-xs border"><p class="font-bold text-amber-600 dark:text-amber-400 mb-1">${escapeHtml(t('drm.prep'))}</p><p class="whitespace-pre-line">${escapeHtml(d.recipe)}</p></div>`;
       }
 
       if (d.updated_at) {
-        let updateDate = new Date(d.updated_at).toLocaleString();
-        html += `<div class="no-print text-[10px] text-slate-500 dark:text-slate-400 mt-2">🕒 Letzte Änderung: ${updateDate}</div>`;
+        let updateDate = new Date(d.updated_at).toLocaleString(langLocale());
+        html += `<div class="no-print text-[10px] text-slate-500 dark:text-slate-400 mt-2">${escapeHtml(t('drm.lastChange', { date: updateDate }))}</div>`;
       }
 
       document.getElementById('modalContent').innerHTML = html;
       
       let isFav = shiftFavorites.includes(d.id);
-      document.getElementById('modalFavBtn').innerText = isFav ? 'Favorit ✓' : 'Schicht-Favorit';
+      document.getElementById('modalFavBtn').innerText = isFav ? t('drm.favOn') : t('drm.favOff');
 
       document.getElementById('modalFavBtn').onclick = function() {
         toggleShiftFavorite(d.id);

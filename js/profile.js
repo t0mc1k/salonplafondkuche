@@ -4,11 +4,23 @@
    ============================================================ */
     function updateHeaderAvatarUI() {
       const container = document.getElementById('headerUserAvatarContainer');
+      const mobileAv = document.getElementById('headerMobileAvatar');
       const menuThumbContainer = document.getElementById('menuAvatarThumbnailContainer');
       const menuName = document.getElementById('menuUserName');
       const menuRole = document.getElementById('menuUserRole');
-      if (menuName) menuName.textContent = currentWaiterName || 'Mein Profil';
-      if (menuRole) menuRole.textContent = (currentStaffRole === 'staff' && currentStaffJob ? 'Koch · ' + currentStaffJob : roleLabel(currentStaffRole)) + ' · Profil bearbeiten';
+      if (menuName) menuName.textContent = currentWaiterName || t('menu.profile');
+      if (menuRole) menuRole.textContent = t('menu.profileEdit', { role: ({ developer: t('role.developer'), manager: t('role.manager') }[currentStaffRole] || t('role.staff')) });
+
+      if (mobileAv) {
+        mobileAv.innerHTML = '';
+        if (currentWaiterAvatar) {
+          const im = document.createElement('img');
+          im.src = currentWaiterAvatar; im.alt = currentWaiterName || '';
+          mobileAv.appendChild(im);
+        } else {
+          mobileAv.textContent = currentWaiterName ? currentWaiterName.charAt(0).toUpperCase() : '?';
+        }
+      }
 
       if (currentWaiterAvatar) {
         container.innerHTML = `<img src="${escapeHtml(currentWaiterAvatar)}" class="w-full h-full object-cover" alt="${escapeHtml(currentWaiterName)}">`;
@@ -27,8 +39,8 @@
     let profileSnapshot = { bio: '', avatar: '' };
     let profilePinVisible = false;
 
-    function profileRoleLabel(role, job) {
-      return (role === 'staff' && job) ? 'Koch · ' + job : roleLabel(role);
+    function profileRoleLabel(role) {
+      return ({ developer: t('role.developer'), manager: t('role.manager') }[role]) || t('role.staff');
     }
 
     function renderProfileAvatar(url, name) {
@@ -49,23 +61,23 @@
       const box = document.getElementById('profileRightsBox');
       if (!box) return;
       const rights = [
-        ['👨‍🍳', 'Rezepte ansehen, Chat nutzen, eigenes Profil bearbeiten', true],
-        ['🍽️', 'Gerichte anlegen, ändern und löschen', userCanEdit],
-        ['👤', 'Personal, PINs und Login-Protokoll verwalten', userIsAdmin],
-        ['🗑️', 'Tickets löschen', currentStaffRole === 'developer']
+        ['🍹', t('prof.r1'), true],
+        ['🍸', t('prof.r2'), userCanEdit],
+        ['👤', t('prof.r3'), userIsAdmin],
+        ['🗑️', t('prof.r4'), currentStaffRole === 'developer']
       ];
       box.innerHTML = rights.map(r => `
         <div class="profile-right ${r[2] ? 'on' : 'off'}">
           <span class="profile-right-ico">${r[0]}</span>
           <span class="profile-right-text">${escapeHtml(r[1])}</span>
-          <span class="profile-right-state">${r[2] ? '✔ erlaubt' : '– nicht erlaubt'}</span>
+          <span class="profile-right-state">${r[2] ? t('prof.allowed') : t('prof.notAllowed')}</span>
         </div>`).join('');
     }
 
     function updateProfileBioPreview() {
       const bio = document.getElementById('profileInputBio').value.trim();
       const prev = document.getElementById('profileBioPreview');
-      if (prev) prev.textContent = bio || 'Noch keine Beschreibung – schreibe unten etwas über dich.';
+      if (prev) prev.textContent = bio || t('prof.bioEmpty');
       const cnt = document.getElementById('profileBioCount');
       if (cnt) cnt.textContent = document.getElementById('profileInputBio').value.length + ' / 140';
     }
@@ -95,13 +107,13 @@
       const p1 = document.getElementById('profileInputNewPin').value.trim();
       const p2 = document.getElementById('profileInputPin2').value.trim();
       const hint = document.getElementById('profilePinHint');
-      let msg = 'Leer lassen, wenn dein PIN gleich bleiben soll.';
+      let msg = t('prof.pinHint');
       let bad = false;
       if (p1 !== '') {
-        if (!/^\d{4,6}$/.test(p1)) { msg = 'Der PIN muss aus 4 bis 6 Ziffern bestehen.'; bad = true; }
-        else if (p2 !== '' && p1 !== p2) { msg = 'Die beiden PINs stimmen nicht überein.'; bad = true; }
-        else if (p2 === '') msg = 'Bitte den PIN zur Kontrolle wiederholen.';
-        else msg = '✔ PIN passt.';
+        if (!/^\d{4,6}$/.test(p1)) { msg = t('prof.pinLenErr'); bad = true; }
+        else if (p2 !== '' && p1 !== p2) { msg = t('prof.pinMismatch'); bad = true; }
+        else if (p2 === '') msg = t('prof.pinRepeat');
+        else msg = t('prof.pinOk');
       }
       if (hint) {
         hint.textContent = msg;
@@ -123,16 +135,16 @@
 
       const { data, error } = await fetchStaffByName(currentWaiterName);
       if (error || !data) {
-        alert("Fehler beim Laden des Profils.");
+        alert(t('prof.loadErr'));
         return;
       }
 
       document.getElementById('profileModalName').innerText = data.name;
       const roleEl = document.getElementById('profileModalRole');
-      roleEl.innerText = profileRoleLabel(data.role, data.job_title);
-      roleEl.className = 'staff-pill ' + (rolePillClass(data.role));
+      roleEl.innerText = profileRoleLabel(data.role);
+      roleEl.className = 'staff-pill ' + (data.role === 'developer' ? 'pill-dev' : data.role === 'manager' ? 'pill-manager' : 'pill-staff');
       const last = document.getElementById('profileLastLogin');
-      if (last) last.textContent = 'Zuletzt angemeldet: ' + formatRelativeTime(data.last_used_at);
+      if (last) last.textContent = t('prof.lastLogin', { when: formatRelativeTime(data.last_used_at) });
 
       document.getElementById('profileInputNewPin').value = '';
       document.getElementById('profileInputPin2').value = '';
@@ -171,7 +183,7 @@
       if (url) {
         openPhotoPreview(url);
       } else {
-        showAppToast({ initial: '📷', title: 'Noch kein Foto', text: 'Lade zuerst ein Profilfoto hoch.' });
+        showAppToast({ initial: '📷', title: t('prof.noPhotoTitle'), text: t('prof.noPhotoText') });
       }
     }
 
@@ -181,19 +193,19 @@
       const status = document.getElementById('profileAvatarStatus');
       status.innerText = "⏳ Foto wird hochgeladen ...";
 
-      const fileName = `my_avatar_${Date.now()}_${safeFileName(file.name)}`;
-      let { data, error } = await _supabase.storage.from('kitchen').upload(fileName, file);
+      const fileName = `my_avatar_${Date.now()}_${file.name}`;
+      let { data, error } = await _supabase.storage.from('drinks').upload(fileName, file);
 
       if (error) {
-        status.innerText = 'Fehler: ' + error.message;
+        status.innerText = t('prof.err', { msg: error.message });
         return;
       }
 
-      let { data: publicURLData } = _supabase.storage.from('kitchen').getPublicUrl(fileName);
+      let { data: publicURLData } = _supabase.storage.from('drinks').getPublicUrl(fileName);
       if (publicURLData && publicURLData.publicUrl) {
         document.getElementById('profileInputAvatarUrl').value = publicURLData.publicUrl;
         renderProfileAvatar(publicURLData.publicUrl, currentWaiterName);
-        status.innerText = '✔ Neues Foto – mit „Speichern“ übernehmen.';
+        status.innerText = t('prof.newPhoto');
         updateProfileDirty();
       }
     }
@@ -214,7 +226,7 @@
 
       const { error } = await _supabase.rpc('update_my_profile', { p_pin: newPin, p_bio: newBio, p_avatar: newAvatarUrl });
       if (error) {
-        alert("Fehler beim Speichern: " + error.message);
+        alert(t('prof.saveErr', { msg: error.message }));
         return;
       }
       if (newAvatarUrl !== '') currentWaiterAvatar = newAvatarUrl;
@@ -225,8 +237,8 @@
       showAppToast({
         avatarUrl: newAvatarUrl,
         initial: currentWaiterName.charAt(0).toUpperCase(),
-        title: 'Profil gespeichert',
-        text: newPin !== '' ? 'Dein neuer PIN gilt ab dem nächsten Login.' : 'Deine Änderungen sind übernommen.'
+        title: t('prof.savedTitle'),
+        text: newPin !== '' ? t('prof.savedPin') : t('prof.savedOk')
       });
     }
 
@@ -238,8 +250,8 @@
       }
 
       document.getElementById('userDetailName').innerText = data.name;
-      document.getElementById('userDetailRole').innerText = `Rolle: ${data.role || 'staff'}`;
-      document.getElementById('userDetailBio').innerText = data.bio ? data.bio : "Keine Beschreibung angegeben.";
+      document.getElementById('userDetailRole').innerText = t('prof.role', { role: profileRoleLabel(data.role || 'staff') });
+      document.getElementById('userDetailBio').innerText = data.bio ? data.bio : t('prof.noBio');
 
       const avatarContainer = document.getElementById('userDetailAvatarContainer');
       if (data.avatar_url) {

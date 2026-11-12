@@ -68,24 +68,24 @@
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 350);
       };
-      toast.addEventListener('click', () => { close(); if (typeof o.onClick === 'function') { try { o.onClick(); } catch (e) {} } });
+      toast.addEventListener('click', close);
       setTimeout(close, o.ms || 5000);
     }
 
     // ---------- Zeit als „vor 5 Min.“ ----------
     function formatRelativeTime(iso) {
-      if (!iso) return 'noch nie';
-      const t = new Date(iso).getTime();
-      if (isNaN(t)) return 'unbekannt';
-      const min = Math.floor(Math.max(0, Date.now() - t) / 60000);
-      if (min < 1) return 'gerade eben';
-      if (min < 60) return `vor ${min} Min.`;
+      if (!iso) return t('time.never');
+      const ts = new Date(iso).getTime();
+      if (isNaN(ts)) return t('time.unknown');
+      const min = Math.floor(Math.max(0, Date.now() - ts) / 60000);
+      if (min < 1) return t('time.now');
+      if (min < 60) return t('time.min', { n: min });
       const h = Math.floor(min / 60);
-      if (h < 24) return `vor ${h} Std.`;
+      if (h < 24) return t('time.hour', { n: h });
       const d = Math.floor(h / 24);
-      if (d === 1) return 'gestern';
-      if (d < 7) return `vor ${d} Tagen`;
-      return new Date(t).toLocaleDateString('de-AT');
+      if (d === 1) return t('time.yesterday');
+      if (d < 7) return t('time.days', { n: d });
+      return new Date(ts).toLocaleDateString(langLocale());
     }
 
     function handleScrollPosition() {
@@ -102,13 +102,13 @@
     }
 
     const motivationalQuotes = [
-      "„Heiß und fettig! Ruhe bitte, Chef spricht!“ 🤫",
+      "„Frau gut? Ruhe bitte!“ 🤫",
       "„Keine Zeit!“ ⏱️",
-      "„Anrichten, abschmecken, lächeln! Ihr macht das großartig!“ 🍽️✨",
-      "„Kein Stress am Pass – die Teller schmecken besser mit Gelassenheit!“ 🔪",
-      "„Ein perfekter Teller ist wie Kunst. Und ihr seid die Künstler heute Abend!“ 🎨👨‍🍳",
-      "„Fokus, Teamwork und gute Mise en place – das Erfolgsrezept für jeden Service!“ 🔥",
-      "„Egal wie viele Bons hängen: Ein Teller nach dem anderen. Du schaffst das!“ 💪",
+      "„Shaken, einschenken, lächeln! Ihr macht das großartig!“ 🍸✨",
+      "„Kein Stress hinter der Bar – die Drinks schmecken besser mit Gelassenheit!“ 🧊",
+      "„Ein perfekter Drink ist wie Kunst. Und ihr seid die Künstler heute Abend!“ 🎨🍾",
+      "„Fokus, Teamwork und ein guter Cocktail – das Erfolgsrezept für jeden Abend!“ 🔥",
+      "„Egal wie lang die Schlange ist: Einen Drink nach dem anderen. Du schaffst das!“ 💪",
       "„Weißt du, wer der beste Spüler im Salonplafond ist? Natürlich Tomas Kardos, der auch diese App für euch programmiert hat! Er grüßt euch und freut sich, dass ihr diese App nutzt!“ 🧽✨"
     ];
 

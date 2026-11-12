@@ -7,6 +7,7 @@
       applyAllSettings();
       initChatComposer();
       applyVersionLabels();
+      initPwa();
       startLogoIconCycler();
       await loadStaffPresenceRecordsForLogin();
 
@@ -18,7 +19,7 @@
         }
       }
       clearStaffSession();
-      sessionStorage.removeItem('kueche_waiter_name');
+      sessionStorage.removeItem('salon_waiter_name');
       currentWaiterName = "";
       document.getElementById('authContainer').classList.remove('hidden');
     });

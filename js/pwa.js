@@ -1,103 +1,140 @@
 /* ============================================================
-   js/pwa.js  –  App installieren (Startbildschirm / Desktop)
-   - registriert den Service Worker (sw.js)
-   - zeigt in den Einstellungen den Button "App installieren"
-   - Android/Chrome/Edge: echter Installations-Dialog
-   - iPhone/iPad (Safari): Anleitung "Zum Home-Bildschirm"
+   js/pwa.js
+   App installieren (Startbildschirm), Offline-Unterstützung (Service Worker)
    ============================================================ */
-(function () {
-  'use strict';
-  let deferredPrompt = null;
+    let deferredInstallPrompt = null;
 
-  const $ = (id) => document.getElementById(id);
-  const isStandalone = () =>
-    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
-  const isIOS = () =>
-    /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const isAndroid = () => /android/i.test(navigator.userAgent);
-  const isFirefox = () => /firefox|fxios/i.test(navigator.userAgent);
-
-  function helpText() {
-    if (isIOS()) {
-      return '<b>iPhone / iPad (Safari):</b><br>1. Unten auf <b>Teilen</b> (Quadrat mit Pfeil) tippen.<br>2. <b>„Zum Home-Bildschirm“</b> wählen.<br>3. Mit <b>„Hinzufügen“</b> bestätigen.<br><span class="opacity-80">In Chrome oder Edge am iPhone geht das nicht – bitte Safari benutzen.</span>';
+    function isStandaloneApp() {
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
     }
-    if (isAndroid() && isFirefox()) {
-      return '<b>Android (Firefox):</b><br>Menü <b>⋮</b> öffnen und <b>„Installieren“</b> bzw. <b>„Zum Startbildschirm hinzufügen“</b> wählen.';
+
+    function detectPlatform() {
+      const ua = navigator.userAgent || '';
+      const iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const android = /Android/i.test(ua);
+      const firefox = /Firefox|FxiOS/.test(ua);
+      const safari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|Chrome|Android|OPR/.test(ua);
+      return { iOS, android, firefox, safari, desktop: !iOS && !android };
     }
-    if (isAndroid()) {
-      return '<b>Android (Chrome / Edge):</b><br>Menü <b>⋮</b> (oder ☰) öffnen und <b>„App installieren“</b> bzw. <b>„Zum Startbildschirm hinzufügen“</b> wählen.';
+
+    function installInstructions() {
+      const p = detectPlatform();
+      if (p.iOS) {
+        return {
+          title: 'Auf dem iPhone / iPad',
+          steps: [
+            'Öffne diese Seite in <b>Safari</b> (bei anderen Browsern: Teilen-Menü nutzen).',
+            'Tippe unten auf <b>Teilen</b> (das Quadrat mit dem Pfeil nach oben ⬆︎).',
+            'Wähle <b>„Zum Home-Bildschirm“</b> und bestätige mit <b>„Hinzufügen“</b>.'
+          ]
+        };
+      }
+      if (p.android) {
+        return {
+          title: p.firefox ? 'Auf Android (Firefox)' : 'Auf Android (Chrome / Edge)',
+          steps: [
+            'Tippe im Browser auf das <b>Menü</b> (⋮ oder ☰).',
+            p.firefox ? 'Wähle <b>„Installieren“</b> oder <b>„Zum Startbildschirm hinzufügen“</b>.'
+                      : 'Wähle <b>„App installieren“</b> oder <b>„Zum Startbildschirm hinzufügen“</b>.',
+            'Bestätige mit <b>„Installieren“</b>. Das Symbol erscheint auf deinem Startbildschirm.'
+          ]
+        };
+      }
+      return {
+        title: 'Am Computer (Chrome / Edge)',
+        steps: [
+          'Klicke rechts in der Adressleiste auf das <b>Installieren-Symbol</b> (⊕ oder Monitor mit Pfeil).',
+          'Alternativ: Browser-Menü ⋮ → <b>„Salonplafond BAR installieren“</b>.',
+          'Safari (Mac): <b>Teilen → „Zum Dock hinzufügen“</b>.'
+        ]
+      };
     }
-    return '<b>Computer (Chrome / Edge):</b><br>Rechts in der Adressleiste auf das Symbol <b>„Installieren“</b> klicken oder Browser-Menü → <b>„App installieren“</b>.<br><span class="opacity-80">Firefox am Computer unterstützt das nicht.</span>';
-  }
 
-  function render() {
-    const status = $('pwaInstallStatus');
-    const btn = $('pwaInstallBtn');
-    const menuBtn = $('menuInstallBtn');
-    if (!status || !btn) return;
-
-    if (isStandalone()) {
-      status.textContent = '✔ Die App ist installiert und läuft im App-Modus.';
-      btn.classList.add('hidden');
-      if (menuBtn) menuBtn.classList.add('hidden');
-      const help = $('pwaInstallHelp'); if (help) help.classList.add('hidden');
-      return;
+    function canOfferInstall() {
+      if (isStandaloneApp()) return false;
+      const p = detectPlatform();
+      return !!deferredInstallPrompt || p.iOS || p.android;
     }
-    btn.classList.remove('hidden');
-    if (menuBtn) menuBtn.classList.remove('hidden');
-    status.textContent = deferredPrompt
-      ? 'Als App auf dem Startbildschirm ablegen – startet ohne Browserleiste.'
-      : 'Als App auf dem Startbildschirm ablegen. Tippe auf „Installieren“ für die Anleitung.';
-  }
 
-  async function installApp() {
-    if (isStandalone()) { render(); return; }
-    if (deferredPrompt) {
-      const p = deferredPrompt;
-      deferredPrompt = null;
-      p.prompt();
-      try { await p.userChoice; } catch (e) {}
-      render();
-      return;
+    function updateInstallUI() {
+      const status = document.getElementById('installStatus');
+      const btn = document.getElementById('installBtn');
+      const steps = document.getElementById('installSteps');
+      const menuBtn = document.getElementById('menuInstallBtn');
+      const standalone = isStandaloneApp();
+
+      if (status) {
+        status.textContent = standalone
+          ? '✅ Die App ist auf diesem Gerät installiert.'
+          : (deferredInstallPrompt
+            ? 'Du kannst die App mit einem Tipp auf dem Startbildschirm installieren.'
+            : 'Mit einem Symbol auf dem Startbildschirm startet die App wie eine normale App ohne Browser-Leiste.');
+      }
+      if (btn) {
+        btn.classList.toggle('hidden', standalone);
+        btn.textContent = deferredInstallPrompt ? '📲 Jetzt installieren' : '📲 So geht’s';
+      }
+      if (steps) {
+        const info = installInstructions();
+        steps.innerHTML = standalone ? '' :
+          `<div class="install-title">${escapeHtml(info.title)}</div><ol>${info.steps.map(s => `<li>${s}</li>`).join('')}</ol>`;
+        steps.classList.toggle('hidden', standalone || !!deferredInstallPrompt);
+      }
+      if (menuBtn) menuBtn.classList.toggle('hidden', !canOfferInstall());
     }
-    // Kein automatischer Dialog möglich (iOS, Firefox, bereits abgelehnt ...): Anleitung zeigen
-    const help = $('pwaInstallHelp');
-    if (help) {
-      help.innerHTML = helpText();
-      help.classList.remove('hidden');
+
+    async function installApp() {
+      if (deferredInstallPrompt) {
+        const promptEvent = deferredInstallPrompt;
+        deferredInstallPrompt = null;
+        try {
+          promptEvent.prompt();
+          await promptEvent.userChoice;
+        } catch (e) {}
+        updateInstallUI();
+        return;
+      }
+      const steps = document.getElementById('installSteps');
+      if (steps) steps.classList.remove('hidden');
     }
-  }
 
-  // Aus dem Menü: Einstellungen öffnen und zum Bereich "App" springen
-  function openInstallFromMenu() {
-    if (deferredPrompt && !isStandalone()) { installApp(); if (typeof closeSettingsMenu === 'function') closeSettingsMenu(); return; }
-    if (typeof openUnifiedSettingsModal === 'function') openUnifiedSettingsModal();
-    setTimeout(() => {
-      const row = $('pwaInstallRow');
-      if (row && row.scrollIntoView) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      installApp();
-    }, 60);
-  }
+    function openInstallSettings() {
+      openUnifiedSettingsModal();
+      updateInstallUI();
+      const el = document.getElementById('setInstall');
+      if (el && el.scrollIntoView) setTimeout(() => el.scrollIntoView({ block: 'start', behavior: 'smooth' }), 50);
+    }
 
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();          // eigenen Button statt Browser-Leiste benutzen
-    deferredPrompt = e;
-    render();
-  });
-  window.addEventListener('appinstalled', () => {
-    deferredPrompt = null;
-    render();
-    if (typeof showAppToast === 'function') showAppToast({ initial: '📲', title: 'App installiert', text: 'Du findest sie jetzt auf deinem Startbildschirm.' });
-  });
+    // App neu laden und dabei alte Zwischenspeicher dieser App leeren (hilft bei „alter Ansicht“)
+    async function reloadApp() {
+      try {
+        if (window.caches && caches.keys) {
+          const keys = await caches.keys();
+          await Promise.all(keys.filter(k => k.indexOf('salon-') === 0).map(k => caches.delete(k)));
+        }
+      } catch (e) {}
+      location.reload();
+    }
 
-  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch((err) => console.warn('Service Worker:', err));
-    });
-  }
+    function initPwa() {
+      window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        updateInstallUI();
+      });
+      window.addEventListener('appinstalled', () => {
+        deferredInstallPrompt = null;
+        updateInstallUI();
+        showAppToast({ initial: '📲', title: 'App installiert', text: 'Du findest sie jetzt auf deinem Startbildschirm.' });
+      });
+      updateInstallUI();
 
-  document.addEventListener('DOMContentLoaded', render);
-  window.installApp = installApp;
-  window.openInstallFromMenu = openInstallFromMenu;
-  window.renderInstallUI = render;
-})();
+      const secure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      if (secure && 'serviceWorker' in navigator) {
+        const hadController = !!navigator.serviceWorker.controller;
+        navigator.serviceWorker.register('sw.js?v=' + encodeURIComponent(APP_VERSION)).catch(() => {});
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (hadController) showAppToast({ initial: '✨', title: 'App aktualisiert', text: 'Die neue Version ist aktiv.' });
+        });
+      }
+    }

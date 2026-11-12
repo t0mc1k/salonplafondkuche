@@ -2,11 +2,11 @@
    js/chat.js
    Team-Chat: Nachrichten, Antworten, Reaktionen, Bearbeiten, Fotos,
    Anpinnen, Suche, „schreibt ...“, @-Vorschläge und Textformatierung
-   Neue Datenbank-Felder siehe sql/1.0.00_setup.sql (der Chat läuft auch ohne sie
+   Neue Datenbank-Felder siehe sql/3.1.02_chat.sql (der Chat läuft auch ohne sie
    mit den Grundfunktionen weiter).
    ============================================================ */
-    const CHAT_REACTIONS = ['👍', '❤️', '😂', '🍽️', '🔥', '🙏'];
-    const CHAT_EMOJIS = ['😀', '😂', '😅', '😍', '😎', '🤔', '😴', '🙌', '👏', '👍', '👎', '🙏', '🔥', '🎉', '🍽️', '👨‍🍳', '🥩', '🍋', '🔪', '☕', '✅', '❗', '❓', '💡'];
+    const CHAT_REACTIONS = ['👍', '❤️', '😂', '🍸', '🔥', '🙏'];
+    const CHAT_EMOJIS = ['😀', '😂', '😅', '😍', '😎', '🤔', '😴', '🙌', '👏', '👍', '👎', '🙏', '🔥', '🎉', '🍸', '🍹', '🥂', '🍋', '🧊', '☕', '✅', '❗', '❓', '💡'];
 
     let chatMessagesCache = [];
     let chatReactionsCache = [];
@@ -25,17 +25,12 @@
     // ---------- Hilfsfunktionen ----------
     function chatEl(id) { return document.getElementById(id); }
 
-    function chatSeenKey() { return 'kueche_chat_seen_' + String(currentWaiterName || '').toLowerCase(); }
+    function chatSeenKey() { return 'salon_chat_seen_' + String(currentWaiterName || '').toLowerCase(); }
     function chatGetSeen() { try { return localStorage.getItem(chatSeenKey()); } catch (e) { return null; } }
     function chatMarkSeen() { try { localStorage.setItem(chatSeenKey(), new Date().toISOString()); } catch (e) {} }
 
     function chatStaffByName(name) {
       return (staffDatabaseRecords || []).find(s => String(s.name).toLowerCase() === String(name).toLowerCase());
-    }
-
-    function chatJobTag(name) {
-      const rec = chatStaffByName(name);
-      return rec ? `<span class="chat-job">${escapeHtml(staffTitle(rec))}</span>` : '';
     }
 
     function chatAvatarHtml(name, size, extra) {
@@ -50,8 +45,8 @@
     function chatDayLabel(d) {
       const today = new Date();
       const y = new Date(); y.setDate(today.getDate() - 1);
-      if (d.toDateString() === today.toDateString()) return 'Heute';
-      if (d.toDateString() === y.toDateString()) return 'Gestern';
+      if (d.toDateString() === today.toDateString()) return t('chat.today');
+      if (d.toDateString() === y.toDateString()) return t('chat.yesterday');
       return d.toLocaleDateString('de-AT', { weekday: 'short', day: 'numeric', month: 'long' });
     }
 
@@ -113,7 +108,7 @@
         }
         const mine = String(m.author_name || '').toLowerCase() === me;
         if (!dividerShown && !q && seenAt && !mine && d > seenAt) {
-          html += `<div class="chat-newdivider" id="chatNewDivider"><span>Neue Nachrichten</span></div>`;
+          html += `<div class="chat-newdivider" id="chatNewDivider"><span>${escapeHtml(t('chat.newMsgs'))}</span></div>`;
           dividerShown = true;
           prev = null;
         }
@@ -131,7 +126,7 @@
           const qm = byId[m.reply_to_id];
           quote = `<div class="chat-quote" onclick="scrollToChatMessage(${jsArg(qm.id)})"><b>${escapeHtml(qm.author_name)}</b><span>${escapeHtml(chatStripFormat(qm.message) || '📷 Foto').slice(0, 140)}</span></div>`;
         }
-        const image = m.image_url ? `<img src="${escapeHtml(m.image_url)}" class="chat-image" alt="Foto" onclick="openPhotoPreview(${jsArg(m.image_url)})">` : '';
+        const image = m.image_url ? `<img src="${escapeHtml(m.image_url)}" class="chat-image" alt="${escapeHtml(t('chat.photoWord'))}" onclick="openPhotoPreview(${jsArg(m.image_url)})">` : '';
         const text = m.message ? `<div class="chat-text">${formatChatText(m.message)}</div>` : '';
 
         // Reaktionen
@@ -149,14 +144,14 @@
           if (chips) reactHtml = `<div class="chat-reacts">${chips}</div>`;
         }
 
-        const pinBtn = (ctx.admin && ctx.pinAvailable) ? `<button type="button" onclick="togglePinMessage(${jsArg(m.id)})" title="${m.is_pinned ? 'Anheften lösen' : 'Anpinnen'}">${m.is_pinned ? '📍' : '📌'}</button>` : '';
+        const pinBtn = (ctx.admin && ctx.pinAvailable) ? `<button type="button" onclick="togglePinMessage(${jsArg(m.id)})" title="${escapeHtml(m.is_pinned ? t('chat.unpin') : t('chat.pin'))}">${m.is_pinned ? '📍' : '📌'}</button>` : '';
         const actions = `
           <div class="chat-actions">
-            <button type="button" onclick="setReplyTarget(${jsArg(m.id)}, ${jsArg(m.author_name)}, ${jsArg(m.message || '📷 Foto')})" title="Antworten">↩️</button>
-            ${ctx.reactionsAvailable ? `<button type="button" onclick="toggleReactionPicker(${jsArg(m.id)})" title="Reagieren">😊</button>` : ''}
+            <button type="button" onclick="setReplyTarget(${jsArg(m.id)}, ${jsArg(m.author_name)}, ${jsArg(m.message || t('chat.photo'))})" title="${escapeHtml(t('chat.reply'))}">↩️</button>
+            ${ctx.reactionsAvailable ? `<button type="button" onclick="toggleReactionPicker(${jsArg(m.id)})" title="${escapeHtml(t('chat.react'))}">😊</button>` : ''}
             ${canEdit ? `<button type="button" onclick="startEditMessage(${jsArg(m.id)})" title="Bearbeiten">✏️</button>` : ''}
             ${pinBtn}
-            ${canDelete ? `<button type="button" onclick="deleteChatMessage(${jsArg(m.id)})" title="Löschen" class="danger">🗑️</button>` : ''}
+            ${canDelete ? `<button type="button" onclick="deleteChatMessage(${jsArg(m.id)})" title="${escapeHtml(t('common.delete'))}" class="danger">🗑️</button>` : ''}
           </div>`;
         const picker = ctx.reactionsAvailable
           ? `<div class="chat-picker hidden" id="picker_${escapeHtml(m.id)}">${CHAT_REACTIONS.map(e => `<button type="button" onclick="toggleReaction(${jsArg(m.id)}, ${jsArg(e)})">${e}</button>`).join('')}</div>`
@@ -166,10 +161,10 @@
           <div class="chat-row ${mine ? 'mine' : ''} ${grouped ? 'grouped' : ''}" id="msg_${escapeHtml(m.id)}">
             ${mine ? '' : (grouped ? '<span class="chat-avatar-space"></span>' : chatAvatarHtml(m.author_name))}
             <div class="chat-col">
-              ${grouped ? '' : `<div class="chat-meta"><b class="chat-author" onclick="openUserDetailModal(${jsArg(m.author_name)})">${escapeHtml(mine ? 'Du' : m.author_name)}</b>${chatJobTag(m.author_name)}<span class="chat-time">${escapeHtml(time)}</span>${m.is_pinned ? '<span class="chat-pin-tag">📌</span>' : ''}</div>`}
+              ${grouped ? '' : `<div class="chat-meta"><b class="chat-author" onclick="openUserDetailModal(${jsArg(m.author_name)})">${escapeHtml(mine ? 'Du' : m.author_name)}</b><span class="chat-time">${escapeHtml(time)}</span>${m.is_pinned ? '<span class="chat-pin-tag">📌</span>' : ''}</div>`}
               <div class="chat-bubble ${mentionsMe ? 'mention' : ''}" title="${escapeHtml(d.toLocaleString('de-AT'))}">
                 ${quote}${image}${text}
-                ${m.edited_at ? '<span class="chat-edited">bearbeitet</span>' : ''}
+                ${m.edited_at ? '<span class="chat-edited">' + escapeHtml(t('chat.edited')) + '</span>' : ''}
               </div>
               ${reactHtml}
               ${actions}
@@ -246,26 +241,26 @@
       if (!box) return;
       const nowMs = Date.now();
       const list = (staffDatabaseRecords || []).slice().sort((a, b) => {
-        const oa = a.last_used_at && (nowMs - new Date(a.last_used_at).getTime()) <= 15 * 60000 ? 0 : 1;
-        const ob = b.last_used_at && (nowMs - new Date(b.last_used_at).getTime()) <= 15 * 60000 ? 0 : 1;
+        const oa = isStaffOnline(a) ? 0 : 1;
+        const ob = isStaffOnline(b) ? 0 : 1;
         return oa - ob || String(a.name).localeCompare(String(b.name), 'de');
       });
-      if (!list.length) { box.innerHTML = '<span class="form-hint">Keine Mitglieder gefunden.</span>'; return; }
+      if (!list.length) { box.innerHTML = '<span class="form-hint">' + escapeHtml(t('chat.noMembers')) + '</span>'; return; }
       box.innerHTML = list.map(s => {
-        const online = s.last_used_at && (nowMs - new Date(s.last_used_at).getTime()) <= 15 * 60000;
+        const online = isStaffOnline(s);
         const typing = chatTypingUsers[s.name] && chatTypingUsers[s.name] > nowMs;
         const avatar = s.avatar_url
           ? `<img src="${escapeHtml(s.avatar_url)}" alt="">`
           : escapeHtml(String(s.name).charAt(0).toUpperCase());
-        const role = staffTitle(s);
+        const role = ({ developer: t('role.developer'), manager: t('role.manager') }[s.role]) || t('role.staff');
         return `
-          <div class="chat-member" onclick="appendChatMention(${jsArg(s.name)})" title="Klicken, um @${escapeHtml(s.name)} zu erwähnen">
+          <div class="chat-member" onclick="appendChatMention(${jsArg(s.name)})" title="${escapeHtml(t('chat.mentionTitle', { name: s.name }))}">
             <span class="chat-member-av">${avatar}<span class="chat-dot ${online ? 'on' : ''}"></span></span>
             <span class="min-w-0 flex-1">
               <span class="chat-member-name">${escapeHtml(s.name)}</span>
-              <span class="chat-member-sub ${typing ? 'typing' : ''}">${typing ? 'schreibt ...' : (online ? 'online · ' + role : role)}</span>
+              <span class="chat-member-sub ${typing ? 'typing' : ''}">${typing ? t('chat.typing') : (online ? t('chat.onlineDot') + role : role)}</span>
             </span>
-            <button type="button" class="chat-member-btn" onclick="event.stopPropagation(); openUserDetailModal(${jsArg(s.name)})" title="Profil ansehen">👤</button>
+            <button type="button" class="chat-member-btn" onclick="event.stopPropagation(); openUserDetailModal(${jsArg(s.name)})" title="${escapeHtml(t('chat.viewProfile'))}">👤</button>
           </div>`;
       }).join('');
     }
@@ -278,7 +273,7 @@
 
       const { data, error } = await _supabase.from('team_chat').select('*').order('created_at', { ascending: true });
       if (error) {
-        container.innerHTML = `<p class="chat-empty bad">Fehler: ${escapeHtml(error.message)}</p>`;
+        container.innerHTML = `<p class="chat-empty bad">${escapeHtml(t('chat.err', { msg: error.message }))}</p>`;
         return;
       }
       chatMessagesCache = data || [];
@@ -314,7 +309,7 @@
         reactionsAvailable: chatReactionsAvailable,
         pinAvailable: chatMessagesCache.some(m => Object.prototype.hasOwnProperty.call(m, 'is_pinned')) || chatMessagesCache.length === 0
       });
-      container.innerHTML = res.html || `<p class="chat-empty">Keine Treffer für „${escapeHtml(chatSearchQuery)}“.</p>`;
+      container.innerHTML = res.html || `<p class="chat-empty">${escapeHtml(t('chat.noHits', { q: chatSearchQuery }))}</p>`;
       container.setAttribute('data-count', String(chatMessagesCache.length));
       const info = chatEl('chatSearchInfo');
       if (info) info.textContent = chatSearchQuery ? `${res.shown} Treffer` : '';
@@ -356,13 +351,13 @@
       if (!box) return;
       const pinned = chatMessagesCache.filter(m => m.is_pinned).pop();
       if (!pinned) { box.classList.add('hidden'); box.innerHTML = ''; return; }
-      const snippet = chatStripFormat(pinned.message) || '📷 Foto';
+      const snippet = chatStripFormat(pinned.message) || t('chat.photo');
       box.innerHTML = `
         <span class="chat-pinned-ico">📌</span>
         <button type="button" class="chat-pinned-text" onclick="scrollToChatMessage(${jsArg(pinned.id)})">
           <b>${escapeHtml(pinned.author_name)}:</b> ${escapeHtml(snippet.slice(0, 160))}
         </button>
-        ${userIsAdmin ? `<button type="button" class="ui-close" onclick="togglePinMessage(${jsArg(pinned.id)})" title="Anheften lösen">&times;</button>` : ''}`;
+        ${userIsAdmin ? `<button type="button" class="ui-close" onclick="togglePinMessage(${jsArg(pinned.id)})" title="${escapeHtml(t('chat.unpin'))}">&times;</button>` : ''}`;
       box.classList.remove('hidden');
     }
 
@@ -418,7 +413,7 @@
           res = await _supabase.from('team_chat').update({ message: text }).eq('id', chatEditingId).select();
         }
         if (res.error || !res.data || !res.data.length) {
-          alert("Die Nachricht konnte nicht geändert werden" + (res.error ? ": " + res.error.message : "."));
+          alert(t('chat.editFail') + (res.error ? ": " + res.error.message : "."));
           return;
         }
         cancelEdit();
@@ -435,7 +430,7 @@
 
       const { error } = await _supabase.from('team_chat').insert([row]);
       if (error) {
-        alert("Fehler beim Senden: " + error.message);
+        alert(t('chat.sendFail') + " " + error.message);
         return;
       }
       input.value = '';
@@ -447,10 +442,10 @@
     }
 
     async function deleteChatMessage(id) {
-      if (!confirm("Möchtest du diese Nachricht löschen?")) return;
+      if (!confirm(t('chat.confirmDel'))) return;
       const { error } = await _supabase.from('team_chat').delete().eq('id', id);
       if (error) {
-        alert("Fehler beim Löschen: " + error.message);
+        alert(t('chat.delFail') + " " + error.message);
       } else {
         await loadChatMessages();
       }
@@ -499,20 +494,20 @@
       const file = event.target.files[0];
       event.target.value = '';
       if (!file) return;
-      if (!/^image\//.test(file.type)) { alert("Bitte ein Foto auswählen."); return; }
-      if (file.size > 8 * 1024 * 1024) { alert("Das Foto ist größer als 8 MB."); return; }
-      chatEl('chatImageName').textContent = '⏳ Foto wird hochgeladen ...';
+      if (!/^image\//.test(file.type)) { alert(t('chat.pickPhoto')); return; }
+      if (file.size > 8 * 1024 * 1024) { alert(t('chat.tooBig')); return; }
+      chatEl('chatImageName').textContent = t('chat.uploading');
       chatEl('chatImageChip').classList.remove('hidden');
       chatEl('chatImageChip').classList.add('flex');
 
-      const fileName = `chat_${Date.now()}_${safeFileName(file.name)}`;
-      const { error } = await _supabase.storage.from('kitchen').upload(fileName, file);
+      const fileName = `chat_${Date.now()}_${file.name}`;
+      const { error } = await _supabase.storage.from('drinks').upload(fileName, file);
       if (error) {
         clearChatImage();
-        alert("Foto konnte nicht hochgeladen werden: " + error.message);
+        alert(t('chat.uploadFail') + " " + error.message);
         return;
       }
-      const { data } = _supabase.storage.from('kitchen').getPublicUrl(fileName);
+      const { data } = _supabase.storage.from('drinks').getPublicUrl(fileName);
       chatPendingImage = { url: data.publicUrl, name: file.name };
       chatEl('chatImageThumb').src = data.publicUrl;
       chatEl('chatImageName').textContent = file.name;
@@ -631,7 +626,7 @@
         const nm = document.createElement('b');
         nm.textContent = '@' + s.name;
         const rl = document.createElement('small');
-        rl.textContent = staffTitle(s);
+        rl.textContent = ({ developer: t('role.developer'), manager: t('role.manager') }[s.role]) || t('role.staff');
         row.appendChild(av); row.appendChild(nm); row.appendChild(rl);
         row.addEventListener('mousedown', ev => { ev.preventDefault(); appendChatMention(s.name); });
         dd.appendChild(row);
@@ -667,7 +662,7 @@
       Object.keys(chatTypingUsers).forEach(n => { if (chatTypingUsers[n] <= nowMs) delete chatTypingUsers[n]; });
       const box = chatEl('chatTypingIndicator');
       if (box) {
-        box.textContent = names.length === 0 ? '' : (names.length === 1 ? `${names[0]} schreibt ...` : `${names.slice(0, 2).join(' und ')} schreiben ...`);
+        box.textContent = names.length === 0 ? '' : (names.length === 1 ? t('chat.typing1', { a: names[0] }) : t('chat.typingN', { a: names[0], b: names[1] }));
       }
       renderChatSidebar();
       if (!names.length && chatTypingTimer) { clearInterval(chatTypingTimer); chatTypingTimer = null; }
@@ -750,19 +745,9 @@
         showAppToast({
           avatarUrl: rec && rec.avatar_url,
           initial: String(msg.author_name).charAt(0).toUpperCase(),
-          title: mention ? msg.author_name + ' hat dich erwähnt' : msg.author_name,
-          text: (chatStripFormat(msg.message) || '📷 Foto').slice(0, 90),
+          title: mention ? t('chat.mentionedYou', { name: msg.author_name }) : msg.author_name,
+          text: (chatStripFormat(msg.message) || t('chat.photo')).slice(0, 90),
           ms: 6000
-        });
-      }
-      // App im Hintergrund: System-Mitteilung mit Absender und Text (Push-Server meldet sonst selbst)
-      if (document.hidden && typeof window.kuecheNotify === 'function' &&
-          !(typeof window.kuechePushActive === 'function' && window.kuechePushActive())) {
-        window.kuecheNotify({
-          title: mention ? '💬 ' + msg.author_name + ' hat dich erwähnt' : '💬 ' + msg.author_name,
-          body: (chatStripFormat(msg.message) || '📷 Foto').slice(0, 200),
-          tag: 'chat-' + msg.author_name,
-          url: './?view=chat'
         });
       }
       if (getSetting('chatSound')) playChatSound();
@@ -784,4 +769,5 @@
       if (dot) dot.classList.toggle('hidden', count <= 0);
       const mb = chatEl('menuChatBadge');
       if (mb) { mb.textContent = count > 99 ? '99+' : String(count); mb.classList.toggle('hidden', count <= 0); }
+      if (typeof refreshDashboardBadges === 'function') refreshDashboardBadges();
     }

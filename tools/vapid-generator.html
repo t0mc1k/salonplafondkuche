@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VAPID-Schlüssel erzeugen</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 42rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #0f172a; }
+  button { padding: .7rem 1.2rem; font-size: 1rem; font-weight: 700; border: 0; border-radius: .6rem; background: #f59e0b; cursor: pointer; }
+  textarea { width: 100%; font-family: ui-monospace, monospace; font-size: .85rem; padding: .5rem; box-sizing: border-box; }
+  .warn { background: #fef3c7; border: 1px solid #f59e0b; padding: .7rem 1rem; border-radius: .6rem; }
+  label { font-weight: 700; display: block; margin-top: 1rem; }
+</style>
+</head>
+<body>
+<h1>VAPID-Schlüssel erzeugen</h1>
+<p>Diese Seite erzeugt das Schlüsselpaar für Push-Benachrichtigungen <b>direkt in deinem Browser</b>. Es wird nichts hochgeladen oder gespeichert.</p>
+<p><button id="go">🔑 Neues Schlüsselpaar erzeugen</button></p>
+
+<label for="pub">1) ÖFFENTLICHER Schlüssel (kommt in die App: <code>js/push.js</code> → <code>PUSH_VAPID_PUBLIC_KEY</code> und in Supabase als Secret <code>VAPID_PUBLIC_KEY</code>)</label>
+<textarea id="pub" rows="3" readonly></textarea>
+
+<label for="priv">2) PRIVATER Schlüssel (nur als Supabase-Secret <code>VAPID_PRIVATE_KEY</code>, sonst nirgends)</label>
+<textarea id="priv" rows="2" readonly></textarea>
+<p class="warn">⚠️ Den privaten Schlüssel nie in den Chat, in E-Mails oder in den App-Code schreiben. Wer ihn hat, kann in deinem Namen Benachrichtigungen senden.</p>
+
+<script>
+  function b64url(bytes) {
+    let s = ''; bytes.forEach(b => s += String.fromCharCode(b));
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  document.getElementById('go').onclick = async () => {
+    const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+    const pubRaw = new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey));          // 65 Bytes (0x04 || X || Y)
+    const jwk = await crypto.subtle.exportKey('jwk', pair.privateKey);                             // d = privater Wert (32 Bytes, base64url)
+    document.getElementById('pub').value = b64url(pubRaw);
+    document.getElementById('priv').value = jwk.d;
+  };
+</script>
+</body>
+</html>

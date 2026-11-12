@@ -3,102 +3,113 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Salonplafond KÜCHE v1.2.01</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Salonplafond">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Salonplafond NeXuS</title>
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- SheetJS für Excel Import & Export -->
+  <!-- SheetJS pre Excel Import & Export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' };</script>
   <meta name="theme-color" content="#0f172a">
-  <!-- App installieren (PWA) -->
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Küche">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <script>
     // Vor dem ersten Zeichnen: Blur-Einstellung, Schriftgröße und Design setzen (kein Flackern)
     try {
       var de = document.documentElement;
-      if (localStorage.getItem('kueche_blur') !== 'off') de.classList.add('blur-on');
-      var st = JSON.parse(localStorage.getItem('kueche_settings') || '{}');
+      if (localStorage.getItem('salon_blur') !== 'off') de.classList.add('blur-on');
+      var st = JSON.parse(localStorage.getItem('salon_settings') || '{}');
       if (st.fontScale) de.style.fontSize = st.fontScale + '%';
       if (st.reduceMotion) de.classList.add('reduce-motion');
-      var th = localStorage.getItem('kueche_theme') || st.theme || 'dark';
-      var dark = th === 'auto' ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) : th !== 'light';
+      if (st.tomiFab === false) de.classList.add('tomi-fab-off');
+      var th = localStorage.getItem('salon_theme') || st.theme || 'dark';
+      var dark = st.skin === 'glass' || (th === 'auto' ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) : th !== 'light');
       if (dark) de.classList.add('dark');
       window.__salonDark = dark;
     } catch (e) { document.documentElement.classList.add('dark'); window.__salonDark = true; }
   </script>
-  <link rel="stylesheet" href="css/style.css?v=1.2.01">
+  <!-- Versionsnummer: nur in js/version.js ändern. Die Datei bindet auch css/style.css ein. -->
+  <script src="js/version.js"></script>
 </head>
-<body class="dark-mode p-4 md:p-8 max-w-6xl mx-auto pb-32" onclick="closeDropdowns(event)">
+<body class="dark-mode p-3 pt-0 md:p-8 max-w-6xl mx-auto pb-32" onclick="closeDropdowns(event)">
   <script>if (window.__salonDark === false) { document.body.classList.remove('dark-mode'); document.body.classList.add('light-mode'); }</script>
 
-  <!-- 1. PRIHLASOVACIA OBRAZOVKA -->
-  <div id="authContainer" class="fixed inset-0 z-[200] bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center p-4 md:p-6 text-center overflow-y-auto">
-    <div class="flex flex-col items-center gap-4 w-full max-w-lg my-auto">
-      
-      <div class="login-logo-advanced w-16 h-16 bg-amber-400 rounded-2xl flex flex-col items-center justify-center shadow-2xl p-1 text-slate-950 font-bold select-none border-2 border-amber-300 mx-auto">
-        <div class="logo-bar-login"></div>
-        <div class="text-2xl font-black leading-none my-0">O</div>
-        <div class="text-[10px] font-black leading-none mt-0.5">•</div>
+  <!-- 1. ANMELDUNG (kompakt, ein Bildschirm) -->
+  <div id="authContainer" class="login-screen fixed inset-0 z-[200] bg-slate-100 dark:bg-slate-950 overflow-y-auto">
+    <div class="login-shell">
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" data-lang="de" onclick="setLanguage('de')">DE</button>
+        <button type="button" data-lang="en" onclick="setLanguage('en')">EN</button>
       </div>
 
-      <div>
-        <h1 class="text-lg md:text-xl font-black tracking-wider text-slate-900 dark:text-white uppercase">Anmeldung</h1>
-        <h2 class="text-xl md:text-2xl font-extrabold text-amber-700 dark:text-amber-400 tracking-tight mt-1">Salonplafond KÜCHE</h2>
-        <span class="text-xs text-slate-600 dark:text-slate-400 font-medium mt-0.5 block"><span data-app-version>v1.2.01</span> • Touch-Grid PIN-Login</span>
-      </div>
+      <header class="login-head">
+        <div class="login-logo-advanced login-logo bg-amber-400 shadow-2xl text-slate-950 font-bold select-none border-2 border-amber-300">
+          <div class="logo-bar-login"></div>
+          <div class="login-logo-o">O</div>
+          <div class="login-logo-dot">•</div>
+        </div>
+        <div class="login-head-text">
+          <h1>Salonplafond NeXuS</h1>
+          <span><span data-brand-header>BAR</span> · <span data-i18n="login.title">Anmeldung</span></span>
+        </div>
+      </header>
 
-      <div id="pinLoginForm" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-5 rounded-2xl shadow-2xl space-y-4 text-left mt-1">
-        <div>
-          <label class="block text-xs font-semibold uppercase mb-2 text-slate-700 dark:text-slate-300 flex items-center justify-between">
-            <span>1. Wer bist du? (Personal wählen)</span>
-            <span id="selectedWaiterLabel" class="text-amber-700 dark:text-amber-400 font-bold"></span>
-          </label>
-          <div id="waiterGridContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
-            <p class="col-span-full text-slate-500 italic text-xs text-center py-4">Personal wird geladen...</p>
+      <div id="pinLoginForm" class="login-card">
+
+        <!-- Schritt 1: Name wählen -->
+        <div id="loginPickerWrap">
+          <p class="login-step" data-i18n="login.who">Wer bist du?</p>
+          <div id="loginSearchRow" class="hidden">
+            <input type="search" id="loginSearchInput" oninput="renderLoginGrid()" onkeydown="if (event.key === 'Enter') { event.preventDefault(); loginPickFirstMatch(); }" autocomplete="off" placeholder="🔍 Name suchen ..." data-i18n-ph="login.search" class="login-search">
+          </div>
+          <div id="loginRecentRow" class="login-recent"></div>
+          <div id="waiterGridContainer" class="login-list">
+            <p class="login-empty" data-i18n="login.loading">Personal wird geladen ...</p>
           </div>
         </div>
 
-        <div id="pinInputSection" class="hidden border-t border-slate-300 dark:border-slate-800 pt-3">
-          <div class="flex items-center justify-between mb-1">
-            <label class="block text-xs font-semibold uppercase text-slate-700 dark:text-slate-300">2. PIN-Code eingeben</label>
-            <button type="button" onclick="resetWaiterSelection()" class="text-[11px] text-amber-700 dark:text-amber-400 hover:underline">← Anderen Namen wählen</button>
-          </div>
-          <div class="relative mb-2">
-            <input type="password" id="loginPinInput" readonly placeholder="••••" class="w-full p-2.5 text-center tracking-widest text-base rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-amber-700 dark:text-amber-400 font-black focus:outline-none focus:border-amber-400">
+        <!-- Schritt 2: PIN eingeben -->
+        <div id="pinInputSection" class="hidden">
+          <div class="login-who">
+            <span id="selectedWaiterAvatar" class="login-av lg"></span>
+            <div class="login-who-text">
+              <b id="selectedWaiterLabel"></b>
+              <small data-i18n="login.enterPin">PIN eingeben</small>
+            </div>
+            <button type="button" onclick="resetWaiterSelection()" class="login-change" data-i18n="login.change">Ändern</button>
           </div>
 
-          <div class="grid grid-cols-3 gap-1.5">
-            <button type="button" onclick="appendPinNum('1')" class="p-2.5 bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-bold rounded-xl transition">1</button>
-            <button type="button" onclick="appendPinNum('2')" class="p-2.5 bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-bold rounded-xl transition">2</button>
-            <button type="button" onclick="appendPinNum('3')" class="p-2.5 bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-bold rounded-xl transition">3</button>
-            <button type="button" onclick="appendPinNum('4')" class="p-2.5 bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-bold rounded-xl transition">4</button>
-            <button type="button" onclick="appendPinNum('5')" class="p-2.5 bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-bold rounded-xl transition">5</button>
-            <button type="button" onclick="appendPinNum('6')" class="p-2.5 bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-bold rounded-xl transition">6</button>
-            <button type="button" onclick="appendPinNum('7')" class="p-2.5 bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-bold rounded-xl transition">7</button>
-            <button type="button" onclick="appendPinNum('8')" class="p-2.5 bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-bold rounded-xl transition">8</button>
-            <button type="button" onclick="appendPinNum('9')" class="p-2.5 bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-bold rounded-xl transition">9</button>
-            <button type="button" onclick="clearPinInput()" class="p-2.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-700 dark:text-red-400 text-xs font-bold rounded-xl transition">C</button>
-            <button type="button" onclick="appendPinNum('0')" class="p-2.5 bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white text-sm font-bold rounded-xl transition">0</button>
-            <button type="button" onclick="backspacePinInput()" class="p-2.5 bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-800 text-amber-700 dark:text-amber-400 text-xs font-bold rounded-xl transition">⌫</button>
+          <div id="loginPinDots" class="login-dots" aria-label="PIN-Eingabe"></div>
+          <input type="password" id="loginPinInput" readonly tabindex="-1" class="hidden">
+
+          <div class="login-keypad">
+            <button type="button" onclick="appendPinNum('1')" class="login-key">1</button>
+            <button type="button" onclick="appendPinNum('2')" class="login-key">2</button>
+            <button type="button" onclick="appendPinNum('3')" class="login-key">3</button>
+            <button type="button" onclick="appendPinNum('4')" class="login-key">4</button>
+            <button type="button" onclick="appendPinNum('5')" class="login-key">5</button>
+            <button type="button" onclick="appendPinNum('6')" class="login-key">6</button>
+            <button type="button" onclick="appendPinNum('7')" class="login-key">7</button>
+            <button type="button" onclick="appendPinNum('8')" class="login-key">8</button>
+            <button type="button" onclick="appendPinNum('9')" class="login-key">9</button>
+            <button type="button" onclick="clearPinInput()" class="login-key login-key-c" aria-label="Löschen">C</button>
+            <button type="button" onclick="appendPinNum('0')" class="login-key">0</button>
+            <button type="button" onclick="backspacePinInput()" class="login-key login-key-b" aria-label="Zurück">⌫</button>
           </div>
-          <button type="button" id="pinSubmitBtn" onclick="submitPinLogin()" class="w-full mt-2 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold rounded-xl text-sm transition shadow-lg">🔓 Anmelden</button>
+          <button type="button" id="pinSubmitBtn" onclick="submitPinLogin()" class="login-submit" data-i18n="login.submit">Anmelden</button>
         </div>
 
-        <div id="pinAuthError" class="text-xs text-red-700 dark:text-red-400 hidden font-medium text-center"></div>
-
+        <div id="pinAuthError" class="login-error hidden"></div>
       </div>
 
-      <div class="mt-2 flex flex-col items-center gap-1">
-        <span class="text-xs text-slate-700 dark:text-slate-300 font-extrabold block">Erstellt von © T0mc1k (Tomas Kardos)</span>
-      </div>
+      <p class="login-credit">Salonplafond NeXuS • BAR v<span data-app-number></span> • Developed by Tomas Kardos © 2026</p>
     </div>
   </div>
 
@@ -120,13 +131,12 @@
           <div class="flex gap-2 flex-wrap items-center">
             <input type="search" id="staffSearchInput" oninput="renderStaffList()" placeholder="🔍 Mitarbeiter suchen..." class="ui-search flex-1 min-w-[10rem]">
             <button type="button" onclick="startNewStaff()" class="ui-btn-primary">➕ Neuer Mitarbeiter</button>
-            <button type="button" onclick="openLoginHistoryModal()" class="ui-btn-ghost">📜 Login-Protokoll</button>
+            <button type="button" onclick="openLoginLogModal()" class="ui-btn-ghost">📜 Login-Protokoll</button>
           </div>
           <div class="flex gap-1.5 flex-wrap items-center">
             <button type="button" id="staffChip_all" onclick="setStaffRoleFilter('all')" class="ui-chip active">Alle</button>
-            <button type="button" id="staffChip_staff" onclick="setStaffRoleFilter('staff')" class="ui-chip">Koch</button>
-            <button type="button" id="staffChip_manager" onclick="setStaffRoleFilter('manager')" class="ui-chip">Küchenchef</button>
-            <button type="button" id="staffChip_souschef" onclick="setStaffRoleFilter('souschef')" class="ui-chip">Sous Chef</button>
+            <button type="button" id="staffChip_staff" onclick="setStaffRoleFilter('staff')" class="ui-chip">Kellner</button>
+            <button type="button" id="staffChip_manager" onclick="setStaffRoleFilter('manager')" class="ui-chip">Manager</button>
             <button type="button" id="staffChip_developer" onclick="setStaffRoleFilter('developer')" class="ui-chip">Developer</button>
             <span id="staffSummary" class="staff-summary"></span>
           </div>
@@ -151,7 +161,6 @@
           <select id="staffInputRole" class="hidden">
             <option value="staff">staff</option>
             <option value="manager">manager</option>
-            <option value="souschef">souschef</option>
             <option value="developer">developer</option>
           </select>
 
@@ -177,29 +186,19 @@
             <div class="form-section-title">2 · Rolle</div>
             <div class="role-seg">
               <button type="button" id="staffRoleBtn_staff" onclick="setStaffRole('staff')" class="role-opt active">
-                <span class="role-ico">👨‍🍳</span><b>Koch</b><small>Rezepte ansehen, Chat, eigenes Profil</small>
+                <span class="role-ico">🍹</span><b>Kellner</b><small>Rezepte ansehen, Chat, eigenes Profil</small>
               </button>
               <button type="button" id="staffRoleBtn_manager" onclick="setStaffRole('manager')" class="role-opt">
-                <span class="role-ico">🧑‍🍳</span><b>Küchenchef</b><small>Personal, Funktionen, Tickets, Login-Protokoll und Gerichte verwalten</small>
-              </button>
-              <button type="button" id="staffRoleBtn_souschef" onclick="setStaffRole('souschef')" class="role-opt">
-                <span class="role-ico">🥄</span><b>Sous Chef</b><small>Gleiche Rechte wie der Küchenchef</small>
+                <span class="role-ico">🧑‍💼</span><b>Manager</b><small>Personal, Tickets, Login-Protokoll und Getränke verwalten</small>
               </button>
               <button type="button" id="staffRoleBtn_developer" onclick="setStaffRole('developer')" class="role-opt">
-                <span class="role-ico">🛠️</span><b>Developer</b><small>Wie Küchenchef, zusätzlich Tickets löschen</small>
+                <span class="role-ico">🛠️</span><b>Developer</b><small>Wie Manager, zusätzlich Tickets löschen</small>
               </button>
             </div>
           </div>
 
-          <div id="staffJobSection" class="form-section">
-            <div class="form-section-title">3 · Funktion in der Küche</div>
-            <input type="hidden" id="staffInputJob" value="">
-            <div id="staffJobChips" class="flex flex-wrap gap-1.5"></div>
-            <p class="form-hint mt-1.5">Wird bei Köchen neben dem Namen angezeigt. Nochmal anklicken = Funktion entfernen.</p>
-          </div>
-
           <div class="form-section">
-            <div class="form-section-title">4 · PIN-Code</div>
+            <div class="form-section-title">3 · PIN-Code</div>
             <div class="flex gap-2 items-center flex-wrap">
               <input type="password" id="staffInputPin" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="4 bis 6 Ziffern" class="ui-field flex-1 min-w-[10rem] tracking-widest">
               <button type="button" onclick="toggleStaffPinVisibility()" class="ui-btn-ghost" title="PIN anzeigen oder verbergen">👁️ Anzeigen</button>
@@ -209,11 +208,11 @@
           </div>
 
           <div class="form-section">
-            <div class="form-section-title">5 · Rechte</div>
+            <div class="form-section-title">4 · Rechte</div>
             <label class="switch-row">
               <span class="min-w-0">
-                <b class="block text-xs">🍽️ Darf Rezepte bearbeiten</b>
-                <small id="staffCanEditNote" class="form-hint block mt-0.5">Erlaubt dem Mitarbeiter, Gerichte anzulegen, zu ändern und zu löschen.</small>
+                <b class="block text-xs">🍸 Darf Getränke bearbeiten</b>
+                <small id="staffCanEditNote" class="form-hint block mt-0.5">Erlaubt dem Mitarbeiter, Getränke anzulegen, zu ändern und zu löschen.</small>
               </span>
               <span class="switch"><input type="checkbox" id="staffInputCanEdit"><span class="switch-track"></span></span>
             </label>
@@ -268,8 +267,8 @@
 
       <div class="ui-head">
         <div>
-          <h3 class="ui-head-title">👤 Mein Profil</h3>
-          <p class="ui-head-sub">So sehen dich deine Kollegen im Chat und in der Personalliste.</p>
+          <h3 class="ui-head-title" data-i18n="prof.title">👤 Mein Profil</h3>
+          <p class="ui-head-sub" data-i18n="prof.sub">So sehen dich deine Kollegen im Chat und in der Personalliste.</p>
         </div>
         <button type="button" onclick="closeUserProfileModal()" class="ui-close" aria-label="Schließen">&times;</button>
       </div>
@@ -294,24 +293,31 @@
           </div>
           <p id="profileBioPreview" class="profile-bio-preview"></p>
           <div class="flex gap-2 flex-wrap px-4 pb-4">
-            <button type="button" onclick="document.getElementById('profileAvatarFile').click()" class="ui-btn-ghost">📷 Foto ändern</button>
-            <button type="button" onclick="openMyFullAvatar()" class="ui-btn-ghost">🔍 Foto ansehen</button>
+            <button type="button" onclick="document.getElementById('profileAvatarFile').click()" class="ui-btn-ghost" data-i18n="prof.photo">📷 Foto ändern</button>
+            <button type="button" onclick="openMyFullAvatar()" class="ui-btn-ghost" data-i18n="prof.viewPhoto">🔍 Foto ansehen</button>
             <span id="profileAvatarStatus" class="profile-meta self-center"></span>
           </div>
           <input type="file" id="profileAvatarFile" accept="image/*" class="hidden" onchange="uploadMyAvatarToSupabase(event)">
           <input type="hidden" id="profileInputAvatarUrl" value="">
         </div>
 
+        <!-- Arbeitsplan -->
+        <button type="button" onclick="closeUserProfileModal(); openMyPlanModal();" class="profile-link">
+          <span class="profile-link-ico">🗓️</span>
+          <span class="min-w-0 flex-1 text-left"><b class="block text-sm" data-i18n="prof.plan">Mein Arbeitsplan</b><small class="block text-xs profile-link-sub" data-i18n="prof.planSub">Deine Schichten ansehen</small></span>
+          <span class="menu-arrow">›</span>
+        </button>
+
         <!-- Über mich -->
         <div class="form-section">
-          <div class="form-section-title">Über mich</div>
-          <textarea id="profileInputBio" rows="2" maxlength="140" oninput="onProfileBioInput()" placeholder="Schreibe etwas über dich oder deinen Status ..." class="ui-field"></textarea>
+          <div class="form-section-title" data-i18n="prof.about">Über mich</div>
+          <textarea id="profileInputBio" rows="2" maxlength="140" oninput="onProfileBioInput()" placeholder="Schreibe etwas über dich oder deinen Status ..." data-i18n-ph="prof.bioPh" class="ui-field"></textarea>
           <div class="flex items-center justify-between gap-2 mt-1.5 flex-wrap">
             <div class="flex gap-1.5 flex-wrap">
-              <button type="button" class="ui-chip" onclick="setProfileBio('👨‍🍳 In der Küche')">👨‍🍳 In der Küche</button>
-              <button type="button" class="ui-chip" onclick="setProfileBio('☕ In der Pause')">☕ In der Pause</button>
-              <button type="button" class="ui-chip" onclick="setProfileBio('🔥 Heute voll dabei')">🔥 Voll dabei</button>
-              <button type="button" class="ui-chip" onclick="setProfileBio('')">Leeren</button>
+              <button type="button" class="ui-chip" onclick="setProfileBio(t('prof.bioBar'))" data-i18n="prof.btnBar">🍸 Hinter der Bar</button>
+              <button type="button" class="ui-chip" onclick="setProfileBio(t('prof.bioPause'))" data-i18n="prof.btnPause">☕ In der Pause</button>
+              <button type="button" class="ui-chip" onclick="setProfileBio(t('prof.bioIn'))" data-i18n="prof.btnIn">🔥 Voll dabei</button>
+              <button type="button" class="ui-chip" onclick="setProfileBio('')" data-i18n="prof.clear">Leeren</button>
             </div>
             <span id="profileBioCount" class="form-hint">0 / 140</span>
           </div>
@@ -319,35 +325,35 @@
 
         <!-- PIN -->
         <div class="form-section">
-          <div class="form-section-title">PIN-Code ändern</div>
+          <div class="form-section-title" data-i18n="prof.pinTitle">PIN-Code ändern</div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="form-label" for="profileInputNewPin">Neuer PIN</label>
-              <input type="password" id="profileInputNewPin" inputmode="numeric" maxlength="6" autocomplete="new-password" oninput="onProfilePinInput()" placeholder="4 bis 6 Ziffern" class="ui-field tracking-widest">
+              <label class="form-label" for="profileInputNewPin" data-i18n="prof.newPin">Neuer PIN</label>
+              <input type="password" id="profileInputNewPin" inputmode="numeric" maxlength="6" autocomplete="new-password" oninput="onProfilePinInput()" placeholder="4 bis 6 Ziffern" data-i18n-ph="prof.pinPh" class="ui-field tracking-widest">
             </div>
             <div>
-              <label class="form-label" for="profileInputPin2">PIN wiederholen</label>
-              <input type="password" id="profileInputPin2" inputmode="numeric" maxlength="6" autocomplete="new-password" oninput="onProfilePinInput()" placeholder="Zur Kontrolle" class="ui-field tracking-widest">
+              <label class="form-label" for="profileInputPin2" data-i18n="prof.repeatPin">PIN wiederholen</label>
+              <input type="password" id="profileInputPin2" inputmode="numeric" maxlength="6" autocomplete="new-password" oninput="onProfilePinInput()" placeholder="Zur Kontrolle" data-i18n-ph="prof.pinPh2" class="ui-field tracking-widest">
             </div>
           </div>
           <div class="flex items-center justify-between gap-2 mt-2 flex-wrap">
-            <p id="profilePinHint" class="form-hint">Leer lassen, wenn dein PIN gleich bleiben soll.</p>
-            <button type="button" onclick="toggleProfilePinVisibility()" class="ui-link-btn">👁️ Anzeigen / verbergen</button>
+            <p id="profilePinHint" class="form-hint" data-i18n="prof.pinHint">Leer lassen, wenn dein PIN gleich bleiben soll.</p>
+            <button type="button" onclick="toggleProfilePinVisibility()" class="ui-link-btn" data-i18n="prof.showHide">👁️ Anzeigen / verbergen</button>
           </div>
         </div>
 
         <!-- Rechte -->
         <div class="form-section">
-          <div class="form-section-title">Meine Rechte</div>
+          <div class="form-section-title" data-i18n="prof.rights">Meine Rechte</div>
           <div id="profileRightsBox" class="flex flex-col gap-1.5"></div>
         </div>
       </div>
 
       <div class="ui-foot">
-        <span id="profileDirtyHint" class="profile-dirty hidden">● Ungespeicherte Änderungen</span>
+        <span id="profileDirtyHint" class="profile-dirty hidden" data-i18n="prof.unsaved">● Ungespeicherte Änderungen</span>
         <span class="flex-1"></span>
-        <button type="button" onclick="closeUserProfileModal()" class="ui-btn-ghost">Schließen</button>
-        <button type="button" id="profileSaveBtn" onclick="saveMyUserProfile()" class="ui-btn-primary">💾 Speichern</button>
+        <button type="button" onclick="closeUserProfileModal()" class="ui-btn-ghost" data-i18n="common.close">Schließen</button>
+        <button type="button" id="profileSaveBtn" onclick="saveMyUserProfile()" class="ui-btn-primary" data-i18n="prof.save">💾 Speichern</button>
       </div>
     </div>
   </div>
@@ -364,10 +370,10 @@
         <span id="userDetailRole" class="text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 font-semibold block mt-0.5"></span>
       </div>
       <div class="w-full custom-box p-3 rounded-xl border text-left">
-        <span class="text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400 block mb-1">Über mich:</span>
-        <p id="userDetailBio" class="text-xs italic text-slate-700 dark:text-slate-300">Keine Beschreibung angegeben.</p>
+        <span class="text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400 block mb-1" data-i18n="prof.aboutColon">Über mich:</span>
+        <p id="userDetailBio" class="text-xs italic text-slate-700 dark:text-slate-300" data-i18n="prof.noBio">Keine Beschreibung angegeben.</p>
       </div>
-      <button onclick="closeUserDetailModal()" class="w-full py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+      <button onclick="closeUserDetailModal()" class="w-full py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition" data-i18n="common.close">Schließen</button>
     </div>
   </div>
 
@@ -375,35 +381,37 @@
   <div id="appContainer" class="hidden">
 
     <!-- Header -->
-    <header class="mb-4 pb-3 border-b border-slate-300 dark:border-slate-700 flex flex-col gap-3">
-
-      <!-- Zeile 1: Logo, Titel, Chat, Menü -->
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2.5 min-w-0">
-          <div class="header-logo-container" onclick="showRandomMotivation(event)" title="Klick mich für Osterei-Motivation! 👨‍🍳">
+    <header id="appBar" class="app-bar">
+      <div class="flex items-center gap-2.5 md:gap-3 min-w-0">
+        <div class="header-logo-container" onclick="showRandomMotivation(event)" title="Klick mich für Osterei-Motivation! 🍸">
           <span class="logo-macron" id="headerLogoMacron"></span>
           <span class="logo-main-char" id="headerLogoChar">O</span>
           <span class="logo-dot" id="headerLogoDot">•</span>
         </div>
-          <div class="flex flex-col justify-center min-w-0">
-            <h1 class="text-xl sm:text-3xl font-bold tracking-tight text-amber-700 dark:text-amber-400 leading-none truncate">Salonplafond KÜCHE</h1>
-            <span class="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 font-medium block mt-0.5" data-app-version>v1.2.01</span>
-          </div>
+
+        <div class="flex flex-col justify-center min-w-0">
+          <h1 class="text-lg md:text-3xl font-bold tracking-tight text-amber-700 dark:text-amber-400 leading-none whitespace-nowrap">Salonplafond NeXuS</h1>
+          <span class="text-[10px] md:text-xs text-slate-600 dark:text-slate-400 font-medium block mt-0.5" data-brand-header>BAR</span>
         </div>
+      </div>
 
-        <div class="flex items-center gap-2 shrink-0">
-          <button onclick="openTeamChatModal()" id="headerChatEnvelopeBtn" class="relative w-10 h-10 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-amber-600 dark:text-amber-400 rounded-xl sm:rounded-lg text-sm sm:text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm" title="Team-Chat" aria-label="Chat">
-            <span>✉️<span class="hidden sm:inline"> Chat</span></span>
-            <span id="headerChatBadgeDot" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-950 pulse-badge-dot"></span>
-          </button>
+      <div class="flex items-center gap-2 shrink-0">
+        <button onclick="handleLogout()" class="hidden md:inline-flex px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 rounded-lg text-xs font-bold transition items-center gap-1.5 shadow-sm" title="Benutzer wechseln" data-i18n="hdr.switch">
+          🚪 Benutzer wechseln
+        </button>
 
-          <button onclick="toggleFullscreen()" class="hidden md:flex px-3 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 items-center gap-1 transition">
-            ⛶ Vollbild
-          </button>
+        <button onclick="openTeamChatModal()" id="headerChatEnvelopeBtn" class="relative w-10 h-10 md:w-auto md:h-auto md:px-3 md:py-1.5 justify-center bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-amber-700 dark:text-amber-400 rounded-xl md:rounded-lg text-base md:text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Team-Chat öffnen">
+          <span>✉️<span class="hidden md:inline"> Chat</span></span>
+          <span id="headerChatBadgeDot" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-950 pulse-badge-dot"></span>
+        </button>
 
-          <div class="relative">
-          <button onclick="toggleSettingsMenu(event)" class="h-10 px-3.5 sm:h-auto sm:py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl sm:rounded-lg text-sm sm:text-xs flex items-center justify-center gap-1 shadow-md transition relative" aria-label="Menü">
-            ⚙️<span class="hidden sm:inline"> Menü</span>
+        <button onclick="toggleFullscreen()" class="hidden md:inline-flex px-3 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300 items-center gap-1 transition" data-i18n="hdr.fullscreen">
+          ⛶ Vollbild
+        </button>
+
+        <div class="relative">
+          <button onclick="toggleSettingsMenu(event)" class="w-10 h-10 md:w-auto md:h-auto md:px-3 md:py-1.5 justify-center bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl md:rounded-lg text-base md:text-xs flex items-center gap-1 shadow-md transition relative" title="Menü" aria-label="Menü">
+            <span class="md:hidden">⚙️</span><span class="hidden md:inline" data-i18n="hdr.menu">☰ Menü</span>
             <span id="menuNotificationDot" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-amber-500 dark:bg-amber-400 rounded-full border-2 border-white dark:border-slate-950 pulse-badge-dot"></span>
           </button>
 
@@ -422,176 +430,214 @@
               <span class="menu-arrow">›</span>
             </button>
 
-            <button type="button" onclick="openAddDishModalFromMenu()" id="menuAddDishBtn" class="hidden menu-primary mt-1">
-              ➕ Neues Gericht hinzufügen
+            <button type="button" onclick="closeSettingsMenu(); showDashboard();" class="menu-item mt-1">
+              <span class="menu-ico">🏠</span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.dashboard">Dashboard</span><span class="menu-sub" data-i18n="menu.dashboardSub">Zurück zur Startseite</span></span>
+            </button>
+            <button type="button" onclick="closeSettingsMenu(); openDrinksView();" class="menu-item">
+              <span class="menu-ico">🍸</span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.drinks">Getränke & Rezepte</span><span class="menu-sub" data-i18n="menu.drinksSub">Datenbank öffnen</span></span>
             </button>
 
-            <div class="menu-section">Gerichte & Karte</div>
+            <button type="button" onclick="openAddDrinkModalFromMenu()" id="menuAddDrinkBtn" class="hidden menu-primary mt-1" data-i18n="menu.addDrink">
+              ➕ Neues Getränk hinzufügen
+            </button>
+
+            <div class="menu-section" data-i18n="menu.secDrinks">Getränke & Karte</div>
 
             <button type="button" onclick="openSeasonModal()" class="menu-item">
               <span class="menu-ico">📅</span>
-              <span class="menu-text"><span class="menu-label">Saison wählen</span><span class="menu-sub" id="menuSeasonSub">Aktive Karte wechseln</span></span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.season">Saison wählen</span><span class="menu-sub" id="menuSeasonSub" data-i18n="menu.seasonSub">Aktive Karte wechseln</span></span>
             </button>
             <button type="button" onclick="createNewSeasonPrompt()" id="menuNewSeasonBtn" class="hidden menu-item">
               <span class="menu-ico">➕</span>
-              <span class="menu-text"><span class="menu-label">Neue Saison erstellen</span><span class="menu-sub">Neue Karte anlegen</span></span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.newSeason">Neue Saison erstellen</span><span class="menu-sub" data-i18n="menu.newSeasonSub">Neue Karte anlegen</span></span>
             </button>
             <button type="button" onclick="openShoppingModal()" class="menu-item">
               <span class="menu-ico">🛒</span>
-              <span class="menu-text"><span class="menu-label">Einkaufsliste / Inventur</span><span class="menu-sub">Zutaten der Saison zusammenrechnen</span></span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.shopping">Einkaufsliste / Inventur</span><span class="menu-sub" data-i18n="menu.shoppingSub">Zutaten der Saison zusammenrechnen</span></span>
             </button>
             <button type="button" onclick="openA3PrintSetupModal()" class="menu-item">
               <span class="menu-ico">🖨️</span>
-              <span class="menu-text"><span class="menu-label">Karten-Druck (A3)</span><span class="menu-sub">Speisekarte zum Ausdrucken</span></span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.print">Karten-Druck (A3)</span><span class="menu-sub" data-i18n="menu.printSub">Getränkekarte zum Ausdrucken</span></span>
             </button>
             <button type="button" onclick="openImportExportModal()" id="btnMenuImportExport" class="hidden menu-item">
               <span class="menu-ico">📊</span>
-              <span class="menu-text"><span class="menu-label">Import & Export</span><span class="menu-sub">Excel oder CSV</span></span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.impexp">Import & Export</span><span class="menu-sub" data-i18n="menu.impexpSub">Excel oder CSV</span></span>
             </button>
 
-            <div class="menu-section">Team & Arbeit</div>
+            <div class="menu-section" data-i18n="menu.secTeam">Team & Arbeit</div>
 
-            <button type="button" onclick="openHandoverModal()" class="menu-item">
-              <span class="menu-ico">📋<span id="hoBadgeMenu" class="hidden menu-count">0</span></span>
-              <span class="menu-text"><span class="menu-label">Schichtübergabe</span><span class="menu-sub">Aufgaben für die nächste Schicht</span></span>
-            </button>
             <button type="button" onclick="openTeamChatModal()" class="menu-item">
               <span class="menu-ico">💬<span id="menuChatBadge" class="hidden menu-count">0</span></span>
-              <span class="menu-text"><span class="menu-label">Team-Chat</span><span class="menu-sub">Nachrichten an das ganze Team</span></span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.chat">Team-Chat</span><span class="menu-sub" data-i18n="menu.chatSub">Nachrichten an das ganze Team</span></span>
             </button>
-            <button type="button" onclick="openWorkScheduleModal()" class="menu-item">
+            <button type="button" onclick="openMyPlanModal()" class="menu-item">
               <span class="menu-ico">🗓️</span>
-              <span class="menu-text"><span class="menu-label">Mein Arbeitsplan</span><span class="menu-sub">Deine Dienste</span></span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.myplan">Mein Arbeitsplan</span><span class="menu-sub" data-i18n="menu.myplanSub">Deine Schichten</span></span>
             </button>
 
             <div id="menuAdminSection" class="hidden flex-col gap-0.5">
               <div class="menu-section">Verwaltung</div>
+              <button type="button" onclick="openTeamPlanModal()" class="menu-item">
+                <span class="menu-ico">📆</span>
+                <span class="menu-text"><span class="menu-label">Team & Arbeitsplan</span><span class="menu-sub">Monatsraster, Stunden, Schichten</span></span>
+              </button>
               <button type="button" onclick="openStaffPinModalFromMenu()" id="menuStaffPinBtn" class="menu-item">
                 <span class="menu-ico">👤</span>
                 <span class="menu-text"><span class="menu-label">Personal & PINs</span><span class="menu-sub">Mitarbeiter, Rollen und Rechte</span></span>
               </button>
             </div>
 
-            <div class="menu-section">App</div>
+            <div class="menu-section" data-i18n="menu.secApp">App</div>
 
             <button type="button" onclick="openUnifiedSettingsModal()" class="menu-item">
               <span class="menu-ico">⚙️</span>
-              <span class="menu-text"><span class="menu-label">Einstellungen & Zentrale</span><span class="menu-sub">Design, Schrift, Hinweise, Sortierung</span></span>
-            </button>
-            <button type="button" id="menuInstallBtn" onclick="openInstallFromMenu()" class="menu-item">
-              <span class="menu-ico">📲</span>
-              <span class="menu-text"><span class="menu-label">App installieren</span><span class="menu-sub">Auf dem Startbildschirm ablegen</span></span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.settings">Einstellungen & Zentrale</span><span class="menu-sub" data-i18n="menu.settingsSub">Design, Schrift, Hinweise, Sortierung</span></span>
             </button>
             <button type="button" onclick="refreshData()" class="menu-item">
               <span class="menu-ico">🔄</span>
-              <span class="menu-text"><span class="menu-label">Daten aktualisieren</span><span class="menu-sub">Gerichte neu laden</span></span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.refresh">Daten aktualisieren</span><span class="menu-sub" data-i18n="menu.refreshSub">Getränke neu laden</span></span>
+            </button>
+            <button type="button" onclick="openInstallSettings()" id="menuInstallBtn" class="hidden menu-item">
+              <span class="menu-ico">📲</span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.install">App installieren</span><span class="menu-sub" data-i18n="menu.installSub">Symbol auf dem Startbildschirm</span></span>
+            </button>
+            <button type="button" onclick="toggleFullscreen(); closeSettingsMenu();" class="menu-item menu-mobile-only">
+              <span class="menu-ico">⛶</span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.fullscreen">Vollbild</span><span class="menu-sub" data-i18n="menu.fullscreenSub">Ganzer Bildschirm ein/aus</span></span>
+            </button>
+            <button type="button" onclick="closeSettingsMenu(); openHelpModal();" class="menu-item">
+              <span class="menu-ico">📖</span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.help">Hilfe & Anleitung</span><span class="menu-sub" data-i18n="menu.helpSub">So funktioniert die App</span></span>
             </button>
             <button type="button" onclick="openChangelogModal()" class="menu-item">
               <span class="menu-ico">🚀</span>
-              <span class="menu-text"><span class="menu-label">Was ist neu?</span><span class="menu-sub">Neuigkeiten in <span data-app-version>v1.2.01</span></span></span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.news">Was ist neu?</span><span class="menu-sub"><span data-i18n="menu.newsSub">Neuigkeiten in </span><span data-app-version></span></span></span>
             </button>
             <button type="button" onclick="openSupportModal()" class="menu-item">
               <span class="menu-ico">🛟<span id="menuDropdownTicketDot" class="hidden menu-dot pulse-badge-dot"></span></span>
-              <span class="menu-text"><span class="menu-label">Support & Tickets</span><span class="menu-sub">Fehler melden oder Fragen stellen</span></span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.support">Support & Tickets</span><span class="menu-sub" data-i18n="menu.supportSub">Fehler melden oder Fragen stellen</span></span>
             </button>
 
             <div class="menu-divider"></div>
 
             <button type="button" onclick="handleLogout()" class="menu-item menu-item-danger">
               <span class="menu-ico">🚪</span>
-              <span class="menu-text"><span class="menu-label">Benutzer wechseln</span><span class="menu-sub">Abmelden</span></span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.logout">Benutzer wechseln</span><span class="menu-sub" data-i18n="menu.logoutSub">Abmelden</span></span>
             </button>
 
           </div>
         </div>
-        </div>
-      </div>
-
-      <!-- Zeile 2: Angemeldeter Benutzer + Wechseln -->
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2.5 min-w-0">
-          <div id="headerUserAvatarContainer" onclick="openUserProfileModal()" class="w-8 h-8 rounded-full border-2 border-amber-500 bg-slate-100 dark:bg-slate-800 overflow-hidden flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition shadow" title="Klicken, um mein Profil zu öffnen">
-          <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400" id="headerAvatarFallback">?</span>
-        </div>
-          <span class="text-xs text-slate-800 dark:text-slate-200 font-bold truncate"><span class="hidden sm:inline">Angemeldet: </span><span id="currentUserEmail" class="text-amber-600 dark:text-amber-300"></span></span>
-        </div>
-        <button onclick="handleLogout()" class="shrink-0 px-3 py-2 sm:py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5" title="Benutzer wechseln">
-          🚪 <span class="hidden sm:inline">Benutzer wechseln</span><span class="sm:hidden">Wechseln</span>
-        </button>
-      </div>
-
-      <!-- Zeile 3: Schichtübergabe -->
-      <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center">
-        <button onclick="openHandoverModal()" class="py-3 sm:py-1.5 sm:px-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/40 rounded-xl sm:rounded-lg text-sm sm:text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm" title="Offene Aufgaben der Schichtübergabe ansehen">
-          📋 <span>Übergabe<span class="hidden sm:inline"> ansehen</span></span> <span id="hoBadgeMain" class="hidden min-w-[1.25rem] px-1 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black text-center leading-none">0</span>
-        </button>
-        <button onclick="openHandoverModal('add')" class="py-3 sm:py-1.5 sm:px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl sm:rounded-lg text-sm sm:text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm" title="Übergabe für die nächste Schicht schreiben">
-          ✍️ <span class="sm:hidden">Schreiben</span><span class="hidden sm:inline">Übergabe schreiben</span>
-        </button>
-        <button onclick="openWorkScheduleModal()" class="hidden sm:flex sm:ml-auto px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-bold transition items-center gap-1.5">
-          📅 Mein Arbeitsplan
-        </button>
       </div>
     </header>
 
-    <!-- Vyhľadávacie pole -->
-    <div class="mb-4 flex flex-col md:flex-row justify-between items-center gap-3">
+    <!-- Angemeldet: am Handy gleich unter der Kopfleiste -->
+    <div class="md:hidden">
+      <div class="mobile-userbar">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span id="headerMobileAvatar" class="mobile-avatar" onclick="openUserProfileModal()" title="Mein Profil">?</span>
+          <span id="mobileUserLabel" class="mobile-user-label"></span>
+        </div>
+        <button type="button" onclick="handleLogout()" class="mobile-switch-btn">🚪 Wechseln</button>
+      </div>
+    </div>
+
+    <!-- Angemeldet (nur am Computer) -->
+    <div class="hidden md:flex mb-5 items-center justify-between flex-wrap gap-3">
+      <div class="inline-flex items-center gap-3">
+        <div id="headerUserAvatarContainer" onclick="openUserProfileModal()" class="w-8 h-8 rounded-full border-2 border-amber-500 bg-slate-100 dark:bg-slate-800 overflow-hidden flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition shadow" title="Klicken, um mein Profil zu öffnen" data-i18n-title="hdr.profileTitle">
+          <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400" id="headerAvatarFallback">?</span>
+        </div>
+        <span class="text-xs text-slate-800 dark:text-slate-200 font-bold">Angemeldet: <span id="currentUserEmail" class="text-amber-700 dark:text-amber-300"></span></span>
+      </div>
+    </div>
+
+    <!-- TomiAI: Schwebe-Knopf für alle -->
+    <button type="button" id="tomiFab" class="tomi-fab" onclick="openTomiModal()" aria-label="TomiAI">✨ <span data-i18n="tomi.fab">TomiAI</span></button>
+
+    <!-- ===== DASHBOARD (Startseite nach dem Login) ===== -->
+    <main id="dashboardView">
+      <section class="dash-hero">
+        <div class="min-w-0">
+          <h2 class="dash-hello" id="dashHello">Hallo!</h2>
+          <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px">
+            <p class="dash-date" id="dashDate"></p>
+            <span class="dash-date hidden" id="dashRsv" onclick="openReservationsModal()" style="cursor:pointer" title="Reservierungen (Gastronaut)"></span>
+          </div>
+          <button type="button" id="dashInbox" class="dash-inbox hidden" onclick="openInboxModal()" aria-live="polite"></button>
+        </div>
+        <span id="dashRolePill" class="staff-pill pill-staff"></span>
+      </section>
+      <div id="dashPushBanner"></div>
+      <div id="dashGroups" class="dash-groups"></div>
+    </main>
+
+    <!-- ===== GETRÄNKE-DATENBANK ===== -->
+    <div id="drinksView" class="hidden">
+      <div class="dash-back-bar">
+        <button type="button" onclick="showDashboard()" class="dash-back-btn" title="Zurück zum Dashboard" data-i18n-title="dv.backTitle">← Dashboard</button>
+        <span class="dash-back-title" data-i18n="dv.title">🍸 Getränke & Rezepte</span>
+      </div>
+
+    <!-- Suche -->
+    <div class="mb-3 md:mb-4">
       <div class="relative w-full">
-        <input type="text" id="searchInput" autocomplete="off" oninput="onSearchInput()" placeholder="🔍 Gericht oder Zutat suchen..." class="px-4 py-3 pr-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white w-full focus:outline-none focus:border-amber-500 text-sm shadow-md font-medium">
+        <input type="text" id="searchInput" autocomplete="off" oninput="onSearchInput()" placeholder="🔍 Getränk oder Zutat suchen..." data-i18n-ph="dv.search" class="px-4 py-3 pr-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white w-full focus:outline-none focus:border-amber-500 text-sm shadow-md font-medium">
         <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-sm font-bold bg-slate-200/70 dark:bg-slate-700/50 hover:bg-slate-300 dark:hover:bg-slate-700 w-5 h-5 rounded-full items-center justify-center">&times;</button>
       </div>
-      <div id="activeSeasonBadge" onclick="openSeasonModal()" title="Klicken, um Saison zu wechseln" class="hidden cursor-pointer px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center gap-2 transition shrink-0 shadow-sm">
-        <span>📅 Saison:</span> <span id="activeSeasonName"></span>
-      </div>
     </div>
 
-    <div id="addDishBtnContainer" class="hidden mb-4">
-      <button onclick="openAddDishModal()" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition shadow-md flex items-center gap-2">
-        ➕ Neues Gericht hinzufügen
-      </button>
+    <!-- Kategorien (wischbar) -->
+    <div class="cat-bar mb-2 md:mb-3">
+      <span class="hidden md:inline text-xs text-slate-600 dark:text-slate-400 font-semibold mr-1 shrink-0" data-i18n="dv.category">Kategorie:</span>
+      <div id="categories" class="flex gap-2"></div>
     </div>
 
-    <div class="flex flex-col gap-3 mb-6">
-      <div class="flex items-center gap-2 overflow-x-auto pb-2">
-        <span class="text-xs text-slate-600 dark:text-slate-400 font-semibold mr-1 shrink-0">Kategorie:</span>
-        <div id="categories" class="flex gap-2"></div>
+    <!-- Schnellzugriff: Saison, Arbeitsplan, Filter -->
+    <div class="quick-row mb-3 md:mb-5">
+      <div id="activeSeasonBadge" onclick="openSeasonModal()" title="Klicken, um Saison zu wechseln" data-i18n-title="dv.seasonTitle" class="hidden quick-chip quick-chip-amber">
+        <span>📅<span class="hidden sm:inline" data-i18n="dv.season"> Saison:</span></span> <span id="activeSeasonName"></span>
       </div>
-      
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center gap-2">
-          <button onclick="toggleFilterDrawer()" class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center gap-1.5 transition">
-            ⚡ Filter & Geschirr <span id="filterArrow">▼</span>
-          </button>
-          <span class="text-[11px] text-slate-500" id="activeFilterSummary"></span>
-        </div>
+      <button type="button" onclick="openMyPlanModal()" class="quick-chip desktop-only" data-i18n="dv.schedule">🗓️ Arbeitsplan</button>
+      <button type="button" onclick="toggleFilterDrawer()" class="quick-chip">⚡ Filter <span id="filterArrow">▼</span></button>
+      <span class="text-[11px] text-slate-500 shrink-0" id="activeFilterSummary"></span>
+    </div>
 
-        <div id="filterDrawer" class="hidden flex-col gap-3 p-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl shadow-sm transition-all">
+    <div id="filterDrawer" class="hidden flex-col gap-3 p-3 mb-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl shadow-sm transition-all">
           <div>
-            <span class="text-xs text-slate-600 dark:text-slate-400 font-semibold mb-1.5 block">Ernährung & Bestseller:</span>
+            <span class="text-xs text-slate-600 dark:text-slate-400 font-semibold mb-1.5 block" data-i18n="dv.diet">Ernährung & Bestseller:</span>
             <div class="flex gap-2 items-center overflow-x-auto text-xs">
-              <button onclick="toggleSpecialFilter('featured')" id="filterFeatured" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 flex items-center gap-1 whitespace-nowrap">⭐ TOP / Highlight</button>
-              <button onclick="toggleSpecialFilter('vegan')" id="filterVegan" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap">🌱 Vegan</button>
-              <button onclick="toggleSpecialFilter('glutenfree')" id="filterGluten" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap">🌾 Glutenfrei</button>
-              <button onclick="toggleSpecialFilter('lactosefree')" id="filterLactose" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap">🥛 Laktosefrei</button>
-              <button onclick="toggleSpecialFilter('vegetarian')" id="filterVeggie" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap">🥕 Vegetarisch</button>
-              <button onclick="toggleSpecialFilter('favorites')" id="filterFavs" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap">❤️ Küchen-Favoriten</button>
+              <button onclick="toggleSpecialFilter('featured')" id="filterFeatured" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 flex items-center gap-1 whitespace-nowrap" data-i18n="dv.top">⭐ TOP / Highlight</button>
+              <button onclick="toggleSpecialFilter('vegan')" id="filterVegan" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap" data-i18n="dv.vegan">🌱 Vegan</button>
+              <button onclick="toggleSpecialFilter('glutenfree')" id="filterGluten" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap" data-i18n="dv.gluten">🌾 Glutenfrei</button>
+              <button onclick="toggleSpecialFilter('lactosefree')" id="filterLactose" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap" data-i18n="dv.lactose">🥛 Laktosefrei</button>
+              <button onclick="toggleSpecialFilter('nonalcoholic')" id="filterNonAlc" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap" data-i18n="dv.noalc">🚫 Alkoholfrei</button>
+              <button onclick="toggleSpecialFilter('favorites')" id="filterFavs" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap" data-i18n="dv.fav">❤️ Schicht-Favoriten</button>
             </div>
           </div>
 
           <div>
-            <span class="text-xs text-slate-600 dark:text-slate-400 font-semibold mb-1.5 block">🍽️ Nach Geschirr filtern:</span>
-            <div id="plateFilterContainer" class="flex gap-1.5 flex-wrap text-xs"></div>
+            <span class="text-xs text-slate-600 dark:text-slate-400 font-semibold mb-1.5 block" data-i18n="dv.glass">🍸 Nach Glas-Typ filtern:</span>
+            <div id="glassFilterContainer" class="flex gap-1.5 flex-wrap text-xs"></div>
           </div>
         </div>
-      </div>
+
+    <!-- Neues Getränk: am Handy runder ➕-Knopf unten rechts -->
+    <div id="addDrinkBtnContainer" class="hidden fab-wrap">
+      <button type="button" onclick="openAddDrinkModal()" class="fab-add" title="Neues Getränk hinzufügen">
+        <span class="fab-ico">➕</span><span class="fab-label">Neues Getränk hinzufügen</span>
+      </button>
     </div>
 
-    <div id="dishesGrid">
-      <p id="loadingTxt" class="col-span-full text-slate-500 dark:text-slate-400">Lade Gerichte aus der Datenbank...</p>
+    <div id="drinksGrid">
+      <p id="loadingTxt" class="col-span-full text-slate-500 dark:text-slate-400" data-i18n="dv.loading">Lade Getränke aus der Datenbank...</p>
     </div>
+
+    </div><!-- /drinksView -->
 
     <footer class="mt-20 pt-6 border-t border-slate-300 dark:border-slate-800 text-center text-xs text-slate-500">
-      Salonplafond KÜCHE App <span data-app-version>v1.2.01</span> • Erstellt von <span class="text-amber-600 dark:text-amber-400 font-semibold">© T0mc1k (Tomas Kardos)</span>
+      Salonplafond NeXuS • BAR v<span data-app-number></span> • Developed by <span class="text-amber-600 dark:text-amber-400 font-semibold">Tomas Kardos © 2026</span>
     </footer>
 
   </div>
@@ -601,17 +647,14 @@
     ⬆️
   </button>
 
-  <!-- Multi-View-Korb -->
-  <!-- Neues Gericht (nur Handy) -->
-  <button type="button" id="addDishFab" onclick="openAddDishModal()" class="hidden fixed z-30 right-4 w-14 h-14 rounded-full bg-amber-500 hover:bg-amber-600 text-slate-950 text-3xl font-black shadow-2xl items-center justify-center" style="bottom: max(1.25rem, env(safe-area-inset-bottom, 0px))" aria-label="Neues Gericht hinzufügen" title="Neues Gericht hinzufügen">＋</button>
-
-  <div id="trayBar" class="hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 border-t border-amber-500/40 backdrop-blur-md p-3 px-4 shadow-2xl flex items-center justify-between gap-3 max-w-5xl mx-auto rounded-t-2xl">
-    <div class="flex items-center gap-2 overflow-x-auto py-1 flex-1" id="trayItems"></div>
+  <!-- Bar Tray -->
+  <div id="barTrayBar" class="hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 border-t border-amber-500/40 backdrop-blur-md p-3 px-4 shadow-2xl flex items-center justify-between gap-3 max-w-5xl mx-auto rounded-t-2xl">
+    <div class="flex items-center gap-2 overflow-x-auto py-1 flex-1" id="barTrayItems"></div>
     <div class="flex items-center gap-2 shrink-0 border-l border-slate-300 dark:border-slate-700 pl-3">
       <button onclick="openMultiViewModal()" class="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition shadow flex items-center gap-1.5">
         ⚡ Multi-View (<span id="trayCountBadge">0</span>)
       </button>
-      <button onclick="clearTray()" class="px-2.5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl text-xs transition border border-slate-300 dark:border-slate-700" title="Leeren">🗑️</button>
+      <button onclick="clearBarTray()" data-i18n-title="tray.clear" class="px-2.5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl text-xs transition border border-slate-300 dark:border-slate-700" title="Leeren">🗑️</button>
     </div>
   </div>
 
@@ -621,7 +664,7 @@
       <button onclick="closeWorkScheduleModal()" class="absolute top-4 right-4 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl font-bold">&times;</button>
       <div>
         <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">📅 Mein Arbeitsplan</h3>
-        <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Übersicht deiner Dienste und Arbeitszeiten für die aktuelle Woche.</p>
+        <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Übersicht deiner Schichten und Arbeitszeiten für die aktuelle Woche.</p>
       </div>
 
       <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2.5">
@@ -639,24 +682,108 @@
     </div>
   </div>
 
+  <!-- TEAM & ARBEITSPLAN (Monatsraster, Manager/Developer) -->
+  <div id="teamPlanModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-2 sm:p-4 z-[295]">
+    <div class="card w-full max-w-[98vw] relative flex flex-col h-[94vh] max-h-[94vh] overflow-hidden p-0 border-amber-500/50 shadow-2xl">
+      <div class="ui-head !items-center">
+        <div class="min-w-0">
+          <h3 class="ui-head-title">📆 Team & Arbeitsplan</h3>
+          <p class="ui-head-sub">Monatsübersicht für das ganze Team: Schichten, Stunden und Planung. Tippe auf ein Feld, um die Schicht zu ändern.</p>
+        </div>
+        <button type="button" onclick="closeTeamPlanModal()" class="ui-close" aria-label="Schließen">&times;</button>
+      </div>
+
+      <div class="ui-toolbar">
+        <div class="flex gap-2 flex-wrap items-center">
+          <div class="tp-monthnav">
+            <button type="button" onclick="teamPlanShiftMonth(-1)" class="ui-btn-ghost" aria-label="Vorheriger Monat">‹</button>
+            <b id="tpMonthLabel" class="tp-month-label">–</b>
+            <button type="button" onclick="teamPlanShiftMonth(1)" class="ui-btn-ghost" aria-label="Nächster Monat">›</button>
+          </div>
+          <button type="button" onclick="teamPlanToday()" class="ui-btn-ghost">Heute</button>
+          <input type="search" id="tpSearch" oninput="onTeamPlanSearch(this.value)" placeholder="🔍 Mitarbeiter ..." class="ui-search flex-1 min-w-[9rem]">
+          <select id="tpAddEmployee" onchange="teamPlanAddEmployee(this)" class="ui-field tp-add-select"></select>
+          <button type="button" onclick="exportTeamPlanExcel()" class="ui-btn-ghost">📗 Excel</button>
+          <button type="button" id="tpImportBtn" onclick="closeTeamPlanModal(); openImportExportModal(); switchImportTab('schedule');" class="ui-btn-ghost">📥 Plan importieren</button>
+        </div>
+        <div id="tpSummary" class="tp-summary"></div>
+      </div>
+
+      <div id="tpGridWrap" class="tp-wrap flex-1 min-h-0">
+        <p class="staff-empty">Lade Arbeitsplan ...</p>
+      </div>
+
+      <div class="ui-foot !justify-between flex-wrap">
+        <span class="tp-legend"><i class="tp-dot tp-dot-work"></i>Schicht <i class="tp-dot tp-dot-free"></i>Frei (X) <i class="tp-dot tp-dot-special"></i>U / K / Sonstiges <i class="tp-dot tp-dot-today"></i>Heute</span>
+        <button type="button" onclick="closeTeamPlanModal()" class="ui-btn-primary">Fertig</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Schicht bearbeiten (aus dem Monatsraster) -->
+  <div id="tpCellModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[310]">
+    <div class="card max-w-md w-full relative flex flex-col max-h-[90vh] overflow-hidden p-0 border-amber-500/50 shadow-2xl">
+      <div class="ui-head">
+        <div class="min-w-0">
+          <h3 class="ui-head-title" id="tpCellTitle">Schicht</h3>
+          <p class="ui-head-sub" id="tpCellSub"></p>
+        </div>
+        <button type="button" onclick="closeTeamPlanCell()" class="ui-close" aria-label="Schließen">&times;</button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
+        <div class="flex gap-1.5 flex-wrap">
+          <button type="button" class="ui-chip" onclick="tpCellPreset('X')">Frei (X)</button>
+          <button type="button" class="ui-chip" onclick="tpCellPreset('U')">Urlaub (U)</button>
+          <button type="button" class="ui-chip" onclick="tpCellPreset('K')">Krank (K)</button>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Schicht 1</div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="form-label" for="tpS1Start">Beginn</label><input type="time" id="tpS1Start" class="ui-field"></div>
+            <div><label class="form-label" for="tpS1End">Ende</label><input type="time" id="tpS1End" class="ui-field"></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Schicht 2 (optional, geteilter Dienst)</div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="form-label" for="tpS2Start">Beginn</label><input type="time" id="tpS2Start" class="ui-field"></div>
+            <div><label class="form-label" for="tpS2End">Ende</label><input type="time" id="tpS2End" class="ui-field"></div>
+          </div>
+        </div>
+        <div>
+          <label class="form-label" for="tpStation">Station</label>
+          <input type="text" id="tpStation" maxlength="30" autocomplete="off" placeholder="z. B. Bar, Service" class="ui-field">
+        </div>
+        <p id="tpCellHours" class="form-hint"></p>
+        <input type="hidden" id="tpCellPresetCode" value="">
+      </div>
+      <div class="ui-foot">
+        <button type="button" id="tpCellDeleteBtn" onclick="deleteTeamPlanCell()" class="hidden px-4 py-2.5 bg-red-600 hover:bg-red-500 font-bold text-white rounded-xl text-xs transition">🗑️ Leeren</button>
+        <span class="flex-1"></span>
+        <button type="button" onclick="closeTeamPlanCell()" class="ui-btn-ghost">Abbrechen</button>
+        <button type="button" onclick="saveTeamPlanCell()" class="ui-btn-primary">💾 Speichern</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TEAM CHAT MODAL -->
   <div id="teamChatModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 z-[280]">
     <div class="card max-w-5xl w-full relative flex flex-col h-[90vh] max-h-[90vh] overflow-hidden p-0 border-amber-500/50 shadow-2xl">
 
       <div class="ui-head !items-center">
         <div class="min-w-0">
-          <h3 class="ui-head-title">💬 Team-Chat</h3>
-          <p class="ui-head-sub">🟢 Online: <span id="chatOnlineCountLabel" class="font-bold">0 Mitglieder</span> · Nachrichten sehen alle Kollegen</p>
+          <h3 class="ui-head-title" data-i18n="chat.title">💬 Team-Chat</h3>
+          <p class="ui-head-sub"><span data-i18n="chat.online">🟢 Online: </span><span id="chatOnlineCountLabel" class="font-bold">0 Mitglieder</span><span data-i18n="chat.seenAll"> · Nachrichten sehen alle Kollegen</span></p>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
-          <button type="button" onclick="toggleChatSearch()" class="ui-btn-ghost" title="Im Chat suchen">🔍</button>
-          <button type="button" onclick="toggleChatSidebar()" class="ui-btn-ghost chat-side-toggle" title="Team anzeigen">👥</button>
-          <button type="button" onclick="closeTeamChatModal()" class="ui-close" aria-label="Schließen">&times;</button>
+          <button type="button" onclick="toggleChatSearch()" class="ui-btn-ghost" title="Im Chat suchen" data-i18n-title="chat.searchTitle">🔍</button>
+          <button type="button" onclick="toggleChatSidebar()" class="ui-btn-ghost chat-side-toggle" title="Team anzeigen" data-i18n-title="chat.teamTitle">👥</button>
+          <button type="button" onclick="closeTeamChatModal()" class="ui-close" aria-label="Schließen" data-i18n-aria="common.close">&times;</button>
         </div>
       </div>
 
       <div id="chatSearchBar" class="hidden ui-toolbar !flex-row !items-center">
-        <input type="search" id="chatSearchInput" oninput="onChatSearch(this.value)" placeholder="🔍 Nachrichten oder Namen suchen ..." class="ui-search flex-1">
+        <input type="search" id="chatSearchInput" oninput="onChatSearch(this.value)" placeholder="🔍 Nachrichten oder Namen suchen ..." data-i18n-ph="chat.searchPh" class="ui-search flex-1">
         <span id="chatSearchInfo" class="form-hint whitespace-nowrap"></span>
       </div>
 
@@ -665,18 +792,18 @@
       <div class="chat-body">
 
         <aside id="chatSidebar" class="chat-side">
-          <div class="chat-side-title">Team</div>
+          <div class="chat-side-title" data-i18n="chat.team">Team</div>
           <div id="chatSidebarUsersList" class="chat-side-list">
-            <span class="form-hint">Lade Mitglieder ...</span>
+            <span class="form-hint" data-i18n="chat.loadMembers">Lade Mitglieder ...</span>
           </div>
         </aside>
 
         <section class="chat-main">
           <div class="chat-scroll-wrap">
             <div id="chatMessagesContainer" class="chat-scroll" onscroll="onChatScroll()">
-              <p class="chat-empty">Lade Chat-Nachrichten ...</p>
+              <p class="chat-empty" data-i18n="chat.loadMsgs">Lade Chat-Nachrichten ...</p>
             </div>
-            <button type="button" id="chatJumpBtn" class="hidden chat-jump" onclick="scrollChatToBottom(true)">↓ Neue Nachrichten</button>
+            <button type="button" id="chatJumpBtn" class="hidden chat-jump" onclick="scrollChatToBottom(true)" data-i18n="chat.newBtn">↓ Neue Nachrichten</button>
           </div>
 
           <div id="chatTypingIndicator" class="chat-typing"></div>
@@ -686,15 +813,15 @@
               <span class="chat-indicator-title">↩️ Antwort auf <span id="replyingAuthorName"></span></span>
               <span id="replyingSnippetText" class="chat-indicator-text"></span>
             </div>
-            <button type="button" onclick="cancelReply()" class="ui-close" aria-label="Antwort abbrechen">&times;</button>
+            <button type="button" onclick="cancelReply()" class="ui-close" aria-label="Antwort abbrechen" data-i18n-aria="chat.cancelReply">&times;</button>
           </div>
 
           <div id="editingIndicatorBox" class="hidden chat-indicator">
             <div class="min-w-0">
-              <span class="chat-indicator-title">✏️ Nachricht bearbeiten</span>
-              <span class="chat-indicator-text">Ändere den Text und sende ihn erneut ab.</span>
+              <span class="chat-indicator-title" data-i18n="chat.editTitle">✏️ Nachricht bearbeiten</span>
+              <span class="chat-indicator-text" data-i18n="chat.editSub">Ändere den Text und sende ihn erneut ab.</span>
             </div>
-            <button type="button" onclick="cancelEdit()" class="ui-close" aria-label="Bearbeiten abbrechen">&times;</button>
+            <button type="button" onclick="cancelEdit()" class="ui-close" aria-label="Bearbeiten abbrechen" data-i18n-aria="chat.cancelEdit">&times;</button>
           </div>
 
           <div id="chatImageChip" class="hidden chat-indicator">
@@ -702,7 +829,7 @@
               <img id="chatImageThumb" class="chat-thumb" alt="">
               <span id="chatImageName" class="chat-indicator-text"></span>
             </div>
-            <button type="button" onclick="clearChatImage()" class="ui-close" aria-label="Bild entfernen">&times;</button>
+            <button type="button" onclick="clearChatImage()" class="ui-close" aria-label="Bild entfernen" data-i18n-aria="chat.removeImg">&times;</button>
           </div>
 
           <form id="chatForm" onsubmit="handleSendChatMessage(event)" class="chat-composer">
@@ -710,20 +837,20 @@
             <input type="file" id="chatImageFile" accept="image/*" class="hidden" onchange="onChatImagePicked(event)">
 
             <div class="chat-toolbar">
-              <button type="button" onclick="applyTextStyling('**')" class="chat-tool" title="Fett (Strg+B)"><b>B</b></button>
-              <button type="button" onclick="applyTextStyling('*')" class="chat-tool" title="Kursiv (Strg+I)"><i>I</i></button>
-              <button type="button" onclick="applyTextStyling('~~')" class="chat-tool" title="Durchgestrichen"><s>S</s></button>
-              <button type="button" onclick="applyTextStyling('`')" class="chat-tool font-mono" title="Code">&lt;/&gt;</button>
+              <button type="button" onclick="applyTextStyling('**')" class="chat-tool" title="Fett (Strg+B)" data-i18n-title="chat.bold"><b>B</b></button>
+              <button type="button" onclick="applyTextStyling('*')" class="chat-tool" title="Kursiv (Strg+I)" data-i18n-title="chat.italic"><i>I</i></button>
+              <button type="button" onclick="applyTextStyling('~~')" class="chat-tool" title="Durchgestrichen" data-i18n-title="chat.strike"><s>S</s></button>
+              <button type="button" onclick="applyTextStyling('`')" class="chat-tool font-mono" title="Code" data-i18n-title="chat.code">&lt;/&gt;</button>
               <span class="chat-tool-sep"></span>
-              <button type="button" onclick="insertChatAt()" class="chat-tool" title="Kollegen erwähnen">@</button>
-              <button type="button" onclick="toggleChatEmojiPanel()" class="chat-tool" title="Emoji">😊</button>
-              <button type="button" onclick="document.getElementById('chatImageFile').click()" class="chat-tool" title="Foto senden">📷</button>
+              <button type="button" onclick="insertChatAt()" class="chat-tool" title="Kollegen erwähnen" data-i18n-title="chat.mention">@</button>
+              <button type="button" onclick="toggleChatEmojiPanel()" class="chat-tool" title="Emoji" data-i18n-title="chat.emoji">😊</button>
+              <button type="button" onclick="document.getElementById('chatImageFile').click()" class="chat-tool" title="Foto senden" data-i18n-title="chat.sendPhoto">📷</button>
             </div>
             <div id="chatEmojiPanel" class="hidden chat-emoji-panel"></div>
 
             <div class="chat-input-row">
-              <textarea id="chatMessageInput" rows="1" maxlength="2000" autocomplete="off" placeholder="Nachricht schreiben ... (@ erwähnt Kollegen)" title="Enter sendet, Shift+Enter macht eine neue Zeile" class="chat-input"></textarea>
-              <button type="submit" id="chatSendBtn" class="ui-btn-primary chat-send">Senden ➔</button>
+              <textarea id="chatMessageInput" rows="1" maxlength="2000" autocomplete="off" placeholder="Nachricht schreiben ... (@ erwähnt Kollegen)" data-i18n-ph="chat.inputPh" title="Enter sendet, Shift+Enter macht eine neue Zeile" data-i18n-title="chat.hintEnter" class="chat-input"></textarea>
+              <button type="submit" id="chatSendBtn" class="ui-btn-primary chat-send" data-i18n="chat.send">Senden ➔</button>
             </div>
           </form>
         </section>
@@ -737,12 +864,12 @@
       <button onclick="closeA3PrintSetupModal()" class="absolute top-4 right-4 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl font-bold">&times;</button>
       <div>
         <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">🖨️ Karten-Druck (A3 Format)</h3>
-        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Wähle die Saison, markiere <b>maximal 3 Gerichte</b> und passe die Druckoptionen an.</p>
+        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Wähle die Saison, markiere <b>maximal 3 Getränke</b> und passe die Druckoptionen an.</p>
       </div>
 
       <div class="flex flex-col gap-2">
         <label class="text-xs font-semibold">Saison wählen:</label>
-        <select id="a3SeasonSelect" onchange="renderA3DishSelectionList()" class="p-2.5 rounded-lg border text-xs w-full"></select>
+        <select id="a3SeasonSelect" onchange="renderA3DrinkSelectionList()" class="p-2.5 rounded-lg border text-xs w-full"></select>
       </div>
 
       <div class="custom-box p-3.5 rounded-xl border flex flex-col gap-2">
@@ -761,10 +888,10 @@
 
       <div class="flex flex-col gap-2">
         <label class="text-xs font-semibold flex justify-between">
-          <span>Gerichte auswählen (max. 3):</span>
+          <span>Getränke auswählen (max. 3):</span>
           <span id="a3SelectedCountBadge" class="text-amber-500 font-bold">0 / 3 gewählt</span>
         </label>
-        <div id="a3DishCheckboxList" class="flex flex-col gap-2 max-h-[35vh] overflow-y-auto pr-1 custom-box p-3 rounded-xl border">
+        <div id="a3DrinkCheckboxList" class="flex flex-col gap-2 max-h-[35vh] overflow-y-auto pr-1 custom-box p-3 rounded-xl border">
           <p class="text-slate-500 italic text-xs text-center py-4">Bitte Saison wählen...</p>
         </div>
       </div>
@@ -784,8 +911,8 @@
       <button onclick="closeA3PrintPreviewModal()" class="no-print absolute top-4 right-4 text-slate-500 hover:text-slate-900 text-2xl font-bold">&times;</button>
       
       <div id="a3PrintContainer" class="flex flex-col gap-8 bg-white text-slate-900 p-4 relative">
-        <div id="a3PrintDishesList" class="flex flex-col gap-8"></div>
-        <div class="print-watermark-footer">Salonplafond KÜCHE App create Tomas Kardos</div>
+        <div id="a3PrintDrinksList" class="flex flex-col gap-8"></div>
+        <div class="print-watermark-footer">Salonplafond NeXuS • BAR • Developed by Tomas Kardos © 2026</div>
       </div>
 
       <div class="no-print flex justify-end gap-2 pt-4 border-t border-slate-200 bg-white">
@@ -798,111 +925,20 @@
   </div>
 
   <!-- Shopping List / Inventory Modal -->
-  <!-- Schichtübergabe -->
-  <div id="handoverModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-end sm:items-center justify-center sm:p-4 z-50">
-    <div class="card w-full sm:max-w-3xl h-[94vh] sm:h-[88vh] p-0 relative flex flex-col overflow-hidden rounded-b-none sm:rounded-b-2xl border-amber-500/50 shadow-2xl">
-
-      <!-- Kopf -->
-      <div class="px-5 pt-4 pb-3 border-b border-slate-200 dark:border-slate-800 flex flex-col gap-3">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">📋 Schichtübergabe</h3>
-            <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Was die letzte Schicht für die nächste vorbereitet hat.</p>
-          </div>
-          <button onclick="closeHandoverModal()" class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-3xl leading-none font-bold" aria-label="Schließen">&times;</button>
-        </div>
-
-        <div class="grid grid-cols-4 gap-2 text-center">
-          <div class="custom-box border rounded-xl py-2"><div id="hoStatOpen" class="text-xl font-black leading-none">0</div><div class="text-[10px] font-bold text-slate-500 mt-1">Offen</div></div>
-          <div class="custom-box border border-amber-500/40 rounded-xl py-2"><div id="hoStatProg" class="text-xl font-black leading-none text-amber-600 dark:text-amber-400">0</div><div class="text-[10px] font-bold text-slate-500 mt-1">In Arbeit</div></div>
-          <div class="custom-box border border-red-500/30 rounded-xl py-2"><div id="hoStatReq" class="text-xl font-black leading-none text-red-600 dark:text-red-400">0</div><div class="text-[10px] font-bold text-slate-500 mt-1">Pflicht</div></div>
-          <div class="custom-box border border-emerald-500/40 rounded-xl py-2"><div id="hoStatDone" class="text-xl font-black leading-none text-emerald-600 dark:text-emerald-400">0</div><div class="text-[10px] font-bold text-slate-500 mt-1">Erledigt</div></div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <button type="button" id="hoTabList" class="ui-chip active py-2 text-xs text-center" onclick="hoSetPane('list')">📋 Aufgaben</button>
-          <button type="button" id="hoTabAdd" class="ui-chip py-2 text-xs text-center" onclick="hoSetPane('add')">✍️ Übergabe schreiben</button>
-        </div>
-      </div>
-
-      <!-- Liste -->
-      <div id="hoPaneList" class="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto px-5 py-4">
-        <div id="hoShareBanner" class="hidden"></div>
-        <div class="flex flex-col gap-2">
-          <div id="hoStationFilter" class="flex gap-1.5 overflow-x-auto pb-1"></div>
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="text-[11px] text-slate-500 font-semibold">Gruppieren nach</span>
-            <button type="button" id="hoGroupStation" class="ui-chip active" onclick="hoSetGroup('station')">Sektion</button>
-            <button type="button" id="hoGroupAuthor" class="ui-chip" onclick="hoSetGroup('author')">Koch</button>
-            <button type="button" id="hoHideOpt" class="ui-chip" onclick="hoToggleOptional()" title="Optionale Aufgaben ausblenden">Evtl. ausblenden</button>
-            <button type="button" class="ui-chip ml-auto" onclick="hoShareVisible()" title="Alle angezeigten offenen Aufgaben an WhatsApp senden">📲 WhatsApp</button>
-            <button type="button" class="ui-chip" onclick="hoRefresh()" title="Aktualisieren">🔄</button>
-          </div>
-        </div>
-        <div id="hoListContainer" class="flex flex-col gap-4"></div>
-      </div>
-
-      <!-- Formular -->
-      <div id="hoPaneAdd" class="hidden flex-col flex-1 min-h-0">
-        <div class="flex-1 min-h-0 overflow-y-auto px-5 py-4 flex flex-col gap-4">
-
-          <div class="form-section">
-            <div class="form-section-title">1 · Für welche Sektion?</div>
-            <div id="hoStationChips" class="flex flex-wrap gap-2 mb-2"></div>
-            <div class="flex gap-2">
-              <input type="text" id="hoNewStation" maxlength="30" autocomplete="off" placeholder="Andere Sektion, z. B. Fisch" class="ui-field" onkeydown="if (event.key === 'Enter') { event.preventDefault(); hoAddCustomStation(); }">
-              <button type="button" class="ui-chip shrink-0" onclick="hoAddCustomStation()">＋ Sektion</button>
-            </div>
-          </div>
-
-          <div class="form-section">
-            <div class="form-section-title">2 · Aufgaben (eine pro Zeile)</div>
-            <textarea id="hoItemsText" rows="6" maxlength="6000" oninput="hoUpdatePreview()" class="ui-field" placeholder="Schupfnudeln&#10;Maissuppe vak&#10;Evtl. Kräuteröl | wenn Zeit bleibt&#10;Rindsjus reduzieren | 2 Liter"></textarea>
-            <p class="form-hint mt-1.5">„Evtl.“ am Zeilenanfang = nur wenn Zeit bleibt. Mit „|“ hängst du eine Notiz an die Zeile.</p>
-            <div id="hoPreview" class="custom-box border rounded-xl p-3 mt-2"></div>
-          </div>
-
-          <div class="form-section">
-            <div class="form-section-title">3 · Optionen</div>
-            <label class="switch-row prop-row">
-              <span>⏳ Alle als „Evtl.“ markieren</span>
-              <span class="switch"><input type="checkbox" id="hoOptional" onchange="hoUpdatePreview()"><span class="switch-track"></span></span>
-            </label>
-            <label class="switch-row prop-row mt-2">
-              <span>📲 Nach dem Speichern an WhatsApp senden</span>
-              <span class="switch"><input type="checkbox" id="hoAutoWa" checked onchange="hoSaveWaPref()"><span class="switch-track"></span></span>
-            </label>
-            <label class="form-label mt-3" for="hoNote">Notiz für Zeilen ohne eigene Notiz</label>
-            <input type="text" id="hoNote" maxlength="300" autocomplete="off" oninput="hoUpdatePreview()" placeholder="z. B. Menge?, im Kühlhaus links" class="ui-field">
-          </div>
-        </div>
-
-        <div class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2">
-          <div id="hoAddError" class="text-xs text-red-600 dark:text-red-400 font-medium empty:hidden"></div>
-          <div class="flex flex-wrap justify-end gap-2">
-            <button type="button" onclick="hoSetPane('list')" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Abbrechen</button>
-            <button type="button" onclick="hoShareForm()" class="px-4 py-2.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-bold rounded-xl text-xs transition" title="Nur an WhatsApp senden, ohne zu speichern">📲 Nur WhatsApp</button>
-            <button type="button" id="hoSubmitBtn" onclick="hoSubmit()" class="ui-btn-primary">💾 Übergabe speichern</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div id="shoppingModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="card max-w-3xl w-full p-6 relative flex flex-col gap-4 max-h-[85vh] overflow-y-auto border-amber-500/50 shadow-2xl">
       <button onclick="closeShoppingModal()" class="no-print absolute top-4 right-4 text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl font-bold">&times;</button>
       
       <div>
-        <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">🛒 Einkaufsliste & Inventur</h3>
-        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Übersicht aller benötigten Zutaten für die aktive Saison: <span id="shoppingSeasonName" class="font-bold text-amber-600 dark:text-amber-300"></span></p>
+        <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2" data-i18n="shop.title">🛒 Einkaufsliste & Inventur</h3>
+        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1"><span data-i18n="shop.intro">Übersicht aller benötigten Zutaten für die aktive Saison: </span><span id="shoppingSeasonName" class="font-bold text-amber-600 dark:text-amber-300"></span></p>
       </div>
 
       <div class="no-print flex flex-wrap gap-2 pt-1 pb-2 border-b border-slate-200 dark:border-slate-800">
-        <button onclick="printShoppingList()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition shadow flex items-center gap-1.5">
+        <button onclick="printShoppingList()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition shadow flex items-center gap-1.5" data-i18n="shop.print">
           🖨️ Einkaufsliste drucken
         </button>
-        <button onclick="exportShoppingListExcel()" class="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 font-bold rounded-xl text-xs transition border border-slate-300 dark:border-slate-700 flex items-center gap-1.5">
+        <button onclick="exportShoppingListExcel()" class="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 font-bold rounded-xl text-xs transition border border-slate-300 dark:border-slate-700 flex items-center gap-1.5" data-i18n="shop.excel">
           📗 Als Excel exportieren
         </button>
       </div>
@@ -910,7 +946,7 @@
       <div id="shoppingListContainer" class="flex flex-col gap-2 mt-1 custom-box p-4 rounded-xl border text-xs max-h-[50vh] overflow-y-auto"></div>
 
       <div class="no-print flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
-        <button onclick="closeShoppingModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+        <button onclick="closeShoppingModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition" data-i18n="common.close">Schließen</button>
       </div>
     </div>
   </div>
@@ -921,143 +957,245 @@
 
       <div class="ui-head">
         <div>
-          <h3 class="ui-head-title">⚙️ Einstellungen & Zentrale</h3>
-          <p class="ui-head-sub">Gelten nur auf diesem Gerät und werden automatisch gespeichert.</p>
+          <h3 class="ui-head-title" data-i18n="set.title">⚙️ Einstellungen & Zentrale</h3>
+          <p class="ui-head-sub" data-i18n="set.sub">Die meisten Einstellungen gelten nur auf diesem Gerät. Startseite und Begrüßungsanimation gelten für dein Konto.</p>
         </div>
         <button type="button" onclick="closeUnifiedSettingsModal()" class="ui-close" aria-label="Schließen">&times;</button>
       </div>
 
+      <div class="set-tabs-wrap px-5 pt-3" id="settingsTabsWrap">
+        <button type="button" class="set-tabs-arrow set-tabs-left" onclick="settingsTabsScroll(-1)" aria-label="Zurück" data-i18n-aria="set.tabsPrev" tabindex="-1">‹</button>
+      <div class="set-tabs" id="settingsTabs" role="tablist">
+        <button type="button" class="set-tab active" data-settab="general" onclick="setSettingsTab('general')" data-i18n="set.tabGeneral">🏠 Allgemein</button>
+        <button type="button" class="set-tab" data-settab="look" onclick="setSettingsTab('look')" data-i18n="set.tabLook">🎨 Darstellung</button>
+        <button type="button" class="set-tab" data-settab="drinks" onclick="setSettingsTab('drinks')" data-i18n="set.tabDrinks">🍸 Getränke</button>
+        <button type="button" class="set-tab" data-settab="notif" onclick="setSettingsTab('notif')" data-i18n="set.tabNotif">🔔 Hinweise</button>
+        <button type="button" class="set-tab" data-settab="account" onclick="setSettingsTab('account')" data-i18n="set.tabAccount">👤 Konto</button>
+        <button type="button" class="set-tab" data-settab="app" onclick="setSettingsTab('app')" data-i18n="set.tabApp">🧰 App</button>
+      </div>
+        <button type="button" class="set-tabs-arrow set-tabs-right" onclick="settingsTabsScroll(1)" aria-label="Weiter" data-i18n-aria="set.tabsNext" tabindex="-1">›</button>
+      </div>
       <div id="settingsBody" class="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
 
+        <div class="set-panel active" data-panel="general">
         <section class="set-card">
-          <h4 class="set-head">🎨 Darstellung</h4>
+          <h4 class="set-head" data-i18n="set.generalHead">🏠 Allgemein</h4>
+          <div class="set-row">
+            <div class="set-text"><b data-i18n="set.langTitle">Sprache / Language</b><small data-i18n="set.langSub">Gilt für Anmeldung, Dashboard, Menü, Einstellungen und Hilfe.</small></div>
+            <div class="seg">
+              <button type="button" class="seg-btn" data-lang="de" onclick="setLanguage('de')">Deutsch</button>
+              <button type="button" class="seg-btn" data-lang="en" onclick="setLanguage('en')">English</button>
+            </div>
+          </div>
 
           <div class="set-row">
-            <div class="set-text"><b>Design</b><small id="settingsThemeInfo">Hell ist augenschonend bei Tageslicht, Dunkel für die Küche am Abend.</small></div>
+            <div class="set-text"><b data-i18n="set.startTitle">Nach dem Login öffnen</b><small data-i18n="set.startSub">Welche Seite sich nach der Anmeldung zuerst öffnet. Gilt auf allen deinen Geräten.</small></div>
             <div class="seg">
-              <button type="button" class="seg-btn" data-setting="theme" data-value="light" onclick="setSetting('theme','light')">☀️ Hell</button>
-              <button type="button" class="seg-btn" data-setting="theme" data-value="dark" onclick="setSetting('theme','dark')">🌙 Dunkel</button>
+              <button type="button" class="seg-btn" data-startpage="dashboard" onclick="setStartPage('dashboard')" data-i18n="set.startDash">🏠 Dashboard</button>
+              <button type="button" class="seg-btn" data-startpage="drinks" onclick="setStartPage('drinks')" data-i18n="set.drinks">🍸 Getränke</button>
+            </div>
+          </div>
+          <div class="set-row">
+            <div class="set-text"><b data-i18n="set.introTitle">Begrüßungsanimation</b><small data-i18n="set.introSub">Kurze Animation nach dem Anmelden. Gilt für dein Konto auf allen Geräten.</small></div>
+            <label class="switch"><input type="checkbox" id="setIntroToggle" onchange="setIntroEnabled(this.checked)"><span class="switch-track"></span></label>
+          </div>
+        </section>
+        </div>
+
+        <div class="set-panel" data-panel="look">
+        <section class="set-card">
+          <h4 class="set-head" data-i18n="set.appearance">🎨 Darstellung</h4>
+          <div class="set-row">
+            <div class="set-text"><b data-i18n="set.skin">Stil</b><small data-i18n="set.skinSub">„NeXuS Glass“: Glas-Look mit Bar-Hintergrund (immer dunkel). Braucht mehr Leistung, bei Ruckeln „Weichzeichner“ ausschalten.</small></div>
+            <div class="seg">
+              <button type="button" class="seg-btn" data-setting="skin" data-value="classic" onclick="setSetting('skin','classic')" data-i18n="set.skinClassic">Original</button>
+              <button type="button" class="seg-btn" data-setting="skin" data-value="glass" onclick="setSetting('skin','glass')">✨ NeXuS Glass</button>
+            </div>
+          </div>
+          <div class="set-row">
+            <div class="set-text"><b data-i18n="set.theme">Design</b><small id="settingsThemeInfo">Hell ist augenschonend bei Tageslicht, Dunkel für die Bar am Abend.</small></div>
+            <div class="seg">
+              <button type="button" class="seg-btn" data-setting="theme" data-value="light" onclick="setSetting('theme','light')" data-i18n="set.light">☀️ Hell</button>
+              <button type="button" class="seg-btn" data-setting="theme" data-value="dark" onclick="setSetting('theme','dark')" data-i18n="set.dark">🌙 Dunkel</button>
               <button type="button" class="seg-btn" data-setting="theme" data-value="auto" onclick="setSetting('theme','auto')">🖥️ Auto</button>
             </div>
           </div>
 
           <div class="set-row">
-            <div class="set-text"><b>Schriftgröße</b><small>Vergrößert alle Texte der App.</small></div>
+            <div class="set-text"><b data-i18n="set.font">Schriftgröße</b><small data-i18n="set.fontSub">Vergrößert alle Texte der App.</small></div>
             <div class="seg">
-              <button type="button" class="seg-btn" data-setting="fontScale" data-value="90" onclick="setSetting('fontScale',90)">Klein</button>
-              <button type="button" class="seg-btn" data-setting="fontScale" data-value="100" onclick="setSetting('fontScale',100)">Normal</button>
-              <button type="button" class="seg-btn" data-setting="fontScale" data-value="112" onclick="setSetting('fontScale',112)">Groß</button>
-              <button type="button" class="seg-btn" data-setting="fontScale" data-value="125" onclick="setSetting('fontScale',125)">Sehr groß</button>
+              <button type="button" class="seg-btn" data-setting="fontScale" data-value="90" onclick="setSetting('fontScale',90)" data-i18n="set.fs90">Klein</button>
+              <button type="button" class="seg-btn" data-setting="fontScale" data-value="100" onclick="setSetting('fontScale',100)" data-i18n="set.fs100">Normal</button>
+              <button type="button" class="seg-btn" data-setting="fontScale" data-value="112" onclick="setSetting('fontScale',112)" data-i18n="set.fs112">Groß</button>
+              <button type="button" class="seg-btn" data-setting="fontScale" data-value="125" onclick="setSetting('fontScale',125)" data-i18n="set.fs125">Sehr groß</button>
             </div>
           </div>
 
           <div class="set-row">
-            <div class="set-text"><b>Weichzeichner (Blur)</b><small>Milchglas-Effekt in Dialogen, Menüs und Hinweisen. Auf schwächeren Geräten ausschalten.</small></div>
+            <div class="set-text"><b data-i18n="set.blur">Weichzeichner (Blur)</b><small data-i18n="set.blurSub">Milchglas-Effekt in Dialogen, Menüs und Hinweisen. Auf schwächeren Geräten ausschalten.</small></div>
             <label class="switch"><input type="checkbox" id="unifiedBlurCheck" onchange="setBlurEnabled(this.checked)"><span class="switch-track"></span></label>
           </div>
 
           <div class="set-row">
-            <div class="set-text"><b>Animationen reduzieren</b><small>Weniger Bewegung und Übergänge, ruhiger und akkusparender.</small></div>
+            <div class="set-text"><b data-i18n="set.motion">Animationen reduzieren</b><small data-i18n="set.motionSub">Weniger Bewegung und Übergänge, ruhiger und akkusparender.</small></div>
             <label class="switch"><input type="checkbox" data-setting-check="reduceMotion" onchange="setSetting('reduceMotion',this.checked)"><span class="switch-track"></span></label>
           </div>
         </section>
 
         <section class="set-card">
-          <h4 class="set-head">🍽️ Gerichte</h4>
+          <h4 class="set-head" data-i18n="set.tomiHead">✨ TomiAI-Knopf</h4>
+          <div class="set-row">
+            <div class="set-text"><b data-i18n="set.tomiShow">TomiAI-Knopf anzeigen</b><small data-i18n="set.tomiShowSub">Der schwebende Knopf unten links. Ausgeblendet erreichst du TomiAI weiter über das Dashboard.</small></div>
+            <label class="switch"><input type="checkbox" data-setting-check="tomiFab" onchange="setSetting('tomiFab',this.checked)"><span class="switch-track"></span></label>
+          </div>
+          <div id="setTomiMoveRows">
+            <div class="set-row">
+              <div class="set-text"><b data-i18n="set.tomiMove">Knopf verschieben</b><small data-i18n="set.tomiMoveSub">Eingeschaltet kannst du den Knopf mit Finger oder Maus an eine beliebige Stelle ziehen. Gilt nur auf diesem Gerät.</small></div>
+              <label class="switch"><input type="checkbox" data-setting-check="tomiMove" onchange="setSetting('tomiMove',this.checked)"><span class="switch-track"></span></label>
+            </div>
+            <div class="set-row">
+              <div class="set-text"><b data-i18n="set.tomiReset">Position zurücksetzen</b><small data-i18n="set.tomiResetSub">Bringt den Knopf an die ursprüngliche Stelle.</small></div>
+              <button type="button" onclick="tomiFabResetPosition()" class="ui-btn-ghost" data-i18n="set.tomiResetBtn">↩️ Zurücksetzen</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="set-card">
+          <h4 class="set-head" data-i18n="set.winHead">🪟 Fenster</h4>
+          <div class="set-row">
+            <div class="set-text"><b data-i18n="set.closeOutside">Fenster per Klick daneben schließen</b><small data-i18n="set.closeOutsideSub">Ein Klick auf den abgedunkelten Hintergrund schließt das Fenster. Hast du etwas eingetippt, bleibt es zur Sicherheit offen.</small></div>
+            <label class="switch"><input type="checkbox" data-setting-check="closeOutside" onchange="setSetting('closeOutside',this.checked)"><span class="switch-track"></span></label>
+          </div>
+        </section>
+        </div>
+
+        <div class="set-panel" data-panel="drinks">
+        <section class="set-card">
+          <h4 class="set-head" data-i18n="set.drinks">🍸 Getränke</h4>
 
           <div class="set-row">
-            <div class="set-text"><b>Ansicht</b><small>Karten mit Foto oder kompakte Liste.</small></div>
+            <div class="set-text"><b data-i18n="set.view">Ansicht</b><small data-i18n="set.viewSub">Karten mit Foto oder kompakte Liste.</small></div>
             <div class="seg">
-              <button type="button" class="seg-btn" data-setting="viewMode" data-value="grid" onclick="setViewMode('grid')">▦ Karten</button>
-              <button type="button" class="seg-btn" data-setting="viewMode" data-value="list" onclick="setViewMode('list')">☰ Liste</button>
+              <button type="button" class="seg-btn" data-setting="viewMode" data-value="grid" onclick="setViewMode('grid')" data-i18n="set.cards">▦ Karten</button>
+              <button type="button" class="seg-btn" data-setting="viewMode" data-value="list" onclick="setViewMode('list')" data-i18n="set.list">☰ Liste</button>
             </div>
           </div>
 
           <div class="set-row">
-            <div class="set-text"><b>Sortierung</b><small>Reihenfolge der Gerichte in der Liste.</small></div>
+            <div class="set-text"><b data-i18n="set.sort">Sortierung</b><small data-i18n="set.sortSub">Reihenfolge der Getränke in der Liste.</small></div>
             <select id="unifiedSortSelect" onchange="setSetting('sort',this.value)" class="ui-field set-select">
-              <option value="newest">Neueste zuerst</option>
-              <option value="name_asc">Name A – Z</option>
+              <option value="newest" data-i18n="set.sortNew">Neueste zuerst</option>
+              <option value="name_asc" data-i18n="set.sortName">Name A – Z</option>
               <option value="name_desc">Name Z – A</option>
-              <option value="price_asc">Preis aufsteigend</option>
-              <option value="price_desc">Preis absteigend</option>
-              <option value="favorites">Favoriten zuerst</option>
+              <option value="price_asc" data-i18n="set.sortPA">Preis aufsteigend</option>
+              <option value="price_desc" data-i18n="set.sortPD">Preis absteigend</option>
+              <option value="favorites" data-i18n="set.sortFav">Favoriten zuerst</option>
             </select>
           </div>
 
           <div class="set-row">
-            <div class="set-text"><b>Preise anzeigen</b><small>Preis neben dem Namen auf Karten und im Detail.</small></div>
+            <div class="set-text"><b data-i18n="set.prices">Preise anzeigen</b><small data-i18n="set.pricesSub">Preis neben dem Namen auf Karten und im Detail.</small></div>
             <label class="switch"><input type="checkbox" data-setting-check="showPrices" onchange="setSetting('showPrices',this.checked)"><span class="switch-track"></span></label>
           </div>
 
           <div class="set-row">
-            <div class="set-text"><b>Aktive Saison</b><small>Welche Karte gerade angezeigt wird.</small></div>
+            <div class="set-text"><b data-i18n="set.season">Aktive Saison</b><small data-i18n="set.seasonSub">Welche Karte gerade angezeigt wird.</small></div>
             <select id="unifiedSeasonSelect" onchange="onUnifiedSeasonChange(this)" class="ui-field set-select"></select>
           </div>
         </section>
+        </div>
 
+        <div class="set-panel" data-panel="notif">
         <section class="set-card">
-          <h4 class="set-head">🔔 Hinweise</h4>
+          <h4 class="set-head" data-i18n="set.notif">🔔 Hinweise</h4>
 
           <div class="set-row">
-            <div class="set-text"><b>Wenn sich ein Kollege anmeldet</b><small>Kurzer Hinweis oben rechts mit Foto.</small></div>
+            <div class="set-text"><b data-i18n="set.nLogin">Wenn sich ein Kollege anmeldet</b><small data-i18n="set.nLoginSub">Kurzer Hinweis oben rechts mit Foto.</small></div>
             <label class="switch"><input type="checkbox" data-setting-check="loginToast" onchange="setSetting('loginToast',this.checked)"><span class="switch-track"></span></label>
           </div>
 
           <div class="set-row">
-            <div class="set-text"><b>Neue Chat-Nachricht</b><small>Hinweis, wenn der Chat gerade geschlossen ist.</small></div>
+            <div class="set-text"><b data-i18n="set.nChat">Neue Chat-Nachricht</b><small data-i18n="set.nChatSub">Hinweis, wenn der Chat gerade geschlossen ist.</small></div>
             <label class="switch"><input type="checkbox" data-setting-check="chatToast" onchange="setSetting('chatToast',this.checked)"><span class="switch-track"></span></label>
           </div>
 
           <div class="set-row">
-            <div class="set-text"><b>Ton bei neuer Nachricht</b><small>Leiser Signalton im Chat.</small></div>
+            <div class="set-text"><b data-i18n="set.nSound">Ton bei neuer Nachricht</b><small data-i18n="set.nSoundSub">Leiser Signalton im Chat.</small></div>
             <label class="switch"><input type="checkbox" data-setting-check="chatSound" onchange="setSetting('chatSound',this.checked); if (this.checked) playChatSound();"><span class="switch-track"></span></label>
           </div>
         </section>
 
-        <section class="set-card" id="setGroupMode">
-          <h4 class="set-head">👤 Ansicht für Mitarbeiter mit Rechten</h4>
+        <section class="set-card">
+          <h4 class="set-head" data-i18n="push.title">🔔 Push-Benachrichtigungen</h4>
+          <div id="pushSettings" class="push-settings"></div>
+        </section>
+        </div>
+
+        <div class="set-panel" data-panel="account">
+        <section class="set-card">
+          <h4 class="set-head" data-i18n="set.accHead">👤 Konto</h4>
           <div class="set-row">
-            <div class="set-text"><b>Ansichtsmodus</b><small>Koch-Ansicht blendet Verwaltungs-Knöpfe aus.</small></div>
+            <div class="set-text"><b id="setAccName">–</b><small id="setAccRole"></small></div>
+          </div>
+          <div class="set-row">
+            <div class="set-text"><b data-i18n="set.accProfile">Mein Profil</b><small data-i18n="set.accProfileSub">Foto, „Über mich“ und PIN ändern.</small></div>
+            <button type="button" class="fm-btn" onclick="closeUnifiedSettingsModal(); openUserProfileModal()" data-i18n="set.open">Öffnen</button>
+          </div>
+          <div class="set-row">
+            <div class="set-text"><b data-i18n="set.accLogout">Benutzer wechseln</b><small data-i18n="set.accLogoutSub">Abmelden und einen anderen Namen wählen.</small></div>
+            <button type="button" class="fm-btn fm-btn-danger" onclick="closeUnifiedSettingsModal(); handleLogout()" data-i18n="set.accLogoutBtn">Abmelden</button>
+          </div>
+        </section>
+
+        <section class="set-card" id="setGroupMode">
+
+          <h4 class="set-head" data-i18n="set.rights">👤 Ansicht für Mitarbeiter mit Rechten</h4>
+          <div class="set-row">
+            <div class="set-text"><b data-i18n="set.mode">Ansichtsmodus</b><small data-i18n="set.modeSub">Kellner-Ansicht blendet Verwaltungs-Knöpfe aus.</small></div>
             <div class="seg">
-              <button type="button" class="seg-btn" id="unifiedModeStaff" onclick="setAdminView(false)">Koch</button>
-              <button type="button" class="seg-btn" id="unifiedModeAdmin" onclick="setAdminView(true)">Verwaltung</button>
+              <button type="button" class="seg-btn" id="unifiedModeStaff" onclick="setAdminView(false)" data-i18n="set.modeStaff">Kellner</button>
+              <button type="button" class="seg-btn" id="unifiedModeAdmin" onclick="setAdminView(true)" data-i18n="set.modeAdmin">Verwaltung</button>
             </div>
           </div>
         </section>
 
         <section class="set-card">
-          <h4 class="set-head">🧰 App</h4>
-          <div class="set-row" id="pwaInstallRow">
-            <div class="set-text"><b>App installieren</b><small id="pwaInstallStatus">Als App auf dem Startbildschirm ablegen.</small></div>
-            <button type="button" id="pwaInstallBtn" onclick="installApp()" class="ui-btn-primary">📲 Installieren</button>
-          </div>
-          <div class="set-row" id="pushRow">
-            <div class="set-text"><b>Benachrichtigungen</b><small id="pushStatus">Melde neue Aufgaben und Änderungen der Schichtübergabe als Mitteilung.</small></div>
-            <div class="flex gap-2 shrink-0">
-              <button type="button" id="pushTestBtn" onclick="pushSendTest()" class="ui-chip hidden">Test</button>
-              <button type="button" id="pushBtn" onclick="pushToggle()" class="ui-btn-primary">🔔 Aktivieren</button>
-            </div>
-          </div>
-          <div id="pwaInstallHelp" class="hidden custom-box border border-amber-500/30 rounded-xl p-3 text-xs text-slate-700 dark:text-slate-300 leading-relaxed"></div>
+          <h4 class="set-head" data-i18n="set.privHead">🔒 Datenschutz</h4>
+          <p class="fm-hint" style="padding:.5rem 0 .7rem" data-i18n="set.privText">Zur Sicherheit speichert die App deine Anmeldezeit, das Gerät, die geöffneten Bereiche und wichtige Aktionen (z. B. Aufgabe abgehakt). Nur Manager sehen das. Es werden keine IP-Adressen gespeichert und alles wird nach 90 Tagen automatisch gelöscht.</p>
+        </section>
+        </div>
+
+        <div class="set-panel" data-panel="app">
+        <section class="set-card" id="setInstall">
+          <h4 class="set-head" data-i18n="set.install">📲 App installieren</h4>
           <div class="set-row">
-            <div class="set-text"><b>Version</b><small>Salonplafond KÜCHE <span data-app-version>v1.2.01</span></small></div>
-            <button type="button" onclick="closeUnifiedSettingsModal(); openChangelogModal();" class="ui-btn-ghost">🚀 Was ist neu?</button>
+            <div class="set-text"><b data-i18n="set.installOn">Auf dem Startbildschirm</b><small id="installStatus" data-i18n="set.installSub">Mit einem Symbol auf dem Startbildschirm startet die App wie eine normale App.</small></div>
+            <button type="button" id="installBtn" onclick="installApp()" class="ui-btn-primary" data-i18n="set.installBtn">📲 So geht’s</button>
+          </div>
+          <div id="installSteps" class="install-steps hidden"></div>
+        </section>
+
+        <section class="set-card">
+          <h4 class="set-head" data-i18n="set.app">🧰 App</h4>
+          <div class="set-row">
+            <div class="set-text"><b data-i18n="set.version">Version</b><small>Salonplafond NeXuS • BAR v<span data-app-number></span></small></div>
+            <button type="button" onclick="closeUnifiedSettingsModal(); openChangelogModal();" class="ui-btn-ghost" data-i18n="set.news">🚀 Was ist neu?</button>
           </div>
           <div class="set-row">
-            <div class="set-text"><b>App neu laden</b><small>Hilft, wenn etwas hängt oder alt aussieht.</small></div>
-            <button type="button" onclick="reloadApp()" class="ui-btn-ghost">🔄 Neu laden</button>
+            <div class="set-text"><b data-i18n="set.reload">App neu laden</b><small data-i18n="set.reloadSub">Hilft, wenn etwas hängt oder alt aussieht.</small></div>
+            <button type="button" onclick="reloadApp()" class="ui-btn-ghost" data-i18n="set.reloadBtn">🔄 Neu laden</button>
           </div>
           <div class="set-row">
-            <div class="set-text"><b>Einstellungen zurücksetzen</b><small>Setzt alle Einstellungen dieses Geräts auf Standard.</small></div>
-            <button type="button" onclick="resetSettings()" class="ui-btn-ghost set-danger">↩️ Zurücksetzen</button>
+            <div class="set-text"><b data-i18n="set.reset">Einstellungen zurücksetzen</b><small data-i18n="set.resetSub">Setzt alle Einstellungen dieses Geräts auf Standard.</small></div>
+            <button type="button" onclick="resetSettings()" class="ui-btn-ghost set-danger" data-i18n="set.resetBtn">↩️ Zurücksetzen</button>
           </div>
         </section>
+        </div>
 
       </div>
 
       <div class="ui-foot">
-        <button type="button" onclick="closeUnifiedSettingsModal()" class="ui-btn-primary">Fertig</button>
+        <button type="button" onclick="closeUnifiedSettingsModal()" class="ui-btn-primary" data-i18n="set.done">Fertig</button>
       </div>
     </div>
   </div>
@@ -1066,32 +1204,32 @@
   <div id="multiViewModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="card max-w-7xl w-full max-h-[90vh] overflow-y-auto p-6 relative flex flex-col gap-4 border-amber-500/50 shadow-2xl">
       <button onclick="closeMultiViewModal()" class="absolute top-4 right-4 text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white text-2xl font-bold">&times;</button>
-      <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400">⚡ Multi-View: Rezepte im direkten Vergleich</h3>
+      <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400" data-i18n="mv.title">⚡ Multi-View: Rezepte im direkten Vergleich</h3>
       <div id="multiViewContentContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2"></div>
       <div class="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
-        <button onclick="closeMultiViewModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition border border-slate-300 dark:border-slate-700">Schließen</button>
+        <button onclick="closeMultiViewModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition border border-slate-300 dark:border-slate-700" data-i18n="common.close">Schließen</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal pre Výber náhradného dishu v Multi-View -->
-  <div id="replaceDishModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[270]">
+  <!-- Modal pre Výber náhradného drinku v Multi-View -->
+  <div id="replaceDrinkModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[270]">
     <div class="card max-w-md w-full p-6 relative flex flex-col gap-4 border-amber-500/50 shadow-2xl max-h-[80vh] overflow-y-auto">
-      <button onclick="closeReplaceDishModal()" class="absolute top-4 right-4 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl font-bold">&times;</button>
-      <h3 class="text-lg font-bold text-amber-600 dark:text-amber-400">🔄 Gericht ersetzen</h3>
-      <p class="text-xs text-slate-600 dark:text-slate-400">Wähle ein neues Gericht aus der aktuellen Saison aus, das dieses ersetzen soll:</p>
+      <button onclick="closeReplaceDrinkModal()" class="absolute top-4 right-4 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl font-bold">&times;</button>
+      <h3 class="text-lg font-bold text-amber-600 dark:text-amber-400" data-i18n="rep.title">🔄 Drink ersetzen</h3>
+      <p class="text-xs text-slate-600 dark:text-slate-400" data-i18n="rep.sub">Wähle einen neuen Drink aus der aktuellen Saison aus, der diesen ersetzen soll:</p>
       <input type="hidden" id="replaceIndexTarget" value="">
-      <div id="replaceDishListContainer" class="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1"></div>
+      <div id="replaceDrinkListContainer" class="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1"></div>
     </div>
   </div>
 
-  <!-- Modal pre Pridanie / Úpravu Dishu -->
+  <!-- Modal pre Pridanie / Úpravu Drinku -->
   <div id="adminModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="card max-w-2xl w-full relative flex flex-col max-h-[92vh] overflow-hidden p-0 border-amber-500/50 shadow-2xl">
 
       <div class="ui-head">
         <div>
-          <h2 id="formTitle" class="ui-head-title">➕ Neues Gericht hinzufügen</h2>
+          <h2 id="formTitle" class="ui-head-title">➕ Neues Getränk hinzufügen</h2>
           <p class="ui-head-sub">Pflichtfelder: Name und Kategorie. Alles andere kannst du auch später ergänzen.</p>
         </div>
         <button type="button" onclick="closeAdminModal()" class="ui-close" aria-label="Schließen">&times;</button>
@@ -1104,17 +1242,17 @@
         <!-- 1 Grunddaten -->
         <div class="form-section">
           <div class="form-section-title">1 · Grunddaten</div>
-          <label class="form-label" for="dName">Name des Gerichts *</label>
+          <label class="form-label" for="dName">Name des Getränks *</label>
           <input type="text" id="dName" autocomplete="off" placeholder="z. B. Strawberry Kiss" class="ui-field text-base font-bold">
 
           <label class="form-label mt-3">Kategorie *</label>
           <div id="categoryChips" class="flex flex-wrap gap-1.5"></div>
           <div id="newCategoryRow" class="hidden mt-2 flex gap-2 items-center">
-            <input type="text" id="dNewCategory" maxlength="30" autocomplete="off" placeholder="Name der neuen Kategorie, z. B. Hausgemachtes" onkeydown="if (event.key === 'Enter') { event.preventDefault(); addNewCategory(); }" class="ui-field flex-1">
+            <input type="text" id="dNewCategory" maxlength="30" autocomplete="off" placeholder="Name der neuen Kategorie, z. B. Signature Drinks" onkeydown="if (event.key === 'Enter') { event.preventDefault(); addNewCategory(); }" class="ui-field flex-1">
             <button type="button" onclick="addNewCategory()" class="ui-btn-primary">Anlegen</button>
             <button type="button" onclick="toggleNewCategoryRow(false)" class="ui-btn-ghost">Abbrechen</button>
           </div>
-          <p class="form-hint mt-1.5">Eine neue Kategorie erscheint nach dem Speichern dieses Gerichts in der Kategorien-Leiste.</p>
+          <p class="form-hint mt-1.5">Eine neue Kategorie erscheint nach dem Speichern dieses Getränks in der Kategorien-Leiste.</p>
 
           <label class="form-label mt-3" for="dSeason">Saison / Zeitraum</label>
           <select id="dSeason" onchange="handleSeasonSelectChange(this)" class="ui-field"></select>
@@ -1125,33 +1263,33 @@
           <div class="form-section-title">2 · Zubereitung</div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="form-label" for="dPlate">🍽️ Geschirr / Anrichten</label>
+              <label class="form-label" for="dGlass">🍸 Glas / Equipment</label>
               <div class="flex flex-wrap gap-1.5 mb-1.5">
-                <button type="button" class="ui-chip" onclick="setQuickVal('dPlate', 'Teller flach')">Teller flach</button>
-                <button type="button" class="ui-chip" onclick="setQuickVal('dPlate', 'Tiefer Teller')">Tiefer Teller</button>
-                <button type="button" class="ui-chip" onclick="setQuickVal('dPlate', 'Schale')">Schale</button>
-                <button type="button" class="ui-chip" onclick="setQuickVal('dPlate', 'Schüssel')">Schüssel</button>
-                <button type="button" class="ui-chip" onclick="setQuickVal('dPlate', 'Servierplatte')">Servierplatte</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dGlass', 'Coupette')">Coupette</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dGlass', 'Highball')">Highball</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dGlass', 'Tumbler')">Tumbler</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dGlass', 'Rocks')">Rocks</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dGlass', 'Martini')">Martini</button>
               </div>
-              <input type="text" id="dPlate" autocomplete="off" placeholder="oder selbst eingeben ..." class="ui-field">
+              <input type="text" id="dGlass" autocomplete="off" placeholder="oder selbst eingeben ..." class="ui-field">
             </div>
             <div>
-              <label class="form-label" for="dCookTime">⏱️ Garzeit / Temperatur</label>
+              <label class="form-label" for="dIce">🧊 Eis</label>
               <div class="flex flex-wrap gap-1.5 mb-1.5">
-                <button type="button" class="ui-chip" onclick="setQuickVal('dCookTime', 'Kalt')">Kalt</button>
-                <button type="button" class="ui-chip" onclick="setQuickVal('dCookTime', 'Warm')">Warm</button>
-                <button type="button" class="ui-chip" onclick="setQuickVal('dCookTime', 'Heiß')">Heiß</button>
-                <button type="button" class="ui-chip" onclick="setQuickVal('dCookTime', 'Raumtemperatur')">Raumtemperatur</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dIce', 'Cubed')">Cubed</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dIce', 'Crushed')">Crushed</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dIce', 'Ice Ball')">Ice Ball</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dIce', 'None')">None</button>
               </div>
-              <input type="text" id="dCookTime" autocomplete="off" placeholder="z. B. 12 Min. bei 180 °C" class="ui-field">
+              <input type="text" id="dIce" autocomplete="off" placeholder="oder selbst eingeben ..." class="ui-field">
             </div>
             <div>
-              <label class="form-label" for="dMethod">🥄 Garmethode</label>
-              <input type="text" id="dMethod" autocomplete="off" placeholder="z. B. Sous-vide, Braten, Dämpfen, Confieren" class="ui-field">
+              <label class="form-label" for="dMethod">🥄 Methode</label>
+              <input type="text" id="dMethod" autocomplete="off" placeholder="z. B. Shake & fine strain, Stir, Build" class="ui-field">
             </div>
             <div>
-              <label class="form-label" for="dGarnish">🌿 Garnitur</label>
-              <input type="text" id="dGarnish" autocomplete="off" placeholder="z. B. Kresse, Kräuteröl, Fleur de Sel" class="ui-field">
+              <label class="form-label" for="dGarnish">🍋 Garnitur</label>
+              <input type="text" id="dGarnish" autocomplete="off" placeholder="z. B. Dried strawberry, Mint sprig" class="ui-field">
             </div>
           </div>
         </div>
@@ -1176,29 +1314,20 @@
           <div class="form-section-title">5 · Eigenschaften & Allergene</div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <label class="switch-row prop-row"><span>⭐ Bestseller / TOP</span><span class="switch"><input type="checkbox" id="dFeatured"><span class="switch-track"></span></span></label>
-            <label class="switch-row prop-row"><span>🥕 Vegetarisch</span><span class="switch"><input type="checkbox" id="dVegetarian"><span class="switch-track"></span></span></label>
             <label class="switch-row prop-row"><span>🌱 Vegan</span><span class="switch"><input type="checkbox" id="dVegan"><span class="switch-track"></span></span></label>
             <label class="switch-row prop-row"><span>🌾 Glutenfrei</span><span class="switch"><input type="checkbox" id="dGlutenfree"><span class="switch-track"></span></span></label>
             <label class="switch-row prop-row"><span>🥛 Laktosefrei</span><span class="switch"><input type="checkbox" id="dLactosefree"><span class="switch-track"></span></span></label>
           </div>
-          <label class="form-label mt-3">Allergene (EU-14)</label>
+          <label class="form-label mt-3">Häufige Allergene</label>
           <div class="flex flex-wrap gap-1.5">
-<label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🌾 Gluten', this.checked)" class="preset-alg"> 🌾 Gluten</label>
-            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🦐 Krebstiere', this.checked)" class="preset-alg"> 🦐 Krebstiere</label>
-            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🥚 Eier', this.checked)" class="preset-alg"> 🥚 Eier</label>
-            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🐟 Fisch', this.checked)" class="preset-alg"> 🐟 Fisch</label>
-            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🥜 Erdnüsse', this.checked)" class="preset-alg"> 🥜 Erdnüsse</label>
-            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🫘 Soja', this.checked)" class="preset-alg"> 🫘 Soja</label>
-            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🥛 Milch/Laktose', this.checked)" class="preset-alg"> 🥛 Milch/Laktose</label>
-            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🌰 Schalenfrüchte', this.checked)" class="preset-alg"> 🌰 Schalenfrüchte</label>
-            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🥬 Sellerie', this.checked)" class="preset-alg"> 🥬 Sellerie</label>
-            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🌭 Senf', this.checked)" class="preset-alg"> 🌭 Senf</label>
-            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🌱 Sesam', this.checked)" class="preset-alg"> 🌱 Sesam</label>
             <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🍷 Sulfite', this.checked)" class="preset-alg"> 🍷 Sulfite</label>
-            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🫛 Lupinen', this.checked)" class="preset-alg"> 🫛 Lupinen</label>
-            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🐚 Weichtiere', this.checked)" class="preset-alg"> 🐚 Weichtiere</label>
+            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🌾 Gluten', this.checked)" class="preset-alg"> 🌾 Gluten</label>
+            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🥛 Laktose', this.checked)" class="preset-alg"> 🥛 Laktose</label>
+            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🥚 Ei', this.checked)" class="preset-alg"> 🥚 Ei</label>
+            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🥜 Nüsse', this.checked)" class="preset-alg"> 🥜 Nüsse</label>
+            <label class="alg-chip"><input type="checkbox" onchange="togglePresetAllergen('🫘 Soja', this.checked)" class="preset-alg"> 🫘 Soja</label>
           </div>
-          <textarea id="dAllergens" placeholder="Allergene (z. B. Enthält Gluten, Milch ...)" class="ui-field mt-2" rows="2" oninput="syncAllergenChecks()"></textarea>
+          <textarea id="dAllergens" placeholder="Allergene (z. B. Enthält Sulfite ...)" class="ui-field mt-2" rows="2" oninput="syncAllergenChecks()"></textarea>
         </div>
 
         <!-- 6 Preise -->
@@ -1217,54 +1346,54 @@
           <p id="dMarginInfo" class="margin-info">Gib beide Preise ein, dann siehst du hier die Marge.</p>
         </div>
 
-        <!-- 7 Foto -->
+        <!-- 7 Fotos -->
         <div class="form-section">
-          <div class="form-section-title">7 · Foto</div>
-          <div class="flex gap-4 items-start flex-wrap">
-            <div id="dPhotoPreview" class="photo-preview"><span>Kein Foto</span></div>
-            <div class="flex-1 min-w-[12rem] flex flex-col gap-2">
-              <input type="file" id="imageFile" accept="image/*" onchange="uploadImageToSupabase(event)" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer">
-              <span id="uploadStatus" class="form-hint"></span>
-              <input type="text" id="dPhoto" oninput="updatePhotoPreview()" autocomplete="off" placeholder="oder Bild-URL einfügen ..." class="ui-field">
-            </div>
+          <div class="form-section-title">7 · Fotos (bis zu 3)</div>
+          <div id="photoSlots" class="photo-slots"></div>
+          <input type="file" id="imageFile" accept="image/*" multiple onchange="uploadImageToSupabase(event)" class="hidden">
+          <span id="uploadStatus" class="form-hint block mt-2"></span>
+          <div class="flex gap-2 mt-2">
+            <input type="text" id="dPhoto" autocomplete="off" placeholder="oder Bild-URL einfügen ..." onkeydown="if (event.key === 'Enter') { event.preventDefault(); addPhotoFromUrl(); }" class="ui-field flex-1">
+            <button type="button" onclick="addPhotoFromUrl()" class="ui-btn-ghost">Hinzufügen</button>
           </div>
+          <p class="form-hint mt-1.5">Das erste Foto ist das Hauptfoto (Karte, Druck, Multi-View). Mit ⭐ machst du ein anderes zum Hauptfoto.</p>
         </div>
       </div>
 
       <div class="ui-foot">
-        <button type="button" onclick="deleteDishFromForm()" id="deleteFormBtn" class="hidden px-4 py-2.5 bg-red-600 hover:bg-red-500 font-bold text-white rounded-xl text-xs transition">🗑️ Löschen</button>
+        <button type="button" onclick="deleteDrinkFromForm()" id="deleteFormBtn" class="hidden px-4 py-2.5 bg-red-600 hover:bg-red-500 font-bold text-white rounded-xl text-xs transition">🗑️ Löschen</button>
         <span class="flex-1"></span>
         <button type="button" onclick="closeAdminModal()" class="ui-btn-ghost">Abbrechen</button>
-        <button type="button" onclick="saveDish()" class="ui-btn-primary">💾 Gericht speichern</button>
+        <button type="button" onclick="saveDrink()" class="ui-btn-primary">💾 Getränk speichern</button>
       </div>
     </div>
   </div>
 
   <!-- Modal Detail View -->
-  <div id="dishModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+  <div id="drinkModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="card max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 relative flex flex-col justify-between shadow-2xl">
       <div>
         <button onclick="closeModal()" class="no-print absolute top-4 right-4 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl font-bold">&times;</button>
         <div id="modalContent"></div>
-        <div class="print-watermark-footer">Salonplafond KÜCHE App create Tomas Kardos</div>
+        <div class="print-watermark-footer">Salonplafond NeXuS • BAR • Developed by Tomas Kardos © 2026</div>
       </div>
       <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex gap-2 no-print items-center flex-wrap">
-        <button id="modalPhotoBtn" onclick="openPhotoPreviewFromModal()" class="hidden px-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-400 font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-700">
+        <button id="modalPhotoBtn" onclick="openPhotoPreviewFromModal()" class="hidden px-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-400 font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-700" data-i18n="drm.photo">
           🖼️ Foto anzeigen
         </button>
         <button id="modalFavBtn" class="px-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-400 font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-700">
-          ❤️ Küchen-Favorit
+          ❤️ Schicht-Favorit
         </button>
-        <button id="modalEditBtn" class="px-4 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm">
+        <button id="modalEditBtn" class="px-4 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm" data-i18n="drm.edit">
           ✏️ Bearbeiten
         </button>
-        <button id="modalDeleteBtn" class="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm">
+        <button id="modalDeleteBtn" class="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm" data-i18n="drm.del">
           🗑️ Löschen
         </button>
-        <button onclick="openPrintOptionsModal()" class="px-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-400 font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-700">
+        <button onclick="openPrintOptionsModal()" class="px-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-400 font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-700" data-i18n="drm.print">
           🖨️ Drucken / PDF
         </button>
-        <button onclick="closeModal()" class="flex-1 py-3.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.99] text-amber-700 dark:text-amber-400 font-extrabold text-sm rounded-xl border-2 border-amber-500/50 transition shadow-sm tracking-wide">
+        <button onclick="closeModal()" class="flex-1 py-3.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.99] text-amber-700 dark:text-amber-400 font-extrabold text-sm rounded-xl border-2 border-amber-500/50 transition shadow-sm tracking-wide" data-i18n="drm.close">
           ✕ Schließen
         </button>
       </div>
@@ -1276,13 +1405,13 @@
     <div class="card max-w-sm w-full p-6 relative flex flex-col gap-4 text-center border-amber-500/50 shadow-2xl">
       <button onclick="closePrintOptionsModal()" class="absolute top-4 right-4 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl font-bold">&times;</button>
       <div class="w-12 h-12 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl mx-auto flex items-center justify-center text-2xl border border-amber-500/30">🖨️</div>
-      <h3 class="text-lg font-bold text-amber-600 dark:text-amber-400">Drucken-Optionen</h3>
-      <p class="text-xs text-slate-600 dark:text-slate-300">Wähle aus, wie das Rezept gedruckt werden soll:</p>
+      <h3 class="text-lg font-bold text-amber-600 dark:text-amber-400" data-i18n="prn.title">Drucken-Optionen</h3>
+      <p class="text-xs text-slate-600 dark:text-slate-300" data-i18n="prn.sub">Wähle aus, wie das Rezept gedruckt werden soll:</p>
       <div class="flex flex-col gap-2.5 mt-2">
-        <button onclick="executePrint(true)" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition shadow flex items-center justify-center gap-2">
+        <button onclick="executePrint(true)" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition shadow flex items-center justify-center gap-2" data-i18n="prn.img">
           🖼️ Mit Bild drucken
         </button>
-        <button onclick="executePrint(false)" class="w-full py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl text-xs transition border border-slate-300 dark:border-slate-700 flex items-center justify-center gap-2">
+        <button onclick="executePrint(false)" class="w-full py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl text-xs transition border border-slate-300 dark:border-slate-700 flex items-center justify-center gap-2" data-i18n="prn.noimg">
           📄 Ohne Bild drucken (Text pur)
         </button>
       </div>
@@ -1304,7 +1433,7 @@
       <div class="ui-head">
         <div>
           <h3 class="ui-head-title">🚀 Was ist neu?</h3>
-          <p class="ui-head-sub">Aktuelle Version <span id="changelogVersionBadge" class="cl-ver">v1.0.00</span></p>
+          <p class="ui-head-sub">Aktuelle Version <span id="changelogVersionBadge" class="cl-ver"></span></p>
         </div>
         <button type="button" onclick="closeChangelogModal()" class="ui-close" aria-label="Schließen">&times;</button>
       </div>
@@ -1363,64 +1492,132 @@
     </div>
   </div>
 
-  <!-- Jednotný Import & Export Dialog Modal -->
+  <!-- Jednotný Import & Export Dialog Modal s dvoma záložkami (Drinky vs Pracovný plán) -->
   <div id="importExportModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="card max-w-xl w-full p-6 relative flex flex-col gap-6 max-h-[90vh] overflow-y-auto border-amber-500/50 shadow-2xl">
-      <button onclick="closeImportExportModal()" class="absolute top-4 right-4 text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl font-bold">&times;</button>
-      
-      <div>
-        <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">📊 Import & Export (Zentrale)</h3>
-        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Verwalte deine Rezept-Datenbank zentral durch Export oder geführten Import.</p>
+    <div class="card max-w-2xl w-full relative flex flex-col max-h-[90vh] overflow-hidden p-0 border-amber-500/50 shadow-2xl">
+
+      <!-- Hlavička Modalu -->
+      <div class="ui-head">
+        <div>
+          <h3 class="ui-head-title">📊 Import & Export (Zentrale)</h3>
+          <p class="ui-head-sub">Verwaltung von Rezepten und monatlichem Arbeitsplan (DPL).</p>
+        </div>
+        <button type="button" onclick="closeImportExportModal()" class="ui-close" aria-label="Schließen">&times;</button>
       </div>
 
-      <div class="custom-box p-4 rounded-xl border flex flex-col gap-3">
-        <h4 class="text-sm font-bold flex items-center gap-1.5">📤 Daten exportieren</h4>
-        <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-          Wähle die gewünschte Saison aus und exportiere die Rezepte in dein bevorzugtes Format (Excel oder CSV).
-        </p>
-        
-        <div class="flex flex-col gap-2 mt-1">
-          <label class="text-[11px] font-semibold">Saison für Export wählen:</label>
-          <select id="exportSeasonSelect" class="p-2.5 rounded-lg border text-xs w-full"></select>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-          <button onclick="exportToExcel()" class="py-2.5 px-3 custom-box hover:bg-slate-200 dark:hover:bg-slate-800 text-amber-700 dark:text-amber-400 font-bold rounded-lg text-xs border transition flex items-center justify-center gap-1.5">
-            📗 Excel (.xlsx) exportieren
-          </button>
-          <button onclick="exportToCSV()" class="py-2.5 px-3 custom-box hover:bg-slate-200 dark:hover:bg-slate-800 text-amber-700 dark:text-amber-400 font-bold rounded-lg text-xs border transition flex items-center justify-center gap-1.5">
-            📊 CSV-Tabelle exportieren
-          </button>
-        </div>
+      <!-- Prepínač Záložiek (Tab-Leiste) -->
+      <div class="flex border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/50 p-1 gap-1">
+        <button type="button" onclick="switchImportTab('drinks')" id="tabBtnDrinks" class="flex-1 py-2 px-3 text-xs font-bold rounded-lg transition bg-amber-500 text-slate-950 shadow-sm">🍸 Getränke Import / Export</button>
+        <button type="button" onclick="switchImportTab('schedule')" id="tabBtnSchedule" class="flex-1 py-2 px-3 text-xs font-bold rounded-lg transition text-slate-600 dark:text-slate-400 hover:text-amber-500">📅 Arbeitsplan Import (DPL)</button>
       </div>
 
-      <div class="custom-box p-4 rounded-xl border flex flex-col gap-3">
-        <h4 class="text-sm font-bold flex items-center gap-1.5">📥 Rezepte importieren (Assistent)</h4>
-        <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-          Lade eine Excel-Datei (.xlsx, .xls) mit Kopfzeile hoch. Spalten: <b>Name</b> (Pflicht), Kategorie, Geschirr, Garmethode, Garzeit, Garnitur, Zutaten (Format „Zutat: Menge; Zutat: Menge“), Verkaufspreis, Wareneinsatz, Allergene, Zubereitung. Tipp: Erst exportieren und die Datei als Vorlage nutzen.
-        </p>
-        
-        <div class="flex flex-col gap-2.5 mt-1">
-          <div>
-            <label class="text-[11px] font-semibold mb-1 block">1. Excel-Datei auswählen:</label>
-            <input type="file" id="wizardExcelFile" accept=".xlsx, .xls" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer w-full custom-box p-2 rounded-lg border">
+      <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
+
+        <!-- KARTA 1: GETRÄNKE IMPORT & EXPORT -->
+        <div id="importSectionDrinks" class="flex flex-col gap-5">
+
+          <!-- Export Sekcia -->
+          <div class="custom-box p-4 rounded-xl border flex flex-col gap-3">
+            <h4 class="text-sm font-bold flex items-center gap-1.5 text-amber-600 dark:text-amber-400">📤 Getränke exportieren</h4>
+            <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+              Wähle die gewünschte Saison aus und exportiere die Rezepte in dein bevorzugtes Format (Excel oder CSV).
+            </p>
+            
+            <div class="flex flex-col gap-1.5 mt-1">
+              <label class="text-[11px] font-semibold">Saison für Export wählen:</label>
+              <select id="exportSeasonSelect" class="p-2.5 rounded-lg border text-xs w-full bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700"></select>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+              <button onclick="exportToExcel()" class="py-2.5 px-3 custom-box hover:bg-slate-200 dark:hover:bg-slate-800 text-amber-700 dark:text-amber-400 font-bold rounded-lg text-xs border transition flex items-center justify-center gap-1.5">
+                📗 Excel (.xlsx) exportieren
+              </button>
+              <button onclick="exportToCSV()" class="py-2.5 px-3 custom-box hover:bg-slate-200 dark:hover:bg-slate-800 text-amber-700 dark:text-amber-400 font-bold rounded-lg text-xs border transition flex items-center justify-center gap-1.5">
+                📊 CSV-Tabelle exportieren
+              </button>
+            </div>
           </div>
-          <div>
-            <label class="text-[11px] font-semibold mb-1 block">2. Ziel-Saison für den Import:</label>
-            <select id="wizardSeasonSelect" onchange="handleWizardSeasonChange(this)" class="p-2.5 rounded-lg border text-xs w-full"></select>
+
+          <!-- Import Sekcia pre Drinky -->
+          <div class="custom-box p-4 rounded-xl border flex flex-col gap-3">
+            <h4 class="text-sm font-bold flex items-center gap-1.5 text-amber-600 dark:text-amber-400">📥 Getränke importieren (Assistent)</h4>
+            <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+              Lade eine strukturierte Excel-Datei (.xlsx, .xls) hoch, um neue Rezepte direkt in eine gewählte Saison einzuspielen.
+            </p>
+            
+            <div class="flex flex-col gap-2.5 mt-1">
+              <div>
+                <label class="text-[11px] font-semibold mb-1 block">1. Excel-Datei auswählen:</label>
+                <input type="file" id="wizardExcelFile" accept=".xlsx, .xls" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer w-full custom-box p-2 rounded-lg border">
+              </div>
+              <div>
+                <label class="text-[11px] font-semibold mb-1 block">2. Ziel-Saison für den Import:</label>
+                <select id="wizardSeasonSelect" onchange="handleWizardSeasonChange(this)" class="p-2.5 rounded-lg border text-xs w-full bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700"></select>
+              </div>
+            </div>
+
+            <div id="wizardStatus" class="text-xs text-amber-600 dark:text-amber-400 font-medium text-center"></div>
+
+            <button onclick="executeWizardImport()" class="py-3 bg-amber-500 hover:bg-amber-600 font-bold text-slate-950 rounded-xl text-xs transition shadow-lg mt-1">
+              🚀 Getränke-Import starten
+            </button>
+          </div>
+
+        </div>
+
+        <!-- KARTA 2: ARBEITSPLAN IMPORT (DPL MA) -->
+        <div id="importSectionSchedule" class="hidden flex-col gap-5">
+          <div class="custom-box p-4 rounded-xl border flex flex-col gap-3 border-amber-500/30">
+            <h4 class="text-sm font-bold flex items-center gap-1.5 text-amber-600 dark:text-amber-400">📅 Monatlichen Arbeitsplan importieren (DPL MA)</h4>
+            <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+              Importieren Sie den monatlichen Arbeitsplan im offiziellen Formular-Format (z. B. <i>DPL MA. NOVEMOBER 2026.xlsx</i>). Der Parser verarbeitet automatisch zweizeilige Mitarbeiter-Schichten sowie Teilschichten (Früh- und Spätschicht an einem Tag).
+            </p>
+
+            <div class="flex flex-col gap-3 mt-1">
+              <div>
+                <label class="text-[11px] font-semibold mb-1 block">1. Excel-Arbeitsplan-Datei wählen (.xlsx):</label>
+                <input type="file" id="scheduleExcelFile" accept=".xlsx, .xls" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer w-full custom-box p-2 rounded-lg border">
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="text-[11px] font-semibold mb-1 block">2. Monat wählen:</label>
+                  <select id="scheduleMonthSelect" class="p-2.5 rounded-lg border text-xs w-full bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700">
+                    <option value="1">Januar</option>
+                    <option value="2">Februar</option>
+                    <option value="3">März</option>
+                    <option value="4">April</option>
+                    <option value="5">Mai</option>
+                    <option value="6">Juni</option>
+                    <option value="7">Juli</option>
+                    <option value="8">August</option>
+                    <option value="9">September</option>
+                    <option value="10">Oktober</option>
+                    <option value="11" selected>November</option>
+                    <option value="12">Dezember</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-[11px] font-semibold mb-1 block">3. Jahr wählen:</label>
+                  <input type="number" id="scheduleYearInput" value="2026" min="2024" max="2035" class="p-2.5 rounded-lg border text-xs w-full bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700 font-bold">
+                </div>
+              </div>
+            </div>
+
+            <div id="scheduleStatus" class="text-xs text-amber-600 dark:text-amber-400 font-medium text-center"></div>
+
+            <button onclick="executeScheduleImport()" class="py-3 bg-amber-500 hover:bg-amber-600 font-bold text-slate-950 rounded-xl text-xs transition shadow-lg mt-1">
+              🗓️ Arbeitsplan importieren & speichern
+            </button>
           </div>
         </div>
 
-        <div id="wizardStatus" class="text-xs text-amber-600 dark:text-amber-400 font-medium text-center"></div>
-
-        <button onclick="executeWizardImport()" class="py-3 bg-amber-500 hover:bg-amber-600 font-bold text-slate-950 rounded-xl text-xs transition shadow-lg mt-1">
-          🚀 Import starten
-        </button>
       </div>
 
-      <div class="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
-        <button onclick="closeImportExportModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
+      <div class="ui-foot">
+        <button type="button" onclick="closeImportExportModal()" class="ui-btn-ghost">Schließen</button>
       </div>
+
     </div>
   </div>
 
@@ -1428,8 +1625,8 @@
   <div id="motivationModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="card max-w-md w-full border-amber-500/50 p-6 relative flex flex-col gap-4 text-center shadow-2xl">
       <button onclick="closeMotivationModal()" class="absolute top-4 right-4 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl font-bold">&times;</button>
-      <div class="w-16 h-16 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl mx-auto flex items-center justify-center text-3xl border border-amber-500/30">👨‍🍳</div>
-      <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400">Salonplafond Küchen-Osterei 🐣</h3>
+      <div class="w-16 h-16 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl mx-auto flex items-center justify-center text-3xl border border-amber-500/30">🍸</div>
+      <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400">Salonplafond Osterei 🐣</h3>
       <div id="motivationTextContainer" class="custom-box p-4 rounded-xl border text-sm italic min-h-[90px] flex items-center justify-center"></div>
       <div class="flex gap-2 mt-2">
         <button onclick="showRandomMotivation()" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 font-bold text-slate-950 rounded-lg text-xs transition">🔄 Noch ein Spruch</button>
@@ -1469,7 +1666,7 @@
       
       <div class="flex flex-col gap-4">
         <div>
-          <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400">💬 Küchen-Tickets & Anfragen</h3>
+          <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400">💬 Bar-Tickets & Anfragen</h3>
           <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Schreibe eine Anfrage oder einen Änderungswunsch als <b id="ticketAuthorDisplay" class="text-amber-600 dark:text-amber-300"></b>.</p>
         </div>
 
@@ -1493,26 +1690,7 @@
     </div>
   </div>
 
-  <script src="js/config.js?v=1.2.01"></script>
-  <script src="js/ui.js?v=1.2.01"></script>
-  <script src="js/settings.js?v=1.2.01"></script>
-  <script src="js/pwa.js?v=1.2.01"></script>
-  <script src="js/push.js?v=1.2.01"></script>
-  <script src="js/auth.js?v=1.2.01"></script>
-  <script src="js/profile.js?v=1.2.01"></script>
-  <script src="js/staff-admin.js?v=1.2.01"></script>
-  <script src="js/chat.js?v=1.2.01"></script>
-  <script src="js/tickets.js?v=1.2.01"></script>
-  <script src="js/changelog.js?v=1.2.01"></script>
-  <script src="js/schedule.js?v=1.2.01"></script>
-  <script src="js/seasons.js?v=1.2.01"></script>
-  <script src="js/dishes.js?v=1.2.01"></script>
-  <script src="js/dish-admin.js?v=1.2.01"></script>
-  <script src="js/tray.js?v=1.2.01"></script>
-  <script src="js/shopping.js?v=1.2.01"></script>
-  <script src="js/handovers.js?v=1.2.01"></script>
-  <script src="js/import-export.js?v=1.2.01"></script>
-  <script src="js/print-a3.js?v=1.2.01"></script>
-  <script src="js/app.js?v=1.2.01"></script>
+  <!-- Alle Skripte (Liste und Reihenfolge) stehen in js/version.js -> APP_SCRIPTS -->
+  <script>loadAppScripts();</script>
 </body>
 </html>

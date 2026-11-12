@@ -1,0 +1,147 @@
+/* ============================================================
+   css/theme-nexus-glass.css  (v4.2.01)
+   Design „NeXuS Glass“ (Liquid-Glass-Look, Gold auf Schwarz).
+   Wird NUR geladen, wenn unter Einstellungen → Darstellung → Stil
+   „NeXuS Glass“ gewählt ist. Alles steht unter html.skin-glass,
+   der Original-Stil bleibt unberührt.
+   ============================================================ */
+
+html.skin-glass {
+  --g-gold: #fbbf24;
+  --g-gold-2: #f59e0b;
+  --g-panel: linear-gradient(155deg, rgba(42, 31, 15, .84), rgba(13, 10, 6, .88));
+  --g-panel-flat: rgba(22, 17, 11, .88);
+  --g-edge: linear-gradient(150deg, rgba(251, 191, 36, .75), rgba(251, 191, 36, .12) 40%, rgba(251, 191, 36, .45));
+  --g-shadow: 0 14px 40px rgba(0, 0, 0, .55), 0 0 22px rgba(245, 158, 11, .14), inset 0 1px 0 rgba(255, 236, 190, .18);
+  --g-blur: none;
+}
+html.skin-glass.blur-on { --g-blur: blur(18px) saturate(140%); }
+
+/* Farb-Variablen der Bausteine */
+html.skin-glass body.dark-mode {
+  --ui-accent: #fbbf24;
+  --ui-text: #f6efe2;
+  --ui-muted: #b9a98c;
+  --ui-surface: rgba(255, 226, 160, .07);
+  --ui-surface-hover: rgba(255, 226, 160, .14);
+  --ui-border: rgba(251, 191, 36, .22);
+  --ui-head: rgba(20, 14, 6, .45);
+  --tp-bg: #1a140b;
+}
+
+/* ---------- Hintergrundbild (feste Ebene, iOS-sicher) ---------- */
+html.skin-glass body { background: #0b0805; color: var(--ui-text); }
+html.skin-glass body::before {
+  content: ''; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background: #0b0805 url('../img/nexus-bg.webp') center / cover no-repeat;
+}
+html.skin-glass body::after {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 30%, rgba(0, 0, 0, .35), rgba(0, 0, 0, .7) 85%), linear-gradient(rgba(0, 0, 0, .4), rgba(0, 0, 0, .55));
+}
+
+/* ---------- Glas-Flächen ---------- */
+html.skin-glass body.dark-mode .card,
+html.skin-glass body.dark-mode .list-item,
+html.skin-glass body.dark-mode .login-card,
+html.skin-glass body.dark-mode .set-card,
+html.skin-glass body.dark-mode .profile-link {
+  background: var(--g-panel); border: 1px solid rgba(251, 191, 36, .28); color: var(--ui-text);
+  box-shadow: var(--g-shadow); -webkit-backdrop-filter: var(--g-blur); backdrop-filter: var(--g-blur);
+  border-radius: 1.35rem;
+}
+html.skin-glass body.dark-mode .card:hover,
+html.skin-glass body.dark-mode .list-item:hover { border-color: var(--g-gold); background: linear-gradient(155deg, rgba(70, 50, 20, .7), rgba(20, 14, 8, .78)); box-shadow: var(--g-shadow), 0 0 26px rgba(245, 158, 11, .28); }
+html.skin-glass body.dark-mode .custom-box { background: rgba(10, 7, 4, .55); border-color: rgba(251, 191, 36, .18); color: #e8dcc6; }
+
+/* Fenster (Modals) */
+html.skin-glass body.dark-mode .modal-bg { background: rgba(6, 4, 2, .62); -webkit-backdrop-filter: var(--g-blur); backdrop-filter: var(--g-blur); }
+html.skin-glass body.dark-mode .modal-bg .card { background: linear-gradient(155deg, rgba(44, 33, 17, .86), rgba(14, 11, 8, .92)); }
+
+/* Eingabefelder */
+html.skin-glass body.dark-mode input,
+html.skin-glass body.dark-mode select,
+html.skin-glass body.dark-mode textarea {
+  background-color: rgba(8, 6, 3, .55) !important; color: #f6efe2 !important;
+  border-color: rgba(251, 191, 36, .28) !important; border-radius: .9rem;
+}
+html.skin-glass body.dark-mode input:focus,
+html.skin-glass body.dark-mode select:focus,
+html.skin-glass body.dark-mode textarea:focus { border-color: var(--g-gold) !important; box-shadow: 0 0 0 3px rgba(251, 191, 36, .18), 0 0 16px rgba(251, 191, 36, .2); outline: none; }
+
+/* Kopfleiste */
+html.skin-glass .app-bar { border-bottom-color: rgba(251, 191, 36, .25); }
+/* WICHTIG: kein backdrop-filter auf .app-bar – sonst wird das Handy-Menü (position: fixed) in der Leiste gefangen */
+@media (max-width: 767px) {
+  html.skin-glass body.dark-mode .app-bar { background: rgba(12, 9, 5, .92); }
+}
+
+/* Menü (Dropdown / Handy-Blatt): deckendes Glas, gut lesbar */
+html.skin-glass body.dark-mode #settingsDropdown,
+html.skin-glass.blur-on body.dark-mode #settingsDropdown {
+  background: linear-gradient(160deg, rgba(40, 30, 15, .97), rgba(14, 10, 6, .98)) !important;
+  border: 1px solid rgba(251, 191, 36, .4) !important; box-shadow: var(--g-shadow);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+html.skin-glass body.dark-mode #settingsMenuBackdrop { background: rgba(0, 0, 0, .65); }
+
+/* Kopf-Knöpfe (Chat, Benutzer wechseln, Vollbild) */
+html.skin-glass body.dark-mode .app-bar button:not([onclick*="toggleSettingsMenu"]) {
+  background: rgba(20, 15, 8, .82) !important; border-color: rgba(251, 191, 36, .4) !important; color: #fcd34d !important;
+}
+
+/* Dashboard-Kacheln */
+html.skin-glass body.dark-mode .dash-tile,
+html.skin-glass body.dark-mode .dash-back-btn,
+html.skin-glass body.dark-mode .dash-push,
+html.skin-glass body.dark-mode .dash-inbox {
+  background: linear-gradient(155deg, rgba(34, 25, 12, .9), rgba(14, 10, 6, .9)); border-color: rgba(251, 191, 36, .35);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 236, 190, .14);
+  -webkit-backdrop-filter: var(--g-blur); backdrop-filter: var(--g-blur);
+}
+html.skin-glass body.dark-mode .dash-tile-primary { background: linear-gradient(155deg, rgba(90, 60, 14, .92), rgba(28, 18, 6, .94)); border-color: var(--g-gold); }
+html.skin-glass body.dark-mode .dash-tile:hover { border-color: var(--g-gold); box-shadow: 0 8px 22px rgba(0, 0, 0, .5), 0 0 22px rgba(251, 191, 36, .3); }
+html.skin-glass body.dark-mode .dash-ico { background: rgba(251, 191, 36, .14); }
+html.skin-glass body.dark-mode .dash-hello,
+html.skin-glass body.dark-mode .dash-date,
+html.skin-glass body.dark-mode .dash-group-title,
+html.skin-glass body.dark-mode .dash-back-title { text-shadow: 0 1px 8px rgba(0, 0, 0, .95), 0 0 2px rgba(0, 0, 0, .9); }
+html.skin-glass body.dark-mode .dash-date { color: #e2d3b4; }
+
+/* Schalter, Segmente, Knöpfe */
+html.skin-glass .seg-btn.active { background: linear-gradient(180deg, #fcd34d, #f59e0b); color: #1a1005; box-shadow: 0 0 14px rgba(251, 191, 36, .45); }
+html.skin-glass .login-submit { background: rgba(251, 191, 36, .12); color: var(--g-gold); border: 1.5px solid var(--g-gold); box-shadow: 0 0 20px rgba(251, 191, 36, .25), inset 0 1px 0 rgba(255, 236, 190, .2); border-radius: 999px; }
+html.skin-glass .login-submit:hover { background: var(--g-gold); color: #1a1005; }
+
+/* ---------- Anmeldung ---------- */
+html.skin-glass #authContainer { background: transparent !important; }
+html.skin-glass .login-screen { background: transparent; }
+html.skin-glass .login-card { padding: 1.1rem; border-radius: 1.7rem; }
+html.skin-glass .login-head-text h1 { color: #fff; text-shadow: 0 0 18px rgba(251, 191, 36, .35); }
+html.skin-glass .login-logo { box-shadow: 0 0 28px rgba(251, 191, 36, .55); }
+html.skin-glass .login-tile { border-radius: 1rem; background: linear-gradient(160deg, rgba(255, 226, 160, .09), rgba(255, 226, 160, .02)); border: 1px solid rgba(251, 191, 36, .22); box-shadow: inset 0 1px 0 rgba(255, 236, 190, .1); }
+html.skin-glass .login-tile:hover, html.skin-glass .login-tile:focus-visible { background: rgba(251, 191, 36, .16); border-color: var(--g-gold); box-shadow: 0 0 18px rgba(251, 191, 36, .3); }
+html.skin-glass .login-av { background: rgba(10, 7, 3, .6); border-color: var(--g-gold); }
+html.skin-glass .login-search { border-radius: 999px; padding-left: 1rem; }
+html.skin-glass .login-key { background: rgba(255, 226, 160, .07); border-color: rgba(251, 191, 36, .22); border-radius: 1.1rem; }
+html.skin-glass .login-dot.on { box-shadow: 0 0 10px rgba(251, 191, 36, .8); }
+
+/* Texte auf dunklem Glas gut lesbar halten */
+html.skin-glass body.dark-mode .text-slate-500,
+html.skin-glass body.dark-mode .text-slate-400 { color: #c9b998; }
+
+/* Schwächere Geräte / Wunsch „Animationen reduzieren“: kein Blur, dafür deckendere Flächen */
+html.skin-glass:not(.blur-on) body.dark-mode .card,
+html.skin-glass:not(.blur-on) body.dark-mode .list-item,
+html.skin-glass:not(.blur-on) body.dark-mode .login-card,
+html.skin-glass:not(.blur-on) body.dark-mode .set-card { background: var(--g-panel-flat); }
+html.skin-glass.reduce-motion .card:hover { transform: none; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html.skin-glass body.dark-mode .card, html.skin-glass body.dark-mode .list-item, html.skin-glass body.dark-mode .login-card, html.skin-glass body.dark-mode .set-card { background: var(--g-panel-flat); }
+}
+
+/* Drucken: immer Original-Aussehen */
+@media print {
+  html.skin-glass body::before, html.skin-glass body::after { display: none; }
+  html.skin-glass body { background: #fff; }
+}

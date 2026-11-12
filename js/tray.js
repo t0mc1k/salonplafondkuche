@@ -1,40 +1,40 @@
 /* ============================================================
    js/tray.js
-   Multi-View-Korb inkl. Drag & Drop und Gericht tauschen
+   Multi-View-Korb inkl. Drag & Drop und Getränk tauschen
    ============================================================ */
-    function toggleTrayItem(id, event) {
+    function toggleBarTrayItem(id, event) {
       if (event) event.stopPropagation();
-      let idx = traySelection.indexOf(id);
+      let idx = barTraySelection.indexOf(id);
       if (idx > -1) {
-        traySelection.splice(idx, 1);
+        barTraySelection.splice(idx, 1);
       } else {
-        if (traySelection.length >= 6) {
-          alert('Für den Schnellvergleich können maximal 6 Gerichte gleichzeitig ausgewählt werden.');
+        if (barTraySelection.length >= 6) {
+          alert(t('tray.max'));
           return;
         }
-        traySelection.push(id);
+        barTraySelection.push(id);
       }
-      localStorage.setItem('kueche_tray', JSON.stringify(traySelection));
-      renderTrayUI();
-      renderDishes();
+      localStorage.setItem('salon_bar_tray', JSON.stringify(barTraySelection));
+      renderBarTrayUI();
+      renderDrinks();
     }
 
-    function clearTray() {
-      traySelection = [];
-      localStorage.setItem('kueche_tray', JSON.stringify(traySelection));
-      renderTrayUI();
-      renderDishes();
+    function clearBarTray() {
+      barTraySelection = [];
+      localStorage.setItem('salon_bar_tray', JSON.stringify(barTraySelection));
+      renderBarTrayUI();
+      renderDrinks();
     }
 
-    function renderTrayUI() {
-      const bar = document.getElementById('trayBar');
-      const container = document.getElementById('trayItems');
+    function renderBarTrayUI() {
+      const bar = document.getElementById('barTrayBar');
+      const container = document.getElementById('barTrayItems');
       const countBadge = document.getElementById('trayCountBadge');
       
-      if (countBadge) countBadge.innerText = traySelection.length;
+      if (countBadge) countBadge.innerText = barTraySelection.length;
+      document.body.classList.toggle('has-tray', barTraySelection.length > 0);
 
-      document.body.classList.toggle('has-tray', traySelection.length > 0);
-      if (traySelection.length === 0) {
+      if (barTraySelection.length === 0) {
         bar.classList.add('hidden');
         bar.classList.remove('flex');
         return;
@@ -43,51 +43,51 @@
       bar.classList.remove('hidden');
       bar.classList.add('flex');
 
-      container.innerHTML = traySelection.map(id => {
-        let d = allDishes.find(item => item.id === id);
+      container.innerHTML = barTraySelection.map(id => {
+        let d = allDrinks.find(item => item.id === id);
         if (!d) return '';
         return `
-          <div onclick="openDishModal(${jsArg(d.id)})" class="cursor-pointer custom-box border hover:border-amber-500 rounded-xl p-1.5 px-3 flex items-center gap-2 shrink-0 transition shadow-sm">
+          <div onclick="openDrinkModal(${jsArg(d.id)})" class="cursor-pointer custom-box border hover:border-amber-500 rounded-xl p-1.5 px-3 flex items-center gap-2 shrink-0 transition shadow-sm">
             <span class="text-xs font-bold text-amber-600 dark:text-amber-300 truncate max-w-[120px]">${escapeHtml(d.name)}</span>
-            <button onclick="toggleTrayItem(${jsArg(d.id)}, event)" class="text-slate-600 dark:text-slate-400 hover:text-red-500 font-bold text-xs p-0.5">&times;</button>
+            <button onclick="toggleBarTrayItem(${jsArg(d.id)}, event)" class="text-slate-600 dark:text-slate-400 hover:text-red-500 font-bold text-xs p-0.5">&times;</button>
           </div>
         `;
       }).join('');
     }
 
 
-    // ===== Drag & Drop: Gericht in den Multi-View-Korb ziehen =====
+    // ===== Drag & Drop: Getränk in den Multi-View-Korb ziehen =====
     function showTrayToast(msg) {
-      let t = document.getElementById('trayToast');
-      if (!t) {
-        t = document.createElement('div');
-        t.id = 'trayToast';
-        t.className = 'glass-surface';
-        t.style.cssText = 'position:fixed;left:50%;bottom:6.5rem;transform:translateX(-50%);z-index:320;padding:.6rem 1rem;border-radius:.75rem;color:#fbbf24;border:1px solid rgba(245,158,11,.5);font-size:.75rem;font-weight:700;box-shadow:0 10px 25px rgba(0,0,0,.4);transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center';
-        document.body.appendChild(t);
+      let toastEl = document.getElementById('trayToast');
+      if (!toastEl) {
+        toastEl = document.createElement('div');
+        toastEl.id = 'trayToast';
+        toastEl.className = 'glass-surface';
+        toastEl.style.cssText = 'position:fixed;left:50%;bottom:6.5rem;transform:translateX(-50%);z-index:320;padding:.6rem 1rem;border-radius:.75rem;color:#fbbf24;border:1px solid rgba(245,158,11,.5);font-size:.75rem;font-weight:700;box-shadow:0 10px 25px rgba(0,0,0,.4);transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center';
+        document.body.appendChild(toastEl);
       }
-      t.textContent = msg;
-      t.style.opacity = '1';
-      clearTimeout(t._hide);
-      t._hide = setTimeout(() => { t.style.opacity = '0'; }, 1800);
+      toastEl.textContent = msg;
+      toastEl.style.opacity = '1';
+      clearTimeout(toastEl._hide);
+      toastEl._hide = setTimeout(() => { toastEl.style.opacity = '0'; }, 1800);
     }
 
-    function addTrayItem(id) {
-      const d = allDishes.find(x => x.id === id);
+    function addBarTrayItem(id) {
+      const d = allDrinks.find(x => x.id === id);
       if (!d) return;
-      if (traySelection.includes(id)) {
-        showTrayToast('„' + d.name + '“ ist schon im Multi-View');
+      if (barTraySelection.includes(id)) {
+        showTrayToast(t('tray.already', { name: d.name }));
         return;
       }
-      if (traySelection.length >= 6) {
-        alert('Für den Schnellvergleich können maximal 6 Gerichte gleichzeitig ausgewählt werden.');
+      if (barTraySelection.length >= 6) {
+        alert(t('tray.max'));
         return;
       }
-      traySelection.push(id);
-      localStorage.setItem('kueche_tray', JSON.stringify(traySelection));
-      renderTrayUI();
-      renderDishes();
-      showTrayToast('„' + d.name + '“ zum Multi-View hinzugefügt (' + traySelection.length + '/6)');
+      barTraySelection.push(id);
+      localStorage.setItem('salon_bar_tray', JSON.stringify(barTraySelection));
+      renderBarTrayUI();
+      renderDrinks();
+      showTrayToast(t('tray.added', { name: d.name, n: barTraySelection.length }));
     }
 
     const trayDrag = { pending: false, active: false, id: null, srcEl: null, startX: 0, startY: 0, x: 0, y: 0, type: 'mouse', timer: null, ghost: null, zone: null };
@@ -95,16 +95,16 @@
 
     function trayDropTargetAt(x, y) {
       const el = document.elementFromPoint(x, y);
-      return el && el.closest ? el.closest('#trayDropZone, #trayBar') : null;
+      return el && el.closest ? el.closest('#trayDropZone, #barTrayBar') : null;
     }
 
     function trayDropZoneRefresh(hover) {
       const z = trayDrag.zone;
       if (!z) return;
-      const full = traySelection.length >= 6 && !traySelection.includes(trayDrag.id);
+      const full = barTraySelection.length >= 6 && !barTraySelection.includes(trayDrag.id);
       z.textContent = full
-        ? '⚡ Multi-View ist voll (6/6)'
-        : '⚡ Hier loslassen für Multi-View (' + traySelection.length + '/6)';
+        ? t('tray.full')
+        : t('tray.drop', { n: barTraySelection.length });
       z.style.background = hover ? (full ? '#ef4444' : '#f59e0b') : (full ? 'rgba(239,68,68,.18)' : 'rgba(245,158,11,.18)');
       z.style.color = hover ? '#020617' : (full ? '#f87171' : '#f59e0b');
       z.style.borderColor = full ? '#ef4444' : '#f59e0b';
@@ -112,7 +112,7 @@
     }
 
     function startTrayDrag() {
-      const d = allDishes.find(x => x.id === trayDrag.id);
+      const d = allDrinks.find(x => x.id === trayDrag.id);
       if (!d) { cancelTrayDrag(); return; }
       trayDrag.pending = false;
       trayDrag.active = true;
@@ -139,7 +139,7 @@
       const z = document.createElement('div');
       z.id = 'trayDropZone';
       z.className = 'glass-blur';
-      const barVisible = !document.getElementById('trayBar').classList.contains('hidden');
+      const barVisible = !document.getElementById('barTrayBar').classList.contains('hidden');
       z.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:' + (barVisible ? '6rem' : '1.5rem') + ';z-index:310;padding:1rem 1.5rem;border-radius:1rem;border:2px dashed #f59e0b;font-weight:900;font-size:.85rem;text-align:center;transition:transform .12s,background .12s;white-space:nowrap';
       document.body.appendChild(z);
       trayDrag.zone = z;
@@ -179,19 +179,19 @@
       const onTarget = wasActive && drop && !!trayDropTargetAt(trayDrag.x, trayDrag.y);
       if (wasActive) traySuppressClickUntil = Date.now() + 400;
       cleanupTrayDrag();
-      if (onTarget) addTrayItem(id);
+      if (onTarget) addBarTrayItem(id);
     }
 
     document.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       if (trayDrag.active || trayDrag.pending) return;
       if (!e.target.closest) return;
-      const card = e.target.closest('[data-dish-id]');
+      const card = e.target.closest('[data-drink-id]');
       if (!card) return;
       if (e.target.closest('button, a, input, select, textarea')) return;
 
       trayDrag.pending = true;
-      trayDrag.id = card.getAttribute('data-dish-id');
+      trayDrag.id = card.getAttribute('data-drink-id');
       trayDrag.srcEl = card;
       trayDrag.startX = trayDrag.x = e.clientX;
       trayDrag.startY = trayDrag.y = e.clientY;
@@ -254,7 +254,7 @@
 
     // Kein nativer Bild-Drag, kein Kontextmenü beim langen Drücken, kein Klick nach dem Loslassen
     document.addEventListener('dragstart', (e) => {
-      if (e.target && e.target.closest && e.target.closest('[data-dish-id]')) e.preventDefault();
+      if (e.target && e.target.closest && e.target.closest('[data-drink-id]')) e.preventDefault();
     });
     document.addEventListener('contextmenu', (e) => {
       if (trayDrag.active || trayDrag.pending) e.preventDefault();
@@ -267,10 +267,10 @@
     }, true);
 
     function openMultiViewModal() {
-      if (traySelection.length === 0) return;
+      if (barTraySelection.length === 0) return;
       const container = document.getElementById('multiViewContentContainer');
-      container.innerHTML = traySelection.map((id, index) => {
-        let d = allDishes.find(item => item.id === id);
+      container.innerHTML = barTraySelection.map((id, index) => {
+        let d = allDrinks.find(item => item.id === id);
         if (!d) return '';
         let priceText = (d.selling_price && getSetting('showPrices')) ? ` (€ ${parseFloat(d.selling_price).toFixed(2)})` : '';
         let photoHtml = d.photo_url ? `<img src="${escapeHtml(d.photo_url)}" class="w-full h-36 object-cover rounded-lg mb-2 shadow cursor-pointer hover:opacity-95 transition" onclick="openPhotoPreview(${jsArg(d.photo_url)})" alt="${escapeHtml(d.name)}">` : '';
@@ -279,7 +279,7 @@
         if (Array.isArray(d.ingredients_json) && d.ingredients_json.length > 0) {
           ingredientsHtml = d.ingredients_json.map(i => `<div class="grid grid-cols-2 py-0.5 border-b border-slate-200 dark:border-slate-800/55"><span class="font-medium">${escapeHtml(i.name)}</span><span class="text-amber-600 dark:text-amber-300 font-semibold">${escapeHtml(i.amount || '-')}</span></div>`).join('');
         } else {
-          ingredientsHtml = `<div class="italic text-slate-500">Keine Zutaten</div>`;
+          ingredientsHtml = `<div class="italic text-slate-500">${escapeHtml(t('tray.noIng'))}</div>`;
         }
 
         return `
@@ -288,23 +288,23 @@
               <div class="flex items-center justify-between mb-2">
                 <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">${escapeHtml(d.category || '')}</span>
                 <div class="flex items-center gap-1.5">
-                  <button onclick="openReplaceDishModal(${index})" class="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-400 font-bold rounded text-[11px] border border-slate-300 dark:border-slate-700">🔄 Tauschen</button>
-                  <button onclick="toggleTrayItem(${jsArg(d.id)}, event); openMultiViewModal();" class="text-red-500 hover:text-red-700 dark:hover:text-red-400 text-xs font-bold p-1">&times;</button>
+                  <button onclick="openReplaceDrinkModal(${index})" class="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-400 font-bold rounded text-[11px] border border-slate-300 dark:border-slate-700">${escapeHtml(t('tray.swap'))}</button>
+                  <button onclick="toggleBarTrayItem(${jsArg(d.id)}, event); openMultiViewModal();" class="text-red-500 hover:text-red-700 dark:hover:text-red-400 text-xs font-bold p-1">&times;</button>
                 </div>
               </div>
               ${photoHtml}
               <h4 class="text-base font-bold mb-3">${escapeHtml(d.name)}${priceText}</h4>
               <div class="text-xs space-y-1 mb-3 custom-box p-2.5 rounded-lg border">
-                <div><b>Geschirr:</b> ${escapeHtml(d.plate_type || '-')}</div>
-                <div><b>Garmethode:</b> ${escapeHtml(d.method || '-')}</div>
-                <div><b>Garzeit / Temp.:</b> ${escapeHtml(d.cook_time || '-')}</div>
-                <div><b>Garnitur:</b> ${escapeHtml(d.garnish || '-')}</div>
+                <div><b>${escapeHtml(t('tray.glass'))}</b> ${escapeHtml(d.glass_type || '-')}</div>
+                <div><b>Method:</b> ${escapeHtml(d.method || '-')}</div>
+                <div><b>Ice:</b> ${escapeHtml(d.ice || '-')}</div>
+                <div><b>Garnish:</b> ${escapeHtml(d.garnish || '-')}</div>
               </div>
               <div class="text-xs custom-box p-2.5 rounded-lg border mb-2">
-                <div class="font-bold text-amber-600 dark:text-amber-400 mb-1 pb-1 border-b border-slate-200 dark:border-slate-800 grid grid-cols-2"><span>Zutaten:</span><span>Menge:</span></div>
+                <div class="font-bold text-amber-600 dark:text-amber-400 mb-1 pb-1 border-b border-slate-200 dark:border-slate-800 grid grid-cols-2"><span>${escapeHtml(t('tray.ingredients'))}</span><span>${escapeHtml(t('tray.amount'))}</span></div>
                 ${ingredientsHtml}
               </div>
-              ${d.recipe ? `<div class="text-[11px] text-slate-600 dark:text-slate-400 custom-box p-2 rounded-lg border"><b>Zubereitung:</b> ${escapeHtml(d.recipe)}</div>` : ''}
+              ${d.recipe ? `<div class="text-[11px] text-slate-600 dark:text-slate-400 custom-box p-2 rounded-lg border"><b>${escapeHtml(t('tray.prep'))}</b> ${escapeHtml(d.recipe)}</div>` : ''}
             </div>
           </div>
         `;
@@ -321,36 +321,36 @@
       modal.classList.add('hidden');
     }
 
-    function openReplaceDishModal(trayIndex) {
+    function openReplaceDrinkModal(trayIndex) {
       document.getElementById('replaceIndexTarget').value = trayIndex;
-      const seasonDishes = allDishes.filter(d => (d.season || '') === currentSeasonFilter);
-      const container = document.getElementById('replaceDishListContainer');
+      const seasonDrinks = allDrinks.filter(d => (d.season || '') === currentSeasonFilter);
+      const container = document.getElementById('replaceDrinkListContainer');
       
-      container.innerHTML = seasonDishes.map(d => `
-        <div onclick="executeReplaceDish(${jsArg(d.id)})" class="p-2.5 rounded-lg custom-box border hover:border-amber-500 cursor-pointer flex items-center justify-between text-xs transition">
+      container.innerHTML = seasonDrinks.map(d => `
+        <div onclick="executeReplaceDrink(${jsArg(d.id)})" class="p-2.5 rounded-lg custom-box border hover:border-amber-500 cursor-pointer flex items-center justify-between text-xs transition">
           <span class="font-bold">${escapeHtml(d.name)}</span>
           <span class="text-[10px] text-slate-600 dark:text-slate-400">${escapeHtml(d.category || '')}</span>
         </div>
       `).join('');
 
-      const modal = document.getElementById('replaceDishModal');
+      const modal = document.getElementById('replaceDrinkModal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
     }
 
-    function closeReplaceDishModal() {
-      const modal = document.getElementById('replaceDishModal');
+    function closeReplaceDrinkModal() {
+      const modal = document.getElementById('replaceDrinkModal');
       modal.classList.remove('flex');
       modal.classList.add('hidden');
     }
 
-    function executeReplaceDish(newDishId) {
+    function executeReplaceDrink(newDrinkId) {
       let trayIndex = parseInt(document.getElementById('replaceIndexTarget').value);
-      if (!isNaN(trayIndex) && trayIndex >= 0 && trayIndex < traySelection.length) {
-        traySelection[trayIndex] = newDishId;
-        localStorage.setItem('kueche_tray', JSON.stringify(traySelection));
-        renderTrayUI();
-        closeReplaceDishModal();
+      if (!isNaN(trayIndex) && trayIndex >= 0 && trayIndex < barTraySelection.length) {
+        barTraySelection[trayIndex] = newDrinkId;
+        localStorage.setItem('salon_bar_tray', JSON.stringify(barTraySelection));
+        renderBarTrayUI();
+        closeReplaceDrinkModal();
         openMultiViewModal();
       }
     }

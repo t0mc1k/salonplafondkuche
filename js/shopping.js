@@ -6,9 +6,9 @@
       closeSettingsMenu();
       document.getElementById('shoppingSeasonName').innerText = currentSeasonFilter;
       
-      let activeDishes = allDishes.filter(d => (d.season || '') === currentSeasonFilter);
+      let activeDrinks = allDrinks.filter(d => (d.season || '') === currentSeasonFilter);
       let ingredientsMap = {};
-      activeDishes.forEach(d => {
+      activeDrinks.forEach(d => {
         if (Array.isArray(d.ingredients_json)) {
           d.ingredients_json.forEach(ing => {
             let key = ing.name.toLowerCase().trim();
@@ -23,15 +23,15 @@
       let container = document.getElementById('shoppingListContainer');
       let keys = Object.keys(ingredientsMap).sort();
       if (keys.length === 0) {
-        container.innerHTML = `<p class="text-slate-500 italic p-4 text-center">Keine Zutaten in dieser Saison gefunden.</p>`;
+        container.innerHTML = `<p class="text-slate-500 italic p-4 text-center">${escapeHtml(t('shop.empty'))}</p>`;
       } else {
         let tableHtml = `
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
               <thead>
                 <tr class="border-b border-slate-300 dark:border-slate-700 text-amber-600 dark:text-amber-400 text-[11px] uppercase">
-                  <th class="p-2.5 w-1/3">Zutat / Produkt</th>
-                  <th class="p-2.5 w-2/3">Verwendung & Mengen</th>
+                  <th class="p-2.5 w-1/3">${escapeHtml(t('shop.colIng'))}</th>
+                  <th class="p-2.5 w-2/3">${escapeHtml(t('shop.colUse'))}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-200 dark:divide-slate-800/60">
@@ -63,9 +63,9 @@
     }
 
     function exportShoppingListExcel() {
-      let activeDishes = allDishes.filter(d => (d.season || '') === currentSeasonFilter);
+      let activeDrinks = allDrinks.filter(d => (d.season || '') === currentSeasonFilter);
       let ingredientsMap = {};
-      activeDishes.forEach(d => {
+      activeDrinks.forEach(d => {
         if (Array.isArray(d.ingredients_json)) {
           d.ingredients_json.forEach(ing => {
             let key = ing.name.toLowerCase().trim();
@@ -78,18 +78,18 @@
       });
 
       let keys = Object.keys(ingredientsMap).sort();
-      if (keys.length === 0) return alert("Keine Zutaten für den Export vorhanden.");
+      if (keys.length === 0) return alert(t('shop.noExport'));
 
       let dataToExport = keys.map(k => {
         let item = ingredientsMap[k];
         return {
-          Zutat: item.name,
-          Verwendung_und_Mengen: item.amounts.join(', ')
+          [t('shop.xlsIng')]: item.name,
+          [t('shop.xlsUse')]: item.amounts.join(', ')
         };
       });
 
       let worksheet = XLSX.utils.json_to_sheet(dataToExport);
       let workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Einkaufsliste");
-      XLSX.writeFile(workbook, `kueche_einkaufsliste_${currentSeasonFilter}.xlsx`);
+      XLSX.writeFile(workbook, `salonplafond_einkaufsliste_${currentSeasonFilter}.xlsx`);
     }
