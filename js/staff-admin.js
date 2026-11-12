@@ -171,18 +171,19 @@
       document.getElementById('staffAvatarStatus').innerText = '';
       document.getElementById('staffFormTitle').innerText = "➕ Neuer Mitarbeiter";
       document.getElementById('staffPinHint').innerText = "Pflichtfeld: 4 bis 6 Ziffern.";
-      setStaffRole('staff');
+      setStaffRole('kitchen');
+      document.getElementById('staffInputExtraDish').checked = false;
       updateStaffAvatarPreview();
     }
 
     function setStaffRole(role) {
       const sel = document.getElementById('staffInputRole');
       if (sel) sel.value = role;
-      ['staff', 'manager', 'developer'].forEach(r => {
+      ['kitchen', 'dishwasher', 'manager', 'developer'].forEach(r => {
         const b = document.getElementById('staffRoleBtn_' + r);
         if (b) b.classList.toggle('active', r === role);
       });
-      // Manager/Developer dürfen immer Getränke bearbeiten
+      // Manager/Developer dürfen immer Rezepte bearbeiten
       const canEdit = document.getElementById('staffInputCanEdit');
       const note = document.getElementById('staffCanEditNote');
       const always = (role === 'manager' || role === 'developer');
@@ -190,7 +191,7 @@
         if (always) canEdit.checked = true;
         canEdit.disabled = always;
       }
-      if (note) note.innerText = always ? 'Manager und Developer dürfen Getränke immer bearbeiten.' : 'Erlaubt dem Mitarbeiter, Getränke anzulegen, zu ändern und zu löschen.';
+      if (note) note.innerText = always ? 'Manager und Developer dürfen Rezepte immer bearbeiten.' : 'Erlaubt dem Mitarbeiter, Rezepte anzulegen, zu ändern und zu löschen.';
     }
 
     function updateStaffAvatarPreview() {
@@ -230,14 +231,14 @@
       status.innerText = "⏳ Foto wird hochgeladen...";
 
       const fileName = `avatar_${Date.now()}_${file.name}`;
-      let { data, error } = await _supabase.storage.from('drinks').upload(fileName, file);
+      let { data, error } = await _supabase.storage.from('photos').upload(fileName, file);
 
       if (error) {
         status.innerText = 'Fehler: ' + error.message;
         return;
       }
 
-      let { data: publicURLData } = _supabase.storage.from('drinks').getPublicUrl(fileName);
+      let { data: publicURLData } = _supabase.storage.from('photos').getPublicUrl(fileName);
       if (publicURLData && publicURLData.publicUrl) {
         document.getElementById('staffInputAvatar').value = publicURLData.publicUrl;
         status.innerText = '✔ Foto hinzugefügt – mit „Speichern“ übernehmen.';
@@ -266,7 +267,8 @@
     function staffRolePill(role) {
       if (role === 'developer') return `<span class="staff-pill pill-dev">Developer</span>`;
       if (role === 'manager') return `<span class="staff-pill pill-manager">Manager</span>`;
-      return `<span class="staff-pill pill-staff">Kellner</span>`;
+      if (role === 'dishwasher') return `<span class="staff-pill pill-staff">Abwasher</span>`;
+      return `<span class="staff-pill pill-staff">Koch</span>`;
     }
 
     function renderStaffList() {
@@ -291,13 +293,13 @@
       }
 
       // Filter-Chips
-      ['all', 'staff', 'manager', 'developer'].forEach(r => {
+      ['all', 'kitchen', 'dishwasher', 'manager', 'developer'].forEach(r => {
         const chip = document.getElementById('staffChip_' + r);
         if (chip) chip.classList.toggle('active', r === staffRoleFilter);
       });
 
       const list = staffListCache.filter(s => {
-        if (staffRoleFilter !== 'all' && (s.role || 'staff') !== staffRoleFilter) return false;
+        if (staffRoleFilter !== 'all' && (s.role || 'kitchen') !== staffRoleFilter) return false;
         if (q && (s.name || '').toLowerCase().indexOf(q) === -1) return false;
         return true;
       });
@@ -324,7 +326,7 @@
               <div class="staff-name">${escapeHtml(staff.name)}</div>
               <div class="staff-badges">
                 ${staffRolePill(staff.role)}
-                ${staff.can_edit_drinks ? '<span class="staff-pill pill-ok" title="Darf Getränke bearbeiten">🍸 Drinks</span>' : ''}
+                ${staff.can_edit_drinks ? '<span class="staff-pill pill-ok" title="Darf Rezepte bearbeiten">🍳 Rezepte</span>' : ''}
                 ${staff.has_pin ? '<span class="staff-pill pill-ok" title="PIN ist gesetzt">🔑 PIN</span>' : '<span class="staff-pill pill-warn" title="Es ist kein PIN gesetzt">⚠ PIN fehlt</span>'}
               </div>
               <div class="staff-meta">Zuletzt angemeldet: ${escapeHtml(formatRelativeTime(staff.last_used_at))}</div>
@@ -350,7 +352,8 @@
       document.getElementById('staffPinHint').innerText = staff.has_pin
         ? "Leer lassen = PIN bleibt unverändert. Zum Ändern 4 bis 6 Ziffern eingeben."
         : "Für diesen Mitarbeiter ist noch kein PIN gesetzt: bitte 4 bis 6 Ziffern eingeben.";
-      setStaffRole(staff.role || 'staff');
+      setStaffRole(staff.role || 'kitchen');
+      document.getElementById('staffInputExtraDish').checked = Array.isArray(staff.extra_roles) && staff.extra_roles.indexOf('dishwasher') !== -1;
       // „Darf Getränke bearbeiten“ nach setStaffRole erneut korrekt setzen (Admins immer)
       if (!(staff.role === 'manager' || staff.role === 'developer')) {
         document.getElementById('staffInputCanEdit').checked = !!staff.can_edit_drinks;
@@ -377,7 +380,8 @@
         p_pin: pin,
         p_role: role,
         p_avatar: avatar_url,
-        p_can_edit: canEdit
+        p_can_edit: canEdit,
+        p_extra_roles: document.getElementById('staffInputExtraDish').checked ? ['dishwasher'] : []
       });
       if (error) return alert("Fehler beim Speichern: " + error.message);
 

@@ -22,7 +22,7 @@
       'js/team-plan.js', 'js/feature-ui.js', 'js/checklists.js', 'js/shift-swap.js', 'js/absence.js', 'js/payroll.js',
       'js/menu-allergens.js', 'js/specials.js', 'js/exclusive.js', 'js/reservations.js', 'js/inbox.js', 'js/reports.js', 'js/help.js', 'js/push.js', 'js/presence.js', 'js/login-log.js',
       'js/intro.js', 'js/tomi.js', 'js/seasons.js', 'js/drinks.js', 'js/drink-admin.js', 'js/tray.js',
-      'js/shopping.js', 'js/import-export.js', 'js/print-a3.js', 'js/dashboard.js', 'js/app.js'
+      'js/shopping.js', 'js/import-export.js', 'js/dashboard.js', 'js/app.js'
     ];
 
     // Stylesheet sofort einbinden (diese Datei steht im <head>)

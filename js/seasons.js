@@ -22,7 +22,7 @@
 
         let formatted = newSeasonName.trim();
         
-        const { error } = await _supabase.from('drinks').insert([{
+        const { error } = await _supabase.from('recipes').insert([{
           name: "Willkommens-Drink (Saison-Start)",
           category: "Cocktails",
           season: formatted,
@@ -81,7 +81,7 @@
         if (!newSeasonName || newSeasonName.trim() === '' || newSeasonName.trim() === oldSeasonName) return;
 
         const formattedNewName = newSeasonName.trim();
-        const { error } = await _supabase.from('drinks').update({ season: formattedNewName }).eq('season', oldSeasonName);
+        const { error } = await _supabase.from('recipes').update({ season: formattedNewName }).eq('season', oldSeasonName);
         
         if (error) {
           alert("Fehler beim Umbenennen: " + error.message);
@@ -100,7 +100,7 @@
       checkDrinkEditAuth(async () => {
         if (!confirm(`Möchten Sie wirklich die gesamte Saison "${seasonKey}" und alle darin enthaltenen Getränke permanent löschen?`)) return;
 
-        const { error: drinksErr } = await _supabase.from('drinks').delete().eq('season', seasonKey);
+        const { error: drinksErr } = await _supabase.from('recipes').delete().eq('season', seasonKey);
         if (drinksErr) {
           alert("Fehler beim Löschen der Getränke der Saison: " + drinksErr.message);
           return;

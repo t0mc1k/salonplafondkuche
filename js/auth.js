@@ -336,7 +336,7 @@
         if (callback) callback();
         return;
       }
-      alert("Du hast keine Berechtigung, Getränke zu bearbeiten.");
+      alert("Du hast keine Berechtigung, Rezepte zu bearbeiten.");
     }
 
     // PIN auch mit der Computer-Tastatur eingeben (nur sichtbar, wenn der PIN-Schritt offen ist)

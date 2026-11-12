@@ -1,6 +1,6 @@
 /* ============================================================
    js/drink-admin.js
-   Getränke bearbeiten: hinzufügen, ändern, löschen, Zutaten, Foto-Upload
+   Rezepte bearbeiten: hinzufügen, ändern, löschen, Zutaten, Foto-Upload
    ============================================================ */
     function togglePresetAllergen(allergenName, isChecked) {
       const textarea = document.getElementById('dAllergens');
@@ -109,7 +109,7 @@
       const url = input.value.trim();
       if (!url) return;
       if (!/^https?:\/\//i.test(url)) return alert("Bitte eine gültige Bild-URL angeben (beginnt mit https://).");
-      if (drinkFormPhotos.length >= MAX_DRINK_PHOTOS) return alert("Es sind höchstens " + MAX_DRINK_PHOTOS + " Fotos pro Getränk möglich.");
+      if (drinkFormPhotos.length >= MAX_DRINK_PHOTOS) return alert("Es sind höchstens " + MAX_DRINK_PHOTOS + " Fotos pro Rezept möglich.");
       if (drinkFormPhotos.indexOf(url) === -1) drinkFormPhotos.push(url);
       input.value = '';
       renderPhotoSlots();
@@ -133,14 +133,14 @@
         const isJpeg = prepared !== file;
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
         const fileName = `${Date.now()}_${done}_${isJpeg ? safeName.replace(/\.[^.]+$/, '') + '.jpg' : safeName}`;
-        const { error } = await _supabase.storage.from('drinks').upload(fileName, prepared, isJpeg ? { contentType: 'image/jpeg' } : undefined);
+        const { error } = await _supabase.storage.from('photos').upload(fileName, prepared, isJpeg ? { contentType: 'image/jpeg' } : undefined);
         if (error) {
           console.error("Supabase Storage Error:", error);
           status.innerText = 'Fehler: ' + error.message;
           renderPhotoSlots();
           return;
         }
-        const { data: pub } = _supabase.storage.from('drinks').getPublicUrl(fileName);
+        const { data: pub } = _supabase.storage.from('photos').getPublicUrl(fileName);
         if (pub && pub.publicUrl) drinkFormPhotos.push(pub.publicUrl);
         done++;
         renderPhotoSlots();
@@ -162,7 +162,7 @@
     function openAddDrinkModal() {
       checkDrinkEditAuth(() => {
         resetForm();
-        document.getElementById('formTitle').innerText = "➕ Neues Getränk hinzufügen";
+        document.getElementById('formTitle').innerText = "➕ Neues Rezept hinzufügen";
         renderSeasonFormSelect(currentSeasonFilter);
         document.getElementById('deleteFormBtn').classList.add('hidden');
         document.getElementById('adminModal').classList.remove('hidden');
@@ -186,15 +186,15 @@
       if (!d) return;
       closeModal();
       document.getElementById('editingId').value = d.id;
-      document.getElementById('formTitle').innerText = "✏️ Getränk bearbeiten";
+      document.getElementById('formTitle').innerText = "✏️ Rezept bearbeiten";
       document.getElementById('dName').value = d.name || '';
       formPendingCategories = [];
       renderCategoryChooser(d.category || '');
       renderSeasonFormSelect(d.season || getAllSeasons()[0]);
-      document.getElementById('dGlass').value = d.glass_type || '';
+      document.getElementById('dPortions').value = d.portions || '';
       document.getElementById('dMethod').value = d.method || '';
-      document.getElementById('dIce').value = d.ice || '';
-      document.getElementById('dGarnish').value = d.garnish || '';
+      document.getElementById('dPrepTime').value = d.prep_time || '';
+      document.getElementById('dPlating').value = d.plating || '';
       populateIngredientRows(d.ingredients_json);
       document.getElementById('dCost').value = d.cost_price || '';
       document.getElementById('dPrice').value = d.selling_price || '';
@@ -216,8 +216,8 @@
     }
 
     async function deleteDrinkConfirm(id) {
-      if (confirm("Möchten Sie dieses Getränk wirklich löschen?")) {
-        const { error } = await _supabase.from('drinks').delete().eq('id', id);
+      if (confirm("Möchten Sie dieses Rezept wirklich löschen?")) {
+        const { error } = await _supabase.from('recipes').delete().eq('id', id);
         if (error) return alert("Error: " + error.message);
         closeModal();
         closeAdminModal();
@@ -237,10 +237,10 @@
       renderCategoryChooser('');
       toggleNewCategoryRow(false);
       populateIngredientRows([]);
-      document.getElementById('dGlass').value = '';
+      document.getElementById('dPortions').value = '';
       document.getElementById('dMethod').value = '';
-      document.getElementById('dIce').value = '';
-      document.getElementById('dGarnish').value = '';
+      document.getElementById('dPrepTime').value = '';
+      document.getElementById('dPlating').value = '';
       document.getElementById('dCost').value = '';
       document.getElementById('dPrice').value = '';
       document.getElementById('dAllergens').value = '';
@@ -271,10 +271,10 @@
         const drinkObj = {
           name, category,
           season: document.getElementById('dSeason').value,
-          glass_type: document.getElementById('dGlass').value,
+          portions: document.getElementById('dPortions').value,
           method: document.getElementById('dMethod').value,
-          ice: document.getElementById('dIce').value,
-          garnish: document.getElementById('dGarnish').value,
+          prep_time: document.getElementById('dPrepTime').value,
+          plating: document.getElementById('dPlating').value,
           ingredients_json: getIngredientsData(),
           cost_price: rawCost !== '' ? parseFloat(rawCost) || null : null,
           selling_price: rawPrice !== '' ? parseFloat(rawPrice) || null : null,
@@ -285,35 +285,29 @@
           is_featured: document.getElementById('dFeatured').checked,
           is_vegan: document.getElementById('dVegan').checked,
           is_glutenfree: document.getElementById('dGlutenfree').checked,
-          is_lactosefree: document.getElementById('dLactosefree').checked,
-          updated_at: new Date().toISOString()
+          is_lactosefree: document.getElementById('dLactosefree').checked
+          // created_by / updated_by / updated_at setzt die Datenbank (Trigger recipes_stamp)
         };
 
         const id = document.getElementById('editingId').value;
         const persist = obj => id
-          ? _supabase.from('drinks').update(obj).select().eq('id', id)
-          : _supabase.from('drinks').insert([obj]).select();
+          ? _supabase.from('recipes').update(obj).select().eq('id', id)
+          : _supabase.from('recipes').insert([obj]).select();
         let saveRes = await persist(drinkObj);
-        let photosNote = false;
-        if (saveRes.error && /photo_urls/.test(saveRes.error.message || '')) {
-          // Spalte für mehrere Fotos fehlt noch in der Datenbank: ohne sie speichern (nur Hauptfoto)
-          delete drinkObj.photo_urls;
-          saveRes = await persist(drinkObj);
-          photosNote = drinkFormPhotos.length > 1;
-        }
+        const photosNote = false;
 
         if (saveRes.error) {
           alert("Fehler beim Speichern: " + saveRes.error.message);
           return;
         }
         if (!saveRes.data || saveRes.data.length === 0) {
-          alert("Das Getränk wurde NICHT gespeichert (keine Berechtigung in der Datenbank).");
+          alert("Das Rezept wurde NICHT gespeichert (keine Berechtigung in der Datenbank).");
           return;
         }
 
         closeAdminModal();
         await loadDrinks();
-        showAppToast({ initial: '🍸', title: id ? 'Getränk gespeichert' : 'Getränk angelegt', text: photosNote ? name + ' – nur das Hauptfoto gespeichert (SQL für mehrere Fotos fehlt noch)' : name, ms: photosNote ? 8000 : 5000 });
+        showAppToast({ initial: '🍳', title: id ? 'Rezept gespeichert' : 'Rezept angelegt', text: name });
       });
     }
 
@@ -357,7 +351,7 @@
       } else {
         formPendingCategories.push(name);
         selectDrinkCategory(name);
-        showAppToast({ initial: '🏷️', title: 'Neue Kategorie', text: `„${name}“ wird mit diesem Getränk gespeichert.` });
+        showAppToast({ initial: '🏷️', title: 'Neue Kategorie', text: `„${name}“ wird mit diesem Rezept gespeichert.` });
       }
       toggleNewCategoryRow(false);
     }

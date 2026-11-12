@@ -47,7 +47,6 @@ js/                 Logik, in Themen aufgeteilt (siehe unten)
 | Multi-View-Korb, Drag & Drop, Getränk tauschen          | js/tray.js           |
 | Einkaufsliste / Inventur                                | js/shopping.js       |
 | Excel-Import, Export (Excel/CSV)                        | js/import-export.js  |
-| Karten-Druck A3                                         | js/print-a3.js       |
 | Programmstart                                           | js/app.js            |
 | App installieren, Offline-Unterstützung (Service Worker) | js/pwa.js, sw.js, manifest.webmanifest, icons/ |
 | Neues Fenster / neuer Button / Text auf der Seite       | index.html           |

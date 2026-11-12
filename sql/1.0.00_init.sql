@@ -25,6 +25,24 @@ create table if not exists public.staff (
   last_used_at    timestamptz,
   created_at      timestamptz not null default now()
 );
+-- Falls die Tabelle schon (älter/teilweise) existiert: fehlende Spalten ergänzen
+alter table public.staff add column if not exists pin_hash text;
+alter table public.staff add column if not exists role text not null default 'kitchen';
+alter table public.staff add column if not exists extra_roles text[] not null default '{}';
+alter table public.staff add column if not exists team text;
+alter table public.staff add column if not exists job_title text;
+alter table public.staff add column if not exists avatar_url text not null default '';
+alter table public.staff add column if not exists bio text not null default '';
+alter table public.staff add column if not exists can_edit_drinks boolean not null default false;
+alter table public.staff add column if not exists must_change_pin boolean not null default true;
+alter table public.staff add column if not exists failed_attempts int not null default 0;
+alter table public.staff add column if not exists locked_until timestamptz;
+alter table public.staff add column if not exists last_used_at timestamptz;
+alter table public.staff add column if not exists created_at timestamptz not null default now();
+update public.staff set role = 'kitchen' where role is null or role not in ('developer','manager','kitchen','dishwasher');
+alter table public.staff drop constraint if exists staff_role_check;
+alter table public.staff add constraint staff_role_check check (role in ('developer','manager','kitchen','dishwasher'));
+
 create unique index if not exists staff_name_uq on public.staff (lower(name));
 
 create table if not exists public.auth_tokens (
@@ -169,7 +187,7 @@ begin
     end if;
     update public.staff set
       name = btrim(p_name), role = p_role, extra_roles = coalesce(p_extra_roles, '{}'),
-      team = p_team, job_title = p_job_title,
+      team = coalesce(p_team, team), job_title = coalesce(p_job_title, job_title),
       avatar_url = coalesce(p_avatar, avatar_url), can_edit_drinks = coalesce(p_can_edit, false),
       pin_hash = case when coalesce(p_pin, '') <> '' then extensions.crypt(p_pin, extensions.gen_salt('bf')) else pin_hash end,
       must_change_pin = case when coalesce(p_pin, '') <> '' then true else must_change_pin end

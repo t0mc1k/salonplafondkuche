@@ -23,11 +23,9 @@
         specials: { icon: '🍰', title: t('dash.specials'), sub: t('dash.specialsSub'), run: 'openSpecialsModal', need: 'all' },
         reserv:   { icon: '📒', title: t('dash.reserv'), sub: t('dash.reservSub'), run: 'openReservationsModal', need: 'all' },
         season:   { icon: '📅', title: t('dash.season'), sub: seasonSub, run: 'openSeasonModal', need: 'admin' },
-        print:    { icon: '🖨️', title: t('dash.print'), sub: t('dash.printSub'), run: 'openA3PrintSetupModal', need: 'admin' },
         impexp:   { icon: '📊', title: t('dash.impexp'), sub: t('dash.impexpSub'), run: 'openImportExportModal', need: 'edit' },
         checklist:{ icon: '✅', title: adm ? t('dash.checklistA') : t('dash.checklistS'), sub: adm ? t('dash.checklistAS') : t('dash.checklistSS'), run: 'openChecklistModal', need: 'all' },
         maint:    { icon: '🛠️', title: adm ? t('dash.maintA') : t('dash.maintS'), sub: adm ? t('dash.maintAS') : t('dash.maintSS'), run: 'openMaintenanceModal', need: 'all', badge: 'dashMaintBadge' },
-        found:    { icon: '🧳', title: t('dash.found'), sub: t('dash.foundSub'), run: 'openFoundModal', need: 'all' },
         loss:     { icon: '🔨', title: adm ? t('dash.lossA') : t('dash.lossS'), sub: adm ? t('dash.lossAS') : t('dash.lossSS'), run: 'openLossModal', need: 'all' },
         teamplan: { icon: '📆', title: t('dash.teamplan'), sub: t('dash.teamplanSub'), run: 'openTeamPlanModal', need: 'admin' },
         swaps:    { icon: '🔄', title: t('dash.swaps'), sub: adm ? t('dash.swapsA') : t('dash.swapsS'), run: 'openSwapModal', need: 'all', badge: 'dashSwapBadge' },
@@ -49,15 +47,19 @@
     function dashLayoutFor() {
       if (userIsAdmin) {
         return [
-          { title: t('dash.g.bar'),  ids: ['drinks', 'allergens', 'specials', 'reserv', 'exclusive', 'season', 'print', 'impexp'] },
-          { title: t('dash.g.std'),  ids: ['checklist', 'maint', 'found', 'loss'] },
+          { title: t('dash.g.bar'),  ids: ['drinks', 'allergens', 'specials', 'reserv', 'exclusive', 'season', 'impexp'] },
+          { title: t('dash.g.std'),  ids: ['checklist', 'maint', 'loss'] },
           { title: t('dash.g.team'), ids: ['teamplan', 'swaps', 'absence', 'payroll', 'staff', 'chat'] },
           { title: t('dash.g.sys'),  ids: ['login', 'settings'] },
           { title: t('dash.g.info'), ids: ['news', 'tomi', 'help', 'support'] }
         ];
       }
-      // Kellner/Barkeeper (+ Import, falls Getränke-Recht)
-      const bar = ['drinks', 'allergens', 'specials', 'reserv', 'maint', 'found', 'loss', 'tomi', 'help', 'news'];
+      // Abwasher: keine Rezepte (Abwasher-Aufgaben kommen in einer späteren Version)
+      if (currentStaffRole === 'dishwasher') {
+        return [{ title: t('dash.g.shift'), ids: ['myplan', 'swaps', 'absence', 'chat', 'help', 'news'] }];
+      }
+      // Koch (+ Import, falls Rezepte-Recht)
+      const bar = ['drinks', 'allergens', 'specials', 'reserv', 'maint', 'loss', 'tomi', 'help', 'news'];
       if (userCanEdit) bar.splice(1, 0, 'impexp');
       return [
         { title: t('dash.g.shift'),      ids: ['checklist', 'myplan', 'swaps', 'absence', 'chat'] },
@@ -90,7 +92,7 @@
       if (dateEl) dateEl.textContent = new Date().toLocaleDateString(langLocale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
       const pill = document.getElementById('dashRolePill');
       if (pill) {
-        pill.textContent = ({ developer: t('role.developer'), manager: t('role.manager') })[currentStaffRole] || t('role.staff');
+        pill.textContent = ({ developer: t('role.developer'), manager: t('role.manager'), dishwasher: t('role.dishwasher') })[currentStaffRole] || t('role.kitchen');
         pill.className = 'staff-pill ' + (currentStaffRole === 'developer' ? 'pill-dev' : currentStaffRole === 'manager' ? 'pill-manager' : 'pill-staff');
       }
 

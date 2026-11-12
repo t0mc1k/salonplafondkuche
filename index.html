@@ -135,7 +135,8 @@
           </div>
           <div class="flex gap-1.5 flex-wrap items-center">
             <button type="button" id="staffChip_all" onclick="setStaffRoleFilter('all')" class="ui-chip active">Alle</button>
-            <button type="button" id="staffChip_staff" onclick="setStaffRoleFilter('staff')" class="ui-chip">Kellner</button>
+            <button type="button" id="staffChip_kitchen" onclick="setStaffRoleFilter('kitchen')" class="ui-chip">Köche</button>
+            <button type="button" id="staffChip_dishwasher" onclick="setStaffRoleFilter('dishwasher')" class="ui-chip">Abwasher</button>
             <button type="button" id="staffChip_manager" onclick="setStaffRoleFilter('manager')" class="ui-chip">Manager</button>
             <button type="button" id="staffChip_developer" onclick="setStaffRoleFilter('developer')" class="ui-chip">Developer</button>
             <span id="staffSummary" class="staff-summary"></span>
@@ -159,7 +160,8 @@
           <input type="hidden" id="editingStaffOriginalName" value="">
           <input type="hidden" id="staffInputAvatar" value="">
           <select id="staffInputRole" class="hidden">
-            <option value="staff">staff</option>
+            <option value="kitchen">kitchen</option>
+            <option value="dishwasher">dishwasher</option>
             <option value="manager">manager</option>
             <option value="developer">developer</option>
           </select>
@@ -185,11 +187,14 @@
           <div class="form-section">
             <div class="form-section-title">2 · Rolle</div>
             <div class="role-seg">
-              <button type="button" id="staffRoleBtn_staff" onclick="setStaffRole('staff')" class="role-opt active">
-                <span class="role-ico">🍹</span><b>Kellner</b><small>Rezepte ansehen, Chat, eigenes Profil</small>
+              <button type="button" id="staffRoleBtn_kitchen" onclick="setStaffRole('kitchen')" class="role-opt active">
+                <span class="role-ico">👨‍🍳</span><b>Koch</b><small>Rezepte ansehen, Dienstplan, Chat, eigenes Profil</small>
+              </button>
+              <button type="button" id="staffRoleBtn_dishwasher" onclick="setStaffRole('dishwasher')" class="role-opt">
+                <span class="role-ico">🧽</span><b>Abwasher</b><small>Nur Abwasher-Aufgaben, Chat, eigenes Profil</small>
               </button>
               <button type="button" id="staffRoleBtn_manager" onclick="setStaffRole('manager')" class="role-opt">
-                <span class="role-ico">🧑‍💼</span><b>Manager</b><small>Personal, Tickets, Login-Protokoll und Getränke verwalten</small>
+                <span class="role-ico">🧑‍💼</span><b>Manager</b><small>Personal, Tickets, Login-Protokoll und Rezepte verwalten</small>
               </button>
               <button type="button" id="staffRoleBtn_developer" onclick="setStaffRole('developer')" class="role-opt">
                 <span class="role-ico">🛠️</span><b>Developer</b><small>Wie Manager, zusätzlich Tickets löschen</small>
@@ -209,10 +214,17 @@
 
           <div class="form-section">
             <div class="form-section-title">4 · Rechte</div>
+            <label class="switch-row mb-2">
+              <span class="min-w-0">
+                <b class="block text-xs">🧽 Zusatzrolle: auch Abwasher</b>
+                <small class="form-hint block mt-0.5">Für Personen mit zwei Aufgaben (z. B. Developer, der auch abwäscht).</small>
+              </span>
+              <span class="switch"><input type="checkbox" id="staffInputExtraDish"><span class="switch-track"></span></span>
+            </label>
             <label class="switch-row">
               <span class="min-w-0">
-                <b class="block text-xs">🍸 Darf Getränke bearbeiten</b>
-                <small id="staffCanEditNote" class="form-hint block mt-0.5">Erlaubt dem Mitarbeiter, Getränke anzulegen, zu ändern und zu löschen.</small>
+                <b class="block text-xs">🍳 Darf Rezepte bearbeiten</b>
+                <small id="staffCanEditNote" class="form-hint block mt-0.5">Erlaubt dem Mitarbeiter, Rezepte anzulegen, zu ändern und zu löschen.</small>
               </span>
               <span class="switch"><input type="checkbox" id="staffInputCanEdit"><span class="switch-track"></span></span>
             </label>
@@ -440,7 +452,7 @@
             </button>
 
             <button type="button" onclick="openAddDrinkModalFromMenu()" id="menuAddDrinkBtn" class="hidden menu-primary mt-1" data-i18n="menu.addDrink">
-              ➕ Neues Getränk hinzufügen
+              ➕ Neues Rezept hinzufügen
             </button>
 
             <div class="menu-section" data-i18n="menu.secDrinks">Getränke & Karte</div>
@@ -456,10 +468,6 @@
             <button type="button" onclick="openShoppingModal()" class="menu-item">
               <span class="menu-ico">🛒</span>
               <span class="menu-text"><span class="menu-label" data-i18n="menu.shopping">Einkaufsliste / Inventur</span><span class="menu-sub" data-i18n="menu.shoppingSub">Zutaten der Saison zusammenrechnen</span></span>
-            </button>
-            <button type="button" onclick="openA3PrintSetupModal()" class="menu-item">
-              <span class="menu-ico">🖨️</span>
-              <span class="menu-text"><span class="menu-label" data-i18n="menu.print">Karten-Druck (A3)</span><span class="menu-sub" data-i18n="menu.printSub">Getränkekarte zum Ausdrucken</span></span>
             </button>
             <button type="button" onclick="openImportExportModal()" id="btnMenuImportExport" class="hidden menu-item">
               <span class="menu-ico">📊</span>
@@ -577,13 +585,13 @@
     <div id="drinksView" class="hidden">
       <div class="dash-back-bar">
         <button type="button" onclick="showDashboard()" class="dash-back-btn" title="Zurück zum Dashboard" data-i18n-title="dv.backTitle">← Dashboard</button>
-        <span class="dash-back-title" data-i18n="dv.title">🍸 Getränke & Rezepte</span>
+        <span class="dash-back-title" data-i18n="dv.title">🍳 Rezepte</span>
       </div>
 
     <!-- Suche -->
     <div class="mb-3 md:mb-4">
       <div class="relative w-full">
-        <input type="text" id="searchInput" autocomplete="off" oninput="onSearchInput()" placeholder="🔍 Getränk oder Zutat suchen..." data-i18n-ph="dv.search" class="px-4 py-3 pr-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white w-full focus:outline-none focus:border-amber-500 text-sm shadow-md font-medium">
+        <input type="text" id="searchInput" autocomplete="off" oninput="onSearchInput()" placeholder="🔍 Rezept oder Zutat suchen..." data-i18n-ph="dv.search" class="px-4 py-3 pr-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white w-full focus:outline-none focus:border-amber-500 text-sm shadow-md font-medium">
         <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-sm font-bold bg-slate-200/70 dark:bg-slate-700/50 hover:bg-slate-300 dark:hover:bg-slate-700 w-5 h-5 rounded-full items-center justify-center">&times;</button>
       </div>
     </div>
@@ -612,7 +620,6 @@
               <button onclick="toggleSpecialFilter('vegan')" id="filterVegan" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap" data-i18n="dv.vegan">🌱 Vegan</button>
               <button onclick="toggleSpecialFilter('glutenfree')" id="filterGluten" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap" data-i18n="dv.gluten">🌾 Glutenfrei</button>
               <button onclick="toggleSpecialFilter('lactosefree')" id="filterLactose" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap" data-i18n="dv.lactose">🥛 Laktosefrei</button>
-              <button onclick="toggleSpecialFilter('nonalcoholic')" id="filterNonAlc" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap" data-i18n="dv.noalc">🚫 Alkoholfrei</button>
               <button onclick="toggleSpecialFilter('favorites')" id="filterFavs" class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap" data-i18n="dv.fav">❤️ Schicht-Favoriten</button>
             </div>
           </div>
@@ -625,13 +632,13 @@
 
     <!-- Neues Getränk: am Handy runder ➕-Knopf unten rechts -->
     <div id="addDrinkBtnContainer" class="hidden fab-wrap">
-      <button type="button" onclick="openAddDrinkModal()" class="fab-add" title="Neues Getränk hinzufügen">
-        <span class="fab-ico">➕</span><span class="fab-label">Neues Getränk hinzufügen</span>
+      <button type="button" onclick="openAddDrinkModal()" class="fab-add" title="Neues Rezept hinzufügen">
+        <span class="fab-ico">➕</span><span class="fab-label">Neues Rezept hinzufügen</span>
       </button>
     </div>
 
     <div id="drinksGrid">
-      <p id="loadingTxt" class="col-span-full text-slate-500 dark:text-slate-400" data-i18n="dv.loading">Lade Getränke aus der Datenbank...</p>
+      <p id="loadingTxt" class="col-span-full text-slate-500 dark:text-slate-400" data-i18n="dv.loading">Lade Rezepte aus der Datenbank...</p>
     </div>
 
     </div><!-- /drinksView -->
@@ -854,72 +861,6 @@
             </div>
           </form>
         </section>
-      </div>
-    </div>
-  </div>
-
-  <!-- A3 Print Setup Modal -->
-  <div id="a3PrintSetupModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="card max-w-xl w-full p-6 relative flex flex-col gap-4 max-h-[85vh] overflow-y-auto border-amber-500/50 shadow-2xl">
-      <button onclick="closeA3PrintSetupModal()" class="absolute top-4 right-4 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl font-bold">&times;</button>
-      <div>
-        <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">🖨️ Karten-Druck (A3 Format)</h3>
-        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Wähle die Saison, markiere <b>maximal 3 Getränke</b> und passe die Druckoptionen an.</p>
-      </div>
-
-      <div class="flex flex-col gap-2">
-        <label class="text-xs font-semibold">Saison wählen:</label>
-        <select id="a3SeasonSelect" onchange="renderA3DrinkSelectionList()" class="p-2.5 rounded-lg border text-xs w-full"></select>
-      </div>
-
-      <div class="custom-box p-3.5 rounded-xl border flex flex-col gap-2">
-        <span class="text-xs font-bold text-amber-600 dark:text-amber-400">⚙️ Druck-Optionen:</span>
-        <div class="flex flex-wrap gap-4 text-xs">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="a3OptionImage" checked class="accent-amber-500 w-4 h-4">
-            <span class="font-semibold">Mit Bild drucken</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="a3OptionPrice" checked class="accent-amber-500 w-4 h-4">
-            <span class="font-semibold">Mit Preis drucken</span>
-          </label>
-        </div>
-      </div>
-
-      <div class="flex flex-col gap-2">
-        <label class="text-xs font-semibold flex justify-between">
-          <span>Getränke auswählen (max. 3):</span>
-          <span id="a3SelectedCountBadge" class="text-amber-500 font-bold">0 / 3 gewählt</span>
-        </label>
-        <div id="a3DrinkCheckboxList" class="flex flex-col gap-2 max-h-[35vh] overflow-y-auto pr-1 custom-box p-3 rounded-xl border">
-          <p class="text-slate-500 italic text-xs text-center py-4">Bitte Saison wählen...</p>
-        </div>
-      </div>
-
-      <div class="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
-        <button onclick="generateA3PrintPreview()" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 font-bold text-slate-950 rounded-xl text-xs transition shadow flex items-center gap-2">
-          🖨️ A3 Vorschau & Drucken
-        </button>
-        <button onclick="closeA3PrintSetupModal()" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold text-slate-800 dark:text-white rounded-xl text-xs transition">Schließen</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- A3 Print Preview Modal -->
-  <div id="a3PrintPreviewModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[300]">
-    <div class="card max-w-4xl w-full p-8 relative flex flex-col gap-6 max-h-[90vh] overflow-y-auto border-amber-500/50 shadow-2xl bg-white text-slate-900">
-      <button onclick="closeA3PrintPreviewModal()" class="no-print absolute top-4 right-4 text-slate-500 hover:text-slate-900 text-2xl font-bold">&times;</button>
-      
-      <div id="a3PrintContainer" class="flex flex-col gap-8 bg-white text-slate-900 p-4 relative">
-        <div id="a3PrintDrinksList" class="flex flex-col gap-8"></div>
-        <div class="print-watermark-footer">Salonplafond NeXuS • BAR • Developed by Tomas Kardos © 2026</div>
-      </div>
-
-      <div class="no-print flex justify-end gap-2 pt-4 border-t border-slate-200 bg-white">
-        <button onclick="window.print()" class="px-6 py-3 bg-amber-500 hover:bg-amber-600 font-extrabold text-slate-950 rounded-xl text-xs transition shadow-lg flex items-center gap-2">
-          🖨️ Jetzt drucken
-        </button>
-        <button onclick="closeA3PrintPreviewModal()" class="px-5 py-3 bg-slate-200 hover:bg-slate-300 font-bold text-slate-800 rounded-xl text-xs transition">Schließen</button>
       </div>
     </div>
   </div>
@@ -1229,7 +1170,7 @@
 
       <div class="ui-head">
         <div>
-          <h2 id="formTitle" class="ui-head-title">➕ Neues Getränk hinzufügen</h2>
+          <h2 id="formTitle" class="ui-head-title">➕ Neues Rezept hinzufügen</h2>
           <p class="ui-head-sub">Pflichtfelder: Name und Kategorie. Alles andere kannst du auch später ergänzen.</p>
         </div>
         <button type="button" onclick="closeAdminModal()" class="ui-close" aria-label="Schließen">&times;</button>
@@ -1242,17 +1183,17 @@
         <!-- 1 Grunddaten -->
         <div class="form-section">
           <div class="form-section-title">1 · Grunddaten</div>
-          <label class="form-label" for="dName">Name des Getränks *</label>
-          <input type="text" id="dName" autocomplete="off" placeholder="z. B. Strawberry Kiss" class="ui-field text-base font-bold">
+          <label class="form-label" for="dName">Name des Rezepts *</label>
+          <input type="text" id="dName" autocomplete="off" placeholder="z. B. Gulaschsuppe" class="ui-field text-base font-bold">
 
           <label class="form-label mt-3">Kategorie *</label>
           <div id="categoryChips" class="flex flex-wrap gap-1.5"></div>
           <div id="newCategoryRow" class="hidden mt-2 flex gap-2 items-center">
-            <input type="text" id="dNewCategory" maxlength="30" autocomplete="off" placeholder="Name der neuen Kategorie, z. B. Signature Drinks" onkeydown="if (event.key === 'Enter') { event.preventDefault(); addNewCategory(); }" class="ui-field flex-1">
+            <input type="text" id="dNewCategory" maxlength="30" autocomplete="off" placeholder="Name der neuen Kategorie, z. B. Mittagsmenü" onkeydown="if (event.key === 'Enter') { event.preventDefault(); addNewCategory(); }" class="ui-field flex-1">
             <button type="button" onclick="addNewCategory()" class="ui-btn-primary">Anlegen</button>
             <button type="button" onclick="toggleNewCategoryRow(false)" class="ui-btn-ghost">Abbrechen</button>
           </div>
-          <p class="form-hint mt-1.5">Eine neue Kategorie erscheint nach dem Speichern dieses Getränks in der Kategorien-Leiste.</p>
+          <p class="form-hint mt-1.5">Eine neue Kategorie erscheint nach dem Speichern dieses Rezepts in der Kategorien-Leiste.</p>
 
           <label class="form-label mt-3" for="dSeason">Saison / Zeitraum</label>
           <select id="dSeason" onchange="handleSeasonSelectChange(this)" class="ui-field"></select>
@@ -1260,36 +1201,35 @@
 
         <!-- 2 Zubereitung -->
         <div class="form-section">
-          <div class="form-section-title">2 · Zubereitung</div>
+          <div class="form-section-title">2 · Angaben zum Rezept</div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="form-label" for="dGlass">🍸 Glas / Equipment</label>
+              <label class="form-label" for="dPortions">🍽️ Portionen / Menge</label>
               <div class="flex flex-wrap gap-1.5 mb-1.5">
-                <button type="button" class="ui-chip" onclick="setQuickVal('dGlass', 'Coupette')">Coupette</button>
-                <button type="button" class="ui-chip" onclick="setQuickVal('dGlass', 'Highball')">Highball</button>
-                <button type="button" class="ui-chip" onclick="setQuickVal('dGlass', 'Tumbler')">Tumbler</button>
-                <button type="button" class="ui-chip" onclick="setQuickVal('dGlass', 'Rocks')">Rocks</button>
-                <button type="button" class="ui-chip" onclick="setQuickVal('dGlass', 'Martini')">Martini</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dPortions', '1 Portion')">1 Portion</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dPortions', '4 Portionen')">4 Portionen</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dPortions', '10 Portionen')">10 Portionen</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dPortions', '1 GN 1/1')">1 GN 1/1</button>
               </div>
-              <input type="text" id="dGlass" autocomplete="off" placeholder="oder selbst eingeben ..." class="ui-field">
+              <input type="text" id="dPortions" autocomplete="off" placeholder="oder selbst eingeben ..." class="ui-field">
             </div>
             <div>
-              <label class="form-label" for="dIce">🧊 Eis</label>
+              <label class="form-label" for="dPrepTime">⏱️ Zubereitungszeit</label>
               <div class="flex flex-wrap gap-1.5 mb-1.5">
-                <button type="button" class="ui-chip" onclick="setQuickVal('dIce', 'Cubed')">Cubed</button>
-                <button type="button" class="ui-chip" onclick="setQuickVal('dIce', 'Crushed')">Crushed</button>
-                <button type="button" class="ui-chip" onclick="setQuickVal('dIce', 'Ice Ball')">Ice Ball</button>
-                <button type="button" class="ui-chip" onclick="setQuickVal('dIce', 'None')">None</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dPrepTime', '15 Min')">15 Min</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dPrepTime', '30 Min')">30 Min</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dPrepTime', '1 Std')">1 Std</button>
+                <button type="button" class="ui-chip" onclick="setQuickVal('dPrepTime', '2 Std')">2 Std</button>
               </div>
-              <input type="text" id="dIce" autocomplete="off" placeholder="oder selbst eingeben ..." class="ui-field">
+              <input type="text" id="dPrepTime" autocomplete="off" placeholder="oder selbst eingeben ..." class="ui-field">
             </div>
             <div>
-              <label class="form-label" for="dMethod">🥄 Methode</label>
-              <input type="text" id="dMethod" autocomplete="off" placeholder="z. B. Shake & fine strain, Stir, Build" class="ui-field">
+              <label class="form-label" for="dMethod">🔥 Garmethode</label>
+              <input type="text" id="dMethod" autocomplete="off" placeholder="z. B. Braten, Kochen, Sous-vide, Grillen" class="ui-field">
             </div>
             <div>
-              <label class="form-label" for="dGarnish">🍋 Garnitur</label>
-              <input type="text" id="dGarnish" autocomplete="off" placeholder="z. B. Dried strawberry, Mint sprig" class="ui-field">
+              <label class="form-label" for="dPlating">🍴 Anrichten / Garnitur</label>
+              <input type="text" id="dPlating" autocomplete="off" placeholder="z. B. Kräuteröl, frische Petersilie" class="ui-field">
             </div>
           </div>
         </div>
@@ -1305,15 +1245,15 @@
 
         <!-- 4 Rezept -->
         <div class="form-section">
-          <div class="form-section-title">4 · Zubereitung Schritt für Schritt (optional)</div>
-          <textarea id="dRecipe" placeholder="Detaillierte Zubereitung eingeben ..." class="ui-field" rows="4"></textarea>
+          <div class="form-section-title">4 · Zubereitung Schritt für Schritt</div>
+          <textarea id="dRecipe" placeholder="1. ...&#10;2. ...&#10;3. ..." class="ui-field" rows="8"></textarea>
         </div>
 
         <!-- 5 Eigenschaften -->
         <div class="form-section">
           <div class="form-section-title">5 · Eigenschaften & Allergene</div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <label class="switch-row prop-row"><span>⭐ Bestseller / TOP</span><span class="switch"><input type="checkbox" id="dFeatured"><span class="switch-track"></span></span></label>
+            <label class="switch-row prop-row"><span>⭐ Standard / TOP</span><span class="switch"><input type="checkbox" id="dFeatured"><span class="switch-track"></span></span></label>
             <label class="switch-row prop-row"><span>🌱 Vegan</span><span class="switch"><input type="checkbox" id="dVegan"><span class="switch-track"></span></span></label>
             <label class="switch-row prop-row"><span>🌾 Glutenfrei</span><span class="switch"><input type="checkbox" id="dGlutenfree"><span class="switch-track"></span></span></label>
             <label class="switch-row prop-row"><span>🥛 Laktosefrei</span><span class="switch"><input type="checkbox" id="dLactosefree"><span class="switch-track"></span></span></label>
@@ -1332,7 +1272,7 @@
 
         <!-- 6 Preise -->
         <div class="form-section">
-          <div class="form-section-title">6 · Preis & Wareneinsatz (optional)</div>
+          <div class="form-section-title">6 · Wareneinsatz & Preis pro Portion (optional)</div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="form-label" for="dCost">💶 Wareneinsatz (€)</label>
@@ -1356,7 +1296,7 @@
             <input type="text" id="dPhoto" autocomplete="off" placeholder="oder Bild-URL einfügen ..." onkeydown="if (event.key === 'Enter') { event.preventDefault(); addPhotoFromUrl(); }" class="ui-field flex-1">
             <button type="button" onclick="addPhotoFromUrl()" class="ui-btn-ghost">Hinzufügen</button>
           </div>
-          <p class="form-hint mt-1.5">Das erste Foto ist das Hauptfoto (Karte, Druck, Multi-View). Mit ⭐ machst du ein anderes zum Hauptfoto.</p>
+          <p class="form-hint mt-1.5">Das erste Foto ist das Hauptfoto (Liste, Druck, Multi-View). Mit ⭐ machst du ein anderes zum Hauptfoto.</p>
         </div>
       </div>
 
@@ -1364,7 +1304,7 @@
         <button type="button" onclick="deleteDrinkFromForm()" id="deleteFormBtn" class="hidden px-4 py-2.5 bg-red-600 hover:bg-red-500 font-bold text-white rounded-xl text-xs transition">🗑️ Löschen</button>
         <span class="flex-1"></span>
         <button type="button" onclick="closeAdminModal()" class="ui-btn-ghost">Abbrechen</button>
-        <button type="button" onclick="saveDrink()" class="ui-btn-primary">💾 Getränk speichern</button>
+        <button type="button" onclick="saveDrink()" class="ui-btn-primary">💾 Rezept speichern</button>
       </div>
     </div>
   </div>

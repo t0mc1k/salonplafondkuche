@@ -25,7 +25,7 @@
       if (activeSpecialFilter === filterType) activeSpecialFilter = null;
       else activeSpecialFilter = filterType;
       
-      const filterButtons = { featured: 'filterFeatured', vegan: 'filterVegan', glutenfree: 'filterGluten', lactosefree: 'filterLactose', nonalcoholic: 'filterNonAlc', favorites: 'filterFavs' };
+      const filterButtons = { featured: 'filterFeatured', vegan: 'filterVegan', glutenfree: 'filterGluten', lactosefree: 'filterLactose', favorites: 'filterFavs' };
       Object.values(filterButtons).forEach(id => {
         const el = document.getElementById(id);
         if (el) el.className = 'px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-amber-500 whitespace-nowrap';
@@ -47,7 +47,7 @@
     function renderGlassFilterButtons() {
       let glasses = [];
       allDrinks.forEach(d => {
-        if (d.glass_type && !glasses.includes(d.glass_type.trim())) glasses.push(d.glass_type.trim());
+        if (d.method && !glasses.includes(d.method.trim())) glasses.push(d.method.trim());   // Filter nach Garmethode
       });
       const container = document.getElementById('glassFilterContainer');
       if (glasses.length === 0) {
@@ -75,7 +75,7 @@
     }
 
     async function loadDrinks() {
-      const { data, error } = await _supabase.from('drinks').select('*').order('created_at', { ascending: false });
+      const { data, error } = await _supabase.from('recipes').select('*').order('created_at', { ascending: false });
       if (error) { console.error(error); return; }
       allDrinks = data || [];
       if (!currentSeasonFilter) {
@@ -89,7 +89,7 @@
       renderBarTrayUI();
     }
 
-    const DEFAULT_CATEGORIES = ['Cocktails', 'Mocktails', 'Salonplafond Classic', 'After Dinner Drinks', 'APERITTIF'];
+    const DEFAULT_CATEGORIES = ['Vorspeisen', 'Suppen', 'Salate', 'Hauptgerichte', 'Beilagen', 'Saucen & Fonds', 'Desserts', 'Gebäck & Brot', 'Frühstück', 'Mise en place'];
 
     // Standard-Kategorien + alle Kategorien, die in Getränken vorkommen (neue Kategorien erscheinen automatisch)
     function getAllCategories(extra) {
@@ -128,10 +128,9 @@
         if (activeSpecialFilter === 'vegan') matchesFilter = d.is_vegan || (d.allergens && d.allergens.toLowerCase().includes('vegan'));
         if (activeSpecialFilter === 'glutenfree') matchesFilter = d.is_glutenfree || (d.allergens && d.allergens.toLowerCase().includes('gluten'));
         if (activeSpecialFilter === 'lactosefree') matchesFilter = d.is_lactosefree || (d.allergens && d.allergens.toLowerCase().includes('laktose'));
-        if (activeSpecialFilter === 'nonalcoholic') matchesFilter = d.category === 'Mocktails';
         if (activeSpecialFilter === 'favorites') matchesFilter = shiftFavorites.includes(d.id);
         
-        let matchesGlass = selectedGlassFilter ? (d.glass_type && d.glass_type.trim() === selectedGlassFilter) : true;
+        let matchesGlass = selectedGlassFilter ? (d.method && d.method.trim() === selectedGlassFilter) : true;
 
         return matchesSeason && matchesCat && matchesSearch && matchesFilter && matchesGlass;
       });
@@ -166,7 +165,7 @@
           let isTray = barTraySelection.includes(d.id);
           let trayBtnHtml = `<button onclick="toggleBarTrayItem(${jsArg(d.id)}, event)" class="text-xs px-2.5 py-1.5 rounded-xl font-bold transition ${isTray ? 'bg-amber-500 text-slate-950' : 'custom-box hover:bg-slate-200 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 border'}" title="In Multi-View werfen">⚡</button>`;
           let priceText = (d.selling_price && getSetting('showPrices')) ? ` (€ ${parseFloat(d.selling_price).toFixed(2)})` : '';
-          return `<div data-drink-id="${escapeHtml(d.id)}" onclick="openDrinkModal(${jsArg(d.id)})" class="list-item p-3 cursor-pointer flex items-center justify-between gap-4 group"><div class="flex items-center gap-4 min-w-0">${photoHtml}<div class="min-w-0"><div class="flex items-center gap-2 flex-wrap"><h3 class="text-base font-bold group-hover:text-amber-500 transition truncate">${escapeHtml(d.name)}${priceText}</h3>${badgeHtml}</div><p class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">${escapeHtml(d.method ? 'Method: ' + d.method : (d.category || ''))}</p></div></div><div class="flex items-center gap-2 shrink-0">${trayBtnHtml}<button onclick="toggleShiftFavorite(${jsArg(d.id)}, event)" class="text-sm p-1.5 rounded-lg custom-box border hover:bg-slate-200 dark:hover:bg-slate-700">${isFav ? '❤️' : '🤍'}</button><span class="text-xs font-semibold px-2.5 py-1 rounded custom-box border">${escapeHtml(d.category || t('dv.drinkWord'))}</span></div></div>`;
+          return `<div data-drink-id="${escapeHtml(d.id)}" onclick="openDrinkModal(${jsArg(d.id)})" class="list-item p-3 cursor-pointer flex items-center justify-between gap-4 group"><div class="flex items-center gap-4 min-w-0">${photoHtml}<div class="min-w-0"><div class="flex items-center gap-2 flex-wrap"><h3 class="text-base font-bold group-hover:text-amber-500 transition truncate">${escapeHtml(d.name)}${priceText}</h3>${badgeHtml}</div><p class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">${escapeHtml(d.method ? 'Methode: ' + d.method : (d.category || ''))}</p></div></div><div class="flex items-center gap-2 shrink-0">${trayBtnHtml}<button onclick="toggleShiftFavorite(${jsArg(d.id)}, event)" class="text-sm p-1.5 rounded-lg custom-box border hover:bg-slate-200 dark:hover:bg-slate-700">${isFav ? '❤️' : '🤍'}</button><span class="text-xs font-semibold px-2.5 py-1 rounded custom-box border">${escapeHtml(d.category || t('dv.drinkWord'))}</span></div></div>`;
         }).join('');
       }
     }
@@ -235,9 +234,9 @@
       }
 
       html += `<div class="mb-6 border rounded-xl overflow-hidden custom-box text-xs">`;
-      html += `<div class="grid grid-cols-2 border-b border-slate-200 dark:border-slate-800 p-2.5 bg-slate-100/50 dark:bg-slate-900/50"><div><span class="text-slate-500 dark:text-slate-400 font-semibold block">Glass:</span> ${escapeHtml(d.glass_type || '-')}</div><div><span class="text-slate-500 dark:text-slate-400 font-semibold block">Method:</span> ${escapeHtml(d.method || '-')}</div></div>`;
-      html += `<div class="border-b border-slate-200 dark:border-slate-800 p-2.5 bg-slate-100/30 dark:bg-slate-900/30"><span class="text-slate-500 dark:text-slate-400 font-semibold block">Ice:</span> ${escapeHtml(d.ice || '-')}</div>`;
-      html += `<div class="p-2.5 border-b border-slate-200 dark:border-slate-800"><div class="grid grid-cols-2 font-bold text-amber-600 dark:text-amber-400 pb-1.5 border-b border-slate-200 dark:border-slate-800 mb-1.5"><span>Ingredients:</span><span>Amount:</span></div>`;
+      html += `<div class="grid grid-cols-2 border-b border-slate-200 dark:border-slate-800 p-2.5 bg-slate-100/50 dark:bg-slate-900/50"><div><span class="text-slate-500 dark:text-slate-400 font-semibold block">Portionen:</span> ${escapeHtml(d.portions || '-')}</div><div><span class="text-slate-500 dark:text-slate-400 font-semibold block">Methode:</span> ${escapeHtml(d.method || '-')}</div></div>`;
+      html += `<div class="border-b border-slate-200 dark:border-slate-800 p-2.5 bg-slate-100/30 dark:bg-slate-900/30"><span class="text-slate-500 dark:text-slate-400 font-semibold block">Zubereitungszeit:</span> ${escapeHtml(d.prep_time || '-')}</div>`;
+      html += `<div class="p-2.5 border-b border-slate-200 dark:border-slate-800"><div class="grid grid-cols-2 font-bold text-amber-600 dark:text-amber-400 pb-1.5 border-b border-slate-200 dark:border-slate-800 mb-1.5"><span>Zutaten:</span><span>Menge:</span></div>`;
       if (Array.isArray(d.ingredients_json) && d.ingredients_json.length > 0) {
         d.ingredients_json.forEach(ing => {
           html += `<div class="grid grid-cols-2 py-1 border-b border-slate-200 dark:border-slate-800/50 last:border-0"><span class="font-medium">${escapeHtml(ing.name)}</span><span class="text-amber-600 dark:text-amber-300 font-semibold">${escapeHtml(ing.amount || '-')}</span></div>`;
@@ -251,16 +250,19 @@
         html += `<div class="p-2.5 custom-box border-b border-slate-200 dark:border-slate-800"><span class="text-amber-600 dark:text-amber-400 font-semibold block mb-0.5">⚠️ ${escapeHtml(t('drm.allergens'))}</span> <span>${escapeHtml(d.allergens)}</span></div>`;
       }
 
-      html += `<div class="p-2.5 bg-slate-100/30 dark:bg-slate-900/30"><span class="text-slate-500 dark:text-slate-400 font-semibold block">Garnish:</span> ${escapeHtml(d.garnish || '-')}</div>`;
+      html += `<div class="p-2.5 bg-slate-100/30 dark:bg-slate-900/30"><span class="text-slate-500 dark:text-slate-400 font-semibold block">Anrichten:</span> ${escapeHtml(d.plating || '-')}</div>`;
       html += `</div>`;
 
       if (d.recipe) {
         html += `<div class="mb-4 custom-box p-3 rounded-xl text-xs border"><p class="font-bold text-amber-600 dark:text-amber-400 mb-1">${escapeHtml(t('drm.prep'))}</p><p class="whitespace-pre-line">${escapeHtml(d.recipe)}</p></div>`;
       }
 
-      if (d.updated_at) {
-        let updateDate = new Date(d.updated_at).toLocaleString(langLocale());
-        html += `<div class="no-print text-[10px] text-slate-500 dark:text-slate-400 mt-2">${escapeHtml(t('drm.lastChange', { date: updateDate }))}</div>`;
+      // Am Ende: wer das Rezept angelegt und wer es zuletzt geändert hat (setzt die Datenbank)
+      {
+        const fmt = v => v ? new Date(v).toLocaleString(langLocale()) : '';
+        html += `<div class="text-[11px] text-slate-500 dark:text-slate-400 mt-3 pt-2 border-t border-slate-200 dark:border-slate-800">`
+          + `<div>➕ Angelegt von <b>${escapeHtml(d.created_by || '–')}</b>${d.created_at ? ' · ' + escapeHtml(fmt(d.created_at)) : ''}</div>`
+          + `<div>✏️ Zuletzt geändert von <b>${escapeHtml(d.updated_by || d.created_by || '–')}</b>${d.updated_at ? ' · ' + escapeHtml(fmt(d.updated_at)) : ''}</div></div>`;
       }
 
       document.getElementById('modalContent').innerHTML = html;

@@ -115,20 +115,20 @@
   "en": "Back to the start page"
  },
  "menu.drinks": {
-  "de": "Getränke & Rezepte",
-  "en": "Drinks & Recipes"
+  "de": "Rezepte",
+  "en": "Recipes"
  },
  "menu.drinksSub": {
-  "de": "Datenbank öffnen",
-  "en": "Open database"
+  "de": "Rezeptdatenbank öffnen",
+  "en": "Open recipe database"
  },
  "menu.addDrink": {
   "de": "➕ Neues Getränk hinzufügen",
   "en": "➕ Add new drink"
  },
  "menu.secDrinks": {
-  "de": "Getränke & Karte",
-  "en": "Drinks & Menu"
+  "de": "Rezepte & Saison",
+  "en": "Recipes & Season"
  },
  "menu.season": {
   "de": "Saison wählen",
@@ -271,8 +271,8 @@
   "en": "Active: {name}"
  },
  "dv.title": {
-  "de": "🍸 Getränke & Rezepte",
-  "en": "🍸 Drinks & Recipes"
+  "de": "🍳 Rezepte",
+  "en": "🍳 Recipes"
  },
  "dv.category": {
   "de": "Kategorie:",
@@ -583,8 +583,8 @@
   "en": "Light"
  },
  "dash.g.bar": {
-  "de": "🍸 Bar & Betrieb",
-  "en": "🍸 Bar & Operations"
+  "de": "🍳 Küche & Betrieb",
+  "en": "🍳 Kitchen & Operations"
  },
  "dash.g.std": {
   "de": "✅ Standards & Betrieb",
@@ -607,20 +607,20 @@
   "en": "🕒 My Shift"
  },
  "dash.g.barService": {
-  "de": "🍸 Bar & Service",
-  "en": "🍸 Bar & Service"
+  "de": "🍳 Küche & Service",
+  "en": "🍳 Kitchen & Service"
  },
  "dash.drinks": {
-  "de": "Getränke & Rezepte",
-  "en": "Drinks & Recipes"
+  "de": "Rezepte",
+  "en": "Recipes"
  },
  "dash.drinksSub": {
-  "de": "{n} Getränke · Datenbank öffnen",
-  "en": "{n} drinks · open database"
+  "de": "{n} Rezepte · Datenbank öffnen",
+  "en": "{n} recipes · open database"
  },
  "dash.drinksSub0": {
-  "de": "Datenbank öffnen",
-  "en": "Open database"
+  "de": "Rezeptdatenbank öffnen",
+  "en": "Open recipe database"
  },
  "dash.allergens": {
   "de": "Speisekarte & Allergene",
@@ -693,14 +693,6 @@
  "dash.reservSub": {
   "de": "Früh, Abend und Tag gesamt",
   "en": "Early, evening and day total"
- },
- "dash.found": {
-  "de": "Fundsachen",
-  "en": "Lost & Found"
- },
- "dash.foundSub": {
-  "de": "Vergessene Dinge der Gäste",
-  "en": "Things guests left behind"
  },
  "dash.lossA": {
   "de": "Verluste & Bruch",
@@ -831,12 +823,12 @@
   "en": "Done"
  },
  "dv.loading": {
-  "de": "Lade Getränke aus der Datenbank...",
-  "en": "Loading drinks from the database..."
+  "de": "Lade Rezepte aus der Datenbank...",
+  "en": "Loading recipes from the database..."
  },
  "dv.search": {
-  "de": "🔍 Getränk oder Zutat suchen...",
-  "en": "🔍 Search drink or ingredient..."
+  "de": "🔍 Rezept oder Zutat suchen...",
+  "en": "🔍 Search recipe or ingredient..."
  },
  "dv.backTitle": {
   "de": "Zurück zum Dashboard",
@@ -859,20 +851,20 @@
   "en": "All"
  },
  "dv.noGlass": {
-  "de": "Keine Glas-Typen vorhanden",
-  "en": "No glass types available"
+  "de": "Keine Garmethoden vorhanden",
+  "en": "No cooking methods available"
  },
  "dv.empty": {
-  "de": "Keine Getränke in dieser Saison gefunden.",
-  "en": "No drinks found in this season."
+  "de": "Keine Rezepte in dieser Saison gefunden.",
+  "en": "No recipes found in this season."
  },
  "dv.noImage": {
   "de": "Kein Bild",
   "en": "No image"
  },
  "dv.drinkWord": {
-  "de": "Getränk",
-  "en": "Drink"
+  "de": "Rezept",
+  "en": "Recipe"
  },
  "drm.bigPhoto": {
   "de": "Klicken für Großansicht",
@@ -1795,8 +1787,8 @@
   "en": "🎨 Appearance"
  },
  "set.tabDrinks": {
-  "de": "🍸 Getränke",
-  "en": "🍸 Drinks"
+  "de": "🍳 Rezepte",
+  "en": "🍳 Recipes"
  },
  "set.tabNotif": {
   "de": "🔔 Hinweise",

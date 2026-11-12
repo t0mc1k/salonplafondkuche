@@ -501,13 +501,13 @@
       chatEl('chatImageChip').classList.add('flex');
 
       const fileName = `chat_${Date.now()}_${file.name}`;
-      const { error } = await _supabase.storage.from('drinks').upload(fileName, file);
+      const { error } = await _supabase.storage.from('photos').upload(fileName, file);
       if (error) {
         clearChatImage();
         alert(t('chat.uploadFail') + " " + error.message);
         return;
       }
-      const { data } = _supabase.storage.from('drinks').getPublicUrl(fileName);
+      const { data } = _supabase.storage.from('photos').getPublicUrl(fileName);
       chatPendingImage = { url: data.publicUrl, name: file.name };
       chatEl('chatImageThumb').src = data.publicUrl;
       chatEl('chatImageName').textContent = file.name;

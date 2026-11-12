@@ -1,10 +1,9 @@
 /* ============================================================
    js/reports.js  (v3.2.03)
-   Drei getrennte Funktionen:
+   Zwei getrennte Funktionen (Fundsachen wurde in der Küchen-Version entfernt):
    1) Störungen melden (Geräte/Ausstattung) – sichtbar für Melder + Manager/Developer
-   2) Fundsachen (Gäste lassen etwas liegen) – für alle, ohne Gast-Kontakt
    3) Verluste / Bruch (Gläser, Verschüttetes, Abschreibungen)
-   Tabellen: maintenance_reports, found_items, loss_reports (sql/3.2.03_betrieb.sql)
+   Tabellen: maintenance_reports, loss_reports
    Fotos: gleicher Speicher wie Getränke/Chat (Bucket „drinks“).
    ============================================================ */
 
@@ -168,136 +167,6 @@
       if (error) return fmToast(fmDbError(error));
       await mtLoad();
       if (typeof loadDashboardCounts === 'function') loadDashboardCounts(true);
-    }
-
-    // ---------------------------------------------------------------
-    // 2) FUNDSACHEN
-    // ---------------------------------------------------------------
-    const FD_STATUS = { gelagert: ['Gelagert', 'amber'], zurueckgegeben: ['Zurückgegeben', 'green'], entsorgt: ['Entsorgt', 'gray'] };
-    let fd = { m: null, list: [], filter: 'gelagert', q: '', photoUrl: '' };
-
-    async function openFoundModal() {
-      closeSettingsMenu();
-      fd.filter = 'gelagert'; fd.q = '';
-      fd.m = fmOpen('fdModal', { title: '🧳 Fundsachen', sub: 'Was Gäste liegen gelassen haben. Es wird kein Kontakt des Gastes gespeichert.' });
-      fd.m.setBody('<p class="staff-empty">Lade ...</p>');
-      await fdLoad();
-    }
-
-    async function fdLoad() {
-      const { data, error } = await _supabase.from('found_items').select('*').order('found_at', { ascending: false }).limit(400);
-      if (error) { fd.m.setBody(fmErrorHtml(error)); return; }
-      fd.list = data || [];
-      fdRender(false);
-    }
-
-    function fdSearch(v) { fd.q = v.trim().toLowerCase(); fdRenderList(); }
-    function fdSetFilter(f) { fd.filter = f; fdRender(false); }
-
-    function fdRender() {
-      const cnt = s => fd.list.filter(x => x.status === s).length;
-      fd.m.setToolbar(`<div class="fm-row-flex" style="justify-content:space-between">
-          <div class="fm-tabs">
-            <button type="button" class="fm-tab${fd.filter === 'gelagert' ? ' active' : ''}" onclick="fdSetFilter('gelagert')">Gelagert<small>${cnt('gelagert')}</small></button>
-            <button type="button" class="fm-tab${fd.filter === 'zurueckgegeben' ? ' active' : ''}" onclick="fdSetFilter('zurueckgegeben')">Zurückgegeben</button>
-            <button type="button" class="fm-tab${fd.filter === 'entsorgt' ? ' active' : ''}" onclick="fdSetFilter('entsorgt')">Entsorgt</button>
-            <button type="button" class="fm-tab${fd.filter === 'all' ? ' active' : ''}" onclick="fdSetFilter('all')">Alle</button>
-          </div>
-          <button type="button" class="ui-btn-primary" onclick="fdOpenForm()">➕ Fund eintragen</button>
-        </div>
-        <input type="search" id="fdSearch" class="ui-search" placeholder="🔍 Suchen (z. B. Schlüssel, schwarz) ..." value="${escapeHtml(fd.q)}" oninput="fdSearch(this.value)">`);
-      fdRenderList();
-      fd.m.setFoot('<button type="button" class="ui-btn-primary" onclick="fmClose(\'fdModal\')">Fertig</button>');
-    }
-
-    function fdRenderList() {
-      const list = fd.list.filter(x => (fd.filter === 'all' || x.status === fd.filter) &&
-        (!fd.q || (x.description + ' ' + (x.found_place || '') + ' ' + (x.storage_place || '')).toLowerCase().indexOf(fd.q) !== -1));
-      let html = list.length ? '' : '<p class="staff-empty">Keine Einträge.</p>';
-      html += list.map(x => {
-        const st = FD_STATUS[x.status] || [x.status, 'gray'];
-        const days = fmDaysAgo(x.found_at);
-        const photo = x.photo_url ? `<a href="${escapeHtml(x.photo_url)}" target="_blank" rel="noopener"><img class="fm-thumb" src="${escapeHtml(x.photo_url)}" alt="Foto" loading="lazy"></a>` : '';
-        const btns = [];
-        if (x.status === 'gelagert') {
-          btns.push(`<button type="button" class="fm-btn fm-btn-ok" onclick="fdSetStatus(${jsArg(x.id)}, 'zurueckgegeben')">✓ Zurückgegeben</button>`);
-          btns.push(`<button type="button" class="fm-btn" onclick="fdSetStatus(${jsArg(x.id)}, 'entsorgt')">Entsorgt</button>`);
-        } else {
-          btns.push(`<button type="button" class="fm-btn" onclick="fdSetStatus(${jsArg(x.id)}, 'gelagert')">Wieder zu „Gelagert“</button>`);
-        }
-        if (userIsAdmin) btns.push(`<button type="button" class="fm-btn fm-btn-danger" onclick="fdDelete(${jsArg(x.id)})">🗑</button>`);
-        return `<div class="fm-item">${photo}
-          <div class="fm-item-main">
-            <div class="fm-row-flex" style="justify-content:space-between;flex-wrap:nowrap">
-              <div class="fm-item-title">${escapeHtml(x.description)}</div>${fmStatusChip(st[0], st[1])}
-            </div>
-            <div class="fm-item-sub">${x.found_place ? '📍 ' + escapeHtml(x.found_place) + ' · ' : ''}${escapeHtml(fmDateTime(x.found_at))}${x.status === 'gelagert' ? ' · liegt seit ' + days + ' Tag' + (days === 1 ? '' : 'en') : ''}</div>
-            ${x.storage_place ? `<div class="fm-item-sub">🗄️ Aufbewahrt: ${escapeHtml(x.storage_place)}</div>` : ''}
-            <div class="fm-item-sub">Eingetragen von ${escapeHtml(x.created_by)}${x.handled_by ? ' · ' + escapeHtml(FD_STATUS[x.status][0]) + ' von ' + escapeHtml(x.handled_by) + ' (' + escapeHtml(fmDateTime(x.handled_at)) + ')' : ''}</div>
-            <div class="fm-item-actions">${btns.join('')}</div>
-          </div></div>`;
-      }).join('');
-      fd.m.setBody(html);
-    }
-
-    function fdOpenForm() {
-      fd.photoUrl = '';
-      const m = fmOpen('fdForm', { title: '🧳 Fund eintragen', layer: 2 });
-      m.setBody(`<div class="fm-stack">
-        <div class="fm-field"><label class="form-label" for="fdDesc">Was wurde gefunden?</label>
-          <input type="text" id="fdDesc" class="ui-field" maxlength="300" placeholder="z. B. Schwarze Geldbörse, Autoschlüssel mit rotem Anhänger"></div>
-        <div class="fm-grid2">
-          <div class="fm-field"><label class="form-label" for="fdPlace">Wo gefunden?</label>
-            <input type="text" id="fdPlace" class="ui-field" maxlength="80" placeholder="z. B. Tisch 12, Terrasse"></div>
-          <div class="fm-field"><label class="form-label" for="fdWhen">Wann?</label>
-            <input type="datetime-local" id="fdWhen" class="ui-field" value="${fmDatetimeLocalValue(new Date())}"></div>
-        </div>
-        <div class="fm-field"><label class="form-label" for="fdStore">Wo aufbewahrt?</label>
-          <input type="text" id="fdStore" class="ui-field" maxlength="80" placeholder="z. B. Schublade Bar, Büro"></div>
-        <div class="fm-field"><label class="form-label">Foto (optional)</label>
-          <input type="file" id="fdPhoto" accept="image/*" capture="environment" onchange="fdPhotoPicked(this)" class="ui-field">
-          <div id="fdPhotoStatus" class="fm-hint"></div></div>
-      </div>`);
-      m.setFoot(`<button type="button" class="ui-btn-ghost" onclick="fmClose('fdForm')">Abbrechen</button>
-        <button type="button" class="ui-btn-primary" onclick="fdSubmit()">💾 Speichern</button>`);
-    }
-
-    async function fdPhotoPicked(input) {
-      const f = input.files && input.files[0];
-      if (!f) return;
-      const st = document.getElementById('fdPhotoStatus');
-      st.textContent = fmTr('⏳ Foto wird hochgeladen ...');
-      try { fd.photoUrl = await fmUploadPhoto(f, 'fund'); st.textContent = fmTr('✔ Foto hochgeladen'); }
-      catch (e) { fd.photoUrl = ''; st.textContent = fmL('Fehler: ', 'Error: ') + (e.message || e); }
-    }
-
-    async function fdSubmit() {
-      const desc = document.getElementById('fdDesc').value.trim();
-      if (!desc) return fmToast('Bitte beschreibe den Fund.');
-      const when = document.getElementById('fdWhen').value;
-      const { error } = await _supabase.from('found_items').insert([{
-        description: desc, found_place: document.getElementById('fdPlace').value.trim() || null,
-        found_at: when ? new Date(when).toISOString() : new Date().toISOString(),
-        storage_place: document.getElementById('fdStore').value.trim() || null,
-        photo_url: fd.photoUrl || null, created_by: currentWaiterName
-      }]);
-      if (error) return fmToast(fmDbError(error));
-      fmClose('fdForm');
-      fmToast('Fund eingetragen');
-      await fdLoad();
-    }
-
-    async function fdSetStatus(id, status) {
-      if (status !== 'gelagert' && !confirm(status === 'entsorgt' ? 'Als „Entsorgt“ markieren?' : 'Als „Zurückgegeben“ markieren?')) return;
-      const { error } = await _supabase.from('found_items').update({ status }).eq('id', id);
-      if (error) return fmToast(fmDbError(error));
-      await fdLoad();
-    }
-    async function fdDelete(id) {
-      if (!confirm('Eintrag endgültig löschen?')) return;
-      const { error } = await _supabase.from('found_items').delete().eq('id', id);
-      if (error) return fmToast(fmDbError(error));
-      await fdLoad();
     }
 
     // ---------------------------------------------------------------

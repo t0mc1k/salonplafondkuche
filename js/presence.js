@@ -17,10 +17,10 @@
     const PRESENCE_SECTIONS = {
       showDashboard: 'dashboard', openDrinksView: 'drinks', openAllergenModal: 'allergens', openChecklistModal: 'checklist',
       openMyPlanModal: 'myplan', openSwapModal: 'swaps', openAbsenceModal: 'absence', openSpecialsModal: 'specials', openExclusiveModal: 'exclusive', openReservationsModal: 'reservations', openTeamChatModal: 'chat', openMaintenanceModal: 'faults',
-      openFoundModal: 'found', openLossModal: 'loss', openHelpModal: 'help', openTomiModal: 'tomi', openShoppingModal: 'shopping',
+      openLossModal: 'loss', openHelpModal: 'help', openTomiModal: 'tomi', openShoppingModal: 'shopping',
       openUserProfileModal: 'profile', openUnifiedSettingsModal: 'settings', openChangelogModal: 'news', openSupportModal: 'support',
       openTeamPlanModal: 'teamplan', openPayrollModal: 'payroll', openStaffPinModal: 'staff', openLoginLogModal: 'loginlog',
-      openSeasonModal: 'season', openImportExportModal: 'impexp', openA3PrintSetupModal: 'print', openMultiViewModal: 'multiview'
+      openSeasonModal: 'season', openImportExportModal: 'impexp', openMultiViewModal: 'multiview'
     };
 
     let presenceSid = null;

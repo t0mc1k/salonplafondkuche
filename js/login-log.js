@@ -7,7 +7,7 @@
 
     const LL_SECTIONS = {
       dashboard: 'Dashboard', drinks: 'Getränke & Rezepte', allergens: 'Speisekarte & Allergene', checklist: 'Checkliste', myplan: 'Mein Arbeitsplan',
-      swaps: 'Schichttausch', chat: 'Team-Chat', faults: 'Störungen', found: 'Fundsachen', loss: 'Verluste & Bruch', help: 'Hilfe', tomi: 'TomiAI',
+      swaps: 'Schichttausch', chat: 'Team-Chat', faults: 'Störungen', loss: 'Verluste & Bruch', help: 'Hilfe', tomi: 'TomiAI',
       shopping: 'Einkaufsliste', profile: 'Profil', settings: 'Einstellungen', news: 'Was ist neu?', support: 'Support', teamplan: 'Team & Arbeitsplan',
       payroll: 'Stunden & Lohn', staff: 'Personal & PINs', loginlog: 'Login-Protokoll', season: 'Saison', impexp: 'Import & Export', print: 'Karten-Druck', multiview: 'Multi-View'
     };
@@ -15,7 +15,7 @@
       section: ['📍', 'Bereich geöffnet'], task_done: ['✅', 'Aufgabe abgehakt'], swap_request: ['🔄', 'Tausch angefragt'], swap_take: ['🤝', 'Tausch übernommen'],
       swap_decide: ['✅', 'Tausch entschieden'], swap_decline: ['❌', 'Tausch abgelehnt'], swap_cancel: ['↩️', 'Tausch zurückgezogen'],
       fault_report: ['🛠️', 'Störung gemeldet'], fault_status: ['🛠️', 'Störung bearbeitet'], loss_report: ['🔨', 'Bruch/Verlust gemeldet'],
-      found_new: ['🧳', 'Fundsache eingetragen'], found_status: ['🧳', 'Fundsache bearbeitet'], plan_change: ['📆', 'Arbeitsplan geändert'],
+      plan_change: ['📆', 'Arbeitsplan geändert'],
       drink_new: ['🍸', 'Getränk angelegt'], drink_edit: ['🍸', 'Getränk geändert'], drink_delete: ['🗑️', 'Getränk gelöscht'],
       chat_msg: ['💬', 'Im Chat geschrieben'], ticket_new: ['🛟', 'Ticket erstellt'], news_new: ['📣', 'Team-News veröffentlicht']
     };

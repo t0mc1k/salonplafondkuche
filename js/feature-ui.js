@@ -129,9 +129,9 @@
       const isJpeg = prepared !== file;
       const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const name = `${prefix}_${Date.now()}_${isJpeg ? safe.replace(/\.[^.]+$/, '') + '.jpg' : safe}`;
-      const { error } = await _supabase.storage.from('drinks').upload(name, prepared, isJpeg ? { contentType: 'image/jpeg' } : undefined);
+      const { error } = await _supabase.storage.from('photos').upload(name, prepared, isJpeg ? { contentType: 'image/jpeg' } : undefined);
       if (error) throw error;
-      const { data } = _supabase.storage.from('drinks').getPublicUrl(name);
+      const { data } = _supabase.storage.from('photos').getPublicUrl(name);
       return data.publicUrl;
     }
 

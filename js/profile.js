@@ -194,14 +194,14 @@
       status.innerText = "⏳ Foto wird hochgeladen ...";
 
       const fileName = `my_avatar_${Date.now()}_${file.name}`;
-      let { data, error } = await _supabase.storage.from('drinks').upload(fileName, file);
+      let { data, error } = await _supabase.storage.from('photos').upload(fileName, file);
 
       if (error) {
         status.innerText = t('prof.err', { msg: error.message });
         return;
       }
 
-      let { data: publicURLData } = _supabase.storage.from('drinks').getPublicUrl(fileName);
+      let { data: publicURLData } = _supabase.storage.from('photos').getPublicUrl(fileName);
       if (publicURLData && publicURLData.publicUrl) {
         document.getElementById('profileInputAvatarUrl').value = publicURLData.publicUrl;
         renderProfileAvatar(publicURLData.publicUrl, currentWaiterName);

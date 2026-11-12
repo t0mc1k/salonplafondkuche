@@ -16,6 +16,12 @@
     changes: [
       ['new', 'Neue Rollen: Koch, Abwasher, Manager, Developer. Zusatzrollen sind möglich (z. B. Developer, der auch Abwasher ist).'],
       ['new', 'Neue Datenbank: sql/1.0.00_init.sql legt Personal, PIN-Login und Login-Historie an. Start-PIN für alle: 1234.'],
+      ['improved', 'Fundsachen (Lost & Found) wurde komplett entfernt: Kachel, Fenster, Hilfe-Kapitel und Login-Protokoll-Einträge.'],
+      ['improved', 'Karten-Druck (A3) für Getränke wurde entfernt (Menüpunkt, Kachel und Fenster).'],
+      ['new', 'Rezepte statt Getränke: Kategorien (Vorspeisen, Suppen, Hauptgerichte ...), Portionen, Zubereitungszeit, Garmethode, Zutaten mit Menge, Zubereitung, Anrichten, Allergene, bis zu 3 Fotos.'],
+      ['new', 'Am Ende jedes Rezepts steht, wer es angelegt und wer es zuletzt geändert hat (wird von der Datenbank eingetragen).'],
+      ['new', 'Rezepte bearbeiten dürfen Manager, Developer und Köche mit der Berechtigung „Darf Rezepte bearbeiten“. Abwasher sehen keine Rezepte.'],
+      ['info', 'Einrichtung: sql/1.0.01_recipes.sql im Supabase SQL Editor ausführen (Tabelle recipes, Foto-Speicher „photos“).'],
       ['info', 'Weitere Küchen-Funktionen (Rezepte, Dienstplan, Kühlschrank-Temperaturen, Abwasher) folgen in den nächsten Versionen.']
     ] },
   { version: '4.2.02', range: '', date: 'November 2026', title: 'Neue Kachel „Reservierungen“ (Gastronaut)',

@@ -219,7 +219,7 @@
         }
 
         if (parsedDrinks.length > 0) {
-          const { error } = await _supabase.from("drinks").insert(parsedDrinks);
+          const { error } = await _supabase.from("recipes").insert(parsedDrinks);
           if (error) {
             statusEl.innerText = "Fehler: " + error.message;
           } else {
