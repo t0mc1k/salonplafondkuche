@@ -19,6 +19,10 @@
 
     let sp = { m: null, tab: 'today', rows: [], edit: { id: '', allergens: [] }, scan: null };
 
+    // KÜCHE: Das Tagesangebot wird in der Bar-App gepflegt. Hier nur ansehen (Daten kommen über den Zugang zur Bar-Datenbank,
+    // siehe docs/BAR-BRIDGE.md). Die Bearbeiten-/Scan-Funktionen weiter unten bleiben im Code, sind aber abgeschaltet.
+    const spCanEdit = () => false;
+
     const spToday = () => fmIso(new Date());
     const spKindInfo = id => SP_KINDS.find(k => k.id === id) || (id === SP_EXTRA.id ? SP_EXTRA : { id, icon: '🍽️', de: id, en: id });
     const spKindLabel = id => { const k = spKindInfo(id); return k.icon + ' ' + fmL(k.de, k.en); };
@@ -28,15 +32,14 @@
       return r.valid_from === r.valid_to ? spFmtDate(r.valid_from) : spFmtDate(r.valid_from) + ' – ' + spFmtDate(r.valid_to);
     }
 
+    // Fehlertexte der Bar-Verbindung (Schlüssel fehlt, Bar noch nicht freigegeben ...) kommen aus exclusive.js
     function spErrorHtml(err) {
-      const msg = (err && err.message) ? String(err.message) : String(err || '');
-      const code = (err && err.code) ? String(err.code) : '';
-      if (/does not exist|schema cache/i.test(msg) || code === '42P01' || /^PGRST20/.test(code)) {
+      if (/kitchen_read_specials/i.test(String((err && err.message) || ''))) {
         return `<p class="staff-empty" style="color:#ef4444">${escapeHtml(fmL(
-          'Die Datenbank ist für diese Funktion noch nicht eingerichtet. Bitte zuerst sql/4.1.06_daily_specials.sql im Supabase SQL Editor ausführen.',
-          'The database is not set up for this feature yet. Please run sql/4.1.06_daily_specials.sql in the Supabase SQL editor first.'))}</p>`;
+          'In der Bar-Datenbank fehlt noch die Freigabe für das Tagesangebot. Bitte sql/bar-side/bar_bridge_for_kitchen.sql in der BAR-Datenbank erneut ausführen (docs/BAR-BRIDGE.md).',
+          'The bar database is not yet shared for daily specials. Please run sql/bar-side/bar_bridge_for_kitchen.sql again in the BAR database (docs/BAR-BRIDGE.md).'))}</p>`;
       }
-      return fmErrorHtml(err);
+      return exErrorHtml(err);
     }
 
     function spToastError(err) {
@@ -58,7 +61,7 @@
       closeSettingsMenu();
       sp.m = fmOpen('spModal', {
         title: '🍰 ' + fmL('Tagesangebot', 'Daily specials'),
-        sub: fmL('Kuchen und Suppe von heute – mit Allergenen', 'Cake and soup of today – with allergens')
+        sub: fmL('Kuchen und Suppe von heute – mit Allergenen (aus der Bar)', 'Cake and soup of today – with allergens (from the bar)')
       });
       sp.tab = 'today';
       sp.m.setBody('<p class="staff-empty">' + escapeHtml(fmL('Lade ...', 'Loading ...')) + '</p>');
@@ -66,11 +69,11 @@
     }
 
     async function spLoad() {
-      const since = fmIso(new Date(Date.now() - 45 * 86400000));
-      const { data, error } = await _supabase.from('daily_specials').select('*').gte('valid_to', since)
-        .order('valid_from', { ascending: true }).order('created_at', { ascending: true }).limit(400);
-      if (error) { sp.m.setBody(spErrorHtml(error)); sp.m.setToolbar(''); sp.m.setFoot(''); return; }
-      sp.rows = data || [];
+      const from = fmIso(new Date(Date.now() - 45 * 86400000)), to = fmIso(new Date(Date.now() + 60 * 86400000));
+      let res;
+      try { res = await barRpc('kitchen_read_specials', { p_from: from, p_to: to }); } catch (e) { res = { data: null, error: e }; }
+      if (res.error) { sp.m.setBody(spErrorHtml(res.error)); sp.m.setToolbar(''); sp.m.setFoot('<button type="button" class="ui-btn-primary" onclick="spLoad()">🔄 ' + escapeHtml(fmL('Neu laden', 'Reload')) + '</button>'); return; }
+      sp.rows = Array.isArray(res.data) ? res.data : [];
       spRender();
     }
 
@@ -88,10 +91,11 @@
     function spRender() {
       const lists = spLists();
       const tabs = [['today', '📌 ' + fmL('Heute', 'Today'), 0], ['upcoming', '📅 ' + fmL('Kommend', 'Upcoming'), lists.upcoming.length]];
-      if (userIsAdmin) tabs.push(['history', '📜 ' + fmL('Verlauf', 'History'), 0]);
+      if (spCanEdit()) tabs.push(['history', '📜 ' + fmL('Verlauf', 'History'), 0]);
       sp.m.setToolbar(`<div class="fm-tabs">${tabs.map(t =>
         `<button type="button" class="fm-tab${sp.tab === t[0] ? ' active' : ''}" onclick="spSetTab('${t[0]}')">${t[1]}${t[2] ? `<small>${t[2]}</small>` : ''}</button>`).join('')}
-        <button type="button" class="fm-tab" onclick="faShowLegend()">ℹ️ A–R</button></div>`);
+        <button type="button" class="fm-tab" onclick="faShowLegend()">ℹ️ A–R</button>
+        <button type="button" class="fm-tab" onclick="spLoad()" title="${escapeHtml(fmL('Neu laden', 'Reload'))}">🔄</button></div>`);
 
       let html = '';
       if (sp.tab === 'today') {
@@ -108,11 +112,11 @@
           : `<p class="staff-empty">${escapeHtml(sp.tab === 'upcoming' ? fmL('Nichts Kommendes eingetragen.', 'Nothing upcoming.') : fmL('Noch keine älteren Einträge.', 'No older entries yet.'))}</p>`;
       }
       html += `<p class="fm-hint" style="margin-top:.8rem">${escapeHtml(fmL(
-        'Allergene nach EU-Verordnung 1169/2011 (A–R). Im Zweifel bitte in der Küche nachfragen.',
-        'Allergens according to EU regulation 1169/2011 (A–R). If in doubt, please ask the kitchen.'))}</p>`;
+        'Allergene nach EU-Verordnung 1169/2011 (A–R). Im Zweifel bitte nachfragen. Das Tagesangebot wird in der Bar-App eingetragen.',
+        'Allergens according to EU regulation 1169/2011 (A–R). If in doubt, please ask. The daily specials are entered in the bar app.'))}</p>`;
       sp.m.setBody(html);
 
-      sp.m.setFoot(userIsAdmin
+      sp.m.setFoot(spCanEdit()
         ? `<button type="button" class="ui-btn-ghost" onclick="fmClose('spModal')">${escapeHtml(fmL('Schließen', 'Close'))}</button>
            <button type="button" class="ui-btn-ghost" onclick="spEdit('')">➕ ${escapeHtml(fmL('Neu', 'New'))}</button>
            <button type="button" class="ui-btn-primary" onclick="spScanOpen()">📷 ${escapeHtml(fmL('Foto scannen', 'Scan photo'))}</button>`
@@ -121,7 +125,7 @@
 
     function spCardHtml(r, showKind) {
       const price = r.price != null ? `<span class="sp-price">€ ${Number(r.price).toFixed(2).replace('.', ',')}</span>` : '';
-      const admin = userIsAdmin ? `<div class="fm-item-actions">
+      const admin = spCanEdit() ? `<div class="fm-item-actions">
           <button type="button" class="fm-btn" onclick="spEdit(${jsArg(r.id)})">✏️ ${escapeHtml(fmL('Bearbeiten', 'Edit'))}</button>
           <button type="button" class="fm-btn fm-btn-danger" onclick="spDelete(${jsArg(r.id)})">🗑 ${escapeHtml(fmL('Löschen', 'Delete'))}</button>
         </div>` : '';
@@ -143,7 +147,7 @@
     }
 
     function spEdit(id) {
-      if (!userIsAdmin) return;
+      if (!spCanEdit()) return;
       const it = id ? sp.rows.find(x => x.id === id) : null;
       sp.edit = { id: id || '', allergens: it ? (it.allergens || []).slice() : [] };
       const today = spToday();
@@ -229,7 +233,7 @@
     }
 
     async function spDelete(id) {
-      if (!userIsAdmin) return;
+      if (!spCanEdit()) return;
       const it = sp.rows.find(x => x.id === id); if (!it) return;
       if (!confirm(fmL('„' + it.name + '“ löschen?', 'Delete “' + it.name + '”?'))) return;
       const { error } = await _supabase.from('daily_specials').delete().eq('id', id);
@@ -241,7 +245,7 @@
     // Foto scannen (Manager/Developer)
     // ---------------------------------------------------------------
     function spScanOpen() {
-      if (!userIsAdmin) return;
+      if (!spCanEdit()) return;
       if (sp.scan && sp.scan.previewUrl) { try { URL.revokeObjectURL(sp.scan.previewUrl); } catch (e) {} }
       sp.scan = { items: [], previewUrl: '', from: spToday(), to: spToday(), note: '', allergensVisible: true };
       const m = fmOpen('spScan', { title: '📷 ' + fmL('Zettel einlesen', 'Scan the sheet'), sub: fmL('Die KI liest Namen und Allergene. Du prüfst das Ergebnis.', 'The AI reads names and allergens. You check the result.'), layer: 2 });
@@ -407,7 +411,7 @@
     }
 
     async function spScanSave() {
-      const s = sp.scan; if (!s || !userIsAdmin) return;
+      const s = sp.scan; if (!s || !spCanEdit()) return;
       const confirmBox = document.getElementById('spsConfirm');
       if (!confirmBox || !confirmBox.checked) return fmToast(fmL('Bitte zuerst bestätigen, dass du alles geprüft hast.', 'Please confirm that you have checked everything first.'));
       spsDates();

@@ -12,6 +12,13 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.12', range: '', date: 'November 2026', title: 'Tagesangebot kommt aus der Bar',
+    changes: [
+      ['new', 'Das Tagesangebot (Tageskuchen und Tagessuppe mit Allergenen) wird aus der Bar-App gelesen. In der Küche nur ansehen (Heute, Kommend, 🔄 Neu laden). Eintragen und Foto-Scan gibt es nur in der Bar-App.'],
+      ['new', 'TomiAI beantwortet Fragen zum Tagesangebot ebenfalls mit den Daten der Bar. Ist die Bar nicht erreichbar, sagt er das ehrlich.'],
+      ['improved', 'TomiAI nutzt die aktuellen Gemini-Modelle (die 2.5-Modelle sind abgeschaltet) und antwortet bei Überlastung deutlich schneller.'],
+      ['info', 'Einrichtung: sql/bar-side/bar_bridge_for_kitchen.sql in der BAR-Datenbank noch einmal ausführen (Funktion kitchen_read_specials). Edge Function tomi-ai neu bereitstellen.']
+    ] },
   { version: '1.0.11', range: '', date: 'November 2026', title: 'TomiAI und Push für die Küche',
     changes: [
       ['new', 'TomiAI kennt jetzt die Rezepte der Küche (Zutaten, Portionen, Garmethode, Zeit, Allergene), die Speisekarte, das Tagesangebot, Checklisten und den Dienstplan. Er antwortet als Assistent der Küche, nicht mehr der Bar.'],
