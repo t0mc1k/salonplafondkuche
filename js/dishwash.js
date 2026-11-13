@@ -42,7 +42,8 @@
       dw.tab = 'tasks';
       dw.m = fmOpen('dwModal', {
         title: '🧽 Abwasher',
-        sub: userIsAdmin ? 'Aufgaben, Übersicht und Rangliste. Orte und Rhythmus pflegst du unter „Orte“.' : 'Hake erledigte Aufgaben ab. Dein Name und die Zeit werden automatisch gespeichert.',
+        sub: dwCanWash() ? 'Hake erledigte Aufgaben ab (✓ Erledigt). Dein Name und die Zeit werden automatisch gespeichert.'
+          : 'Aufgaben, Übersicht und Rangliste. Orte und Rhythmus pflegst du unter „Orte“.',
         wide: true
       });
       dw.m.setBody('<p class="staff-empty">Lade ...</p>');
@@ -71,10 +72,16 @@
     }
 
     function dwTabsHtml() {
-      const tabs = [['tasks', '✅ Aufgaben']];
-      if (dwCanWash()) tabs.push(['extra', '➕ Extra']);
-      if (userIsAdmin) tabs.push(['overview', '📋 Übersicht'], ['rank', '🏆 Rangliste'], ['archive', '🗂️ Monate'], ['areas', '⚙️ Orte']);
-      return `<div class="fm-tabs">${tabs.map(t => `<button type="button" class="fm-tab${dw.tab === t[0] ? ' active' : ''}" onclick="dwTab('${t[0]}')">${t[1]}</button>`).join('')}</div>`;
+      const mine = [['tasks', dwCanWash() ? '✅ Meine Aufgaben' : '✅ Aufgaben']];
+      if (dwCanWash()) mine.push(['extra', '➕ Extra']);
+      const lead = userIsAdmin ? [['overview', '📋 Übersicht'], ['rank', '🏆 Rangliste'], ['archive', '🗂️ Monate'], ['areas', '⚙️ Orte']] : [];
+      const btn = t => `<button type="button" class="fm-tab${dw.tab === t[0] ? ' active' : ''}" onclick="dwTab('${t[0]}')">${t[1]}</button>`;
+      // Wer abwäscht UND Leitung ist (z. B. Developer + Abwasher): zwei klar getrennte Bereiche
+      if (dwCanWash() && lead.length) {
+        return `<div class="dw-modes"><div class="dw-mode"><small>🧽 Meine Arbeit</small><div class="fm-tabs">${mine.map(btn).join('')}</div></div>
+          <div class="dw-mode"><small>🧑‍💼 Leitung</small><div class="fm-tabs">${lead.map(btn).join('')}</div></div></div>`;
+      }
+      return `<div class="fm-tabs">${mine.concat(lead).map(btn).join('')}</div>`;
     }
 
     function dwRender() {
@@ -94,7 +101,7 @@
     function dwRenderTasks() {
       const areas = dw.areas.filter(a => a.active);
       if (!areas.length) {
-        dw.m.setBody(`<p class="staff-empty">${userIsAdmin ? 'Noch keine Orte angelegt. Wechsle zu „⚙️ Orte“ und lege den ersten Ort an.' : 'Der Manager hat noch keine Aufgaben angelegt.'}</p>`);
+        dw.m.setBody(`<p class="staff-empty">${userIsAdmin ? 'Es gibt noch keine Aufgaben zum Abhaken. Lege zuerst unter „⚙️ Orte“ (Bereich Leitung) die Orte und Aufgaben an, danach erscheinen sie hier mit dem Knopf „✓ Erledigt“.' : 'Der Manager hat noch keine Aufgaben angelegt.'}</p>`);
         return;
       }
       const meLower = String(currentWaiterName || '').toLowerCase();

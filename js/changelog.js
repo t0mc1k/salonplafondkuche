@@ -12,6 +12,12 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.14', range: '', date: 'November 2026', title: 'Abwasher mit Leitungsrolle: „Meine Arbeit“',
+    changes: [
+      ['improved', 'Wer Leitung ist und selbst abwäscht (z. B. Developer mit Zusatzrolle Abwasher), sieht auf dem Dashboard ganz oben die Gruppe „🧽 Meine Arbeit“ mit der Kachel Abwasher.'],
+      ['improved', 'Im Fenster Abwasher sind „Meine Arbeit“ (✅ Meine Aufgaben mit dem Knopf ✓ Erledigt, ➕ Extra) und „Leitung“ (Übersicht, Rangliste, Monate, Orte) klar getrennt. Der Untertitel erklärt, wo abgehakt wird.'],
+      ['improved', 'Gibt es noch keine Aufgaben, steht jetzt, dass sie zuerst unter „⚙️ Orte“ angelegt werden müssen.']
+    ] },
   { version: '1.0.13', range: '', date: 'November 2026', title: 'Übersichtlichere Anmeldung',
     changes: [
       ['improved', 'Anmeldung: Die Namen stehen nach Teams geordnet (Leitung, AM-Team, PM-Team, Lehrling, Reinigung) und werden vollständig angezeigt, nichts wird mehr abgeschnitten. Auf dem Handy in zwei Spalten.']

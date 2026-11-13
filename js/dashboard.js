@@ -27,7 +27,7 @@
         checklist:{ icon: '✅', title: adm ? t('dash.checklistA') : t('dash.checklistS'), sub: adm ? t('dash.checklistAS') : t('dash.checklistSS'), run: 'openChecklistModal', need: 'all' },
         maint:    { icon: '🛠️', title: adm ? t('dash.maintA') : t('dash.maintS'), sub: adm ? t('dash.maintAS') : t('dash.maintSS'), run: 'openMaintenanceModal', need: 'all', badge: 'dashMaintBadge' },
         loss:     { icon: '🔨', title: adm ? t('dash.lossA') : t('dash.lossS'), sub: adm ? t('dash.lossAS') : t('dash.lossSS'), run: 'openLossModal', need: 'all' },
-        wash:     { icon: '🧽', title: t('dash.wash'), sub: userIsAdmin ? t('dash.washSubA') : t('dash.washSub'), run: 'openDishwashModal', need: 'wash', primary: !userIsAdmin },
+        wash:     { icon: '🧽', title: t('dash.wash'), sub: (userIsAdmin && !staffHasRole('dishwasher')) ? t('dash.washSubA') : t('dash.washSub'), run: 'openDishwashModal', need: 'wash', primary: (!userIsAdmin || staffHasRole('dishwasher')) },
         fridge:   { icon: '🌡️', title: t('dash.fridge'), sub: t('dash.fridgeSub'), run: 'openFridgeTempModal', need: 'admin' },
         teamplan: { icon: '📆', title: t('dash.teamplan'), sub: t('dash.teamplanSub'), run: 'openTeamPlanModal', need: 'all' },
         swaps:    { icon: '🔄', title: t('dash.swaps'), sub: adm ? t('dash.swapsA') : t('dash.swapsS'), run: 'openSwapModal', need: 'all', badge: 'dashSwapBadge' },
@@ -48,13 +48,17 @@
     // ---------- Anordnung je Rolle ----------
     function dashLayoutFor() {
       if (userIsAdmin) {
-        return [
+        // Leitung, die selbst abwäscht (z. B. Developer + Abwasher): eigene Gruppe „Meine Arbeit“ ganz oben
+        const alsoWashes = staffHasRole('dishwasher');
+        const groups = [
           { title: t('dash.g.bar'),  ids: ['drinks', 'allergens', 'specials', 'reserv', 'exclusive', 'season', 'impexp'] },
-          { title: t('dash.g.std'),  ids: ['checklist', 'fridge', 'wash', 'maint', 'loss'] },
+          { title: t('dash.g.std'),  ids: alsoWashes ? ['checklist', 'fridge', 'maint', 'loss'] : ['checklist', 'fridge', 'wash', 'maint', 'loss'] },
           { title: t('dash.g.team'), ids: ['teamplan', 'swaps', 'absence', 'payroll', 'staff', 'chat'] },
           { title: t('dash.g.sys'),  ids: ['login', 'settings'] },
           { title: t('dash.g.info'), ids: ['news', 'tomi', 'help', 'support'] }
         ];
+        if (alsoWashes) groups.unshift({ title: '🧽 ' + fmL('Meine Arbeit (Abwasher)', 'My work (dishwashing)'), ids: ['wash', 'myplan'] });
+        return groups;
       }
       // Abwasher: Rezepte nur ansehen (Abwasher-Aufgaben kommen in einer späteren Version)
       if (currentStaffRole === 'dishwasher') {
