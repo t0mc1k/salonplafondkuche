@@ -263,12 +263,37 @@ thead { display: table-header-group; } tr { page-break-inside: avoid; }
       });
       ex.m.root.classList.add('ex-root');
       ex.m.setBody('<p class="staff-empty">' + escapeHtml(fmL('Lade ...', 'Loading ...')) + '</p>');
+      ex.sig = '';
       exLoadShifts(null);
+      exStartAuto();
     }
 
-    async function exLoadShifts(selectId) {
+    // Automatisch aktualisieren (alle 5 Sekunden), solange das Fenster offen ist
+    function exStartAuto() {
+      if (ex.timer) clearInterval(ex.timer);
+      ex.timer = setInterval(() => {
+        if (!document.getElementById('exModal')) { clearInterval(ex.timer); ex.timer = null; return; }
+        if (document.hidden || ex.busy) return;
+        ex.busy = true;
+        exLoadShifts(ex.shift ? ex.shift.id : null, true).finally(() => { ex.busy = false; });
+      }, 5000);
+    }
+    function exToggleFull() {
+      const root = document.getElementById('exModal'); if (!root) return;
+      root.classList.toggle('ex-full');
+      const on = root.classList.contains('ex-full');
+      const b = document.getElementById('exFullBtn'); if (b) b.textContent = (on ? '🗗 ' : '⛶ ') + (on ? fmL('Verkleinern', 'Shrink') : fmL('Vollbild', 'Full screen'));
+    }
+
+    async function exLoadShifts(selectId, silent) {
       let res;
       try { res = await barRpc('kitchen_read_exclusive'); } catch (e) { res = { data: null, error: e }; }
+      if (silent) {   // Hintergrund-Abgleich: bei Fehler oder ohne Änderung nichts anzeigen, Scroll-Position behalten
+        if (res.error || !document.getElementById('exModal')) return;
+        const sig = JSON.stringify(res.data);
+        if (sig === ex.sig) return;
+      }
+      ex.sig = JSON.stringify(res.data);
       if (res.error) { ex.m.setBody(exErrorHtml(res.error)); ex.m.setToolbar(`<div class="ex-bar"><button type="button" class="fm-btn" onclick="exReload()">🔄 ${escapeHtml(fmL('Neu laden', 'Reload'))}</button></div>`); ex.m.setFoot(''); return; }
       const list = Array.isArray(res.data) ? res.data : [];
       ex.byShift = {};
@@ -277,7 +302,10 @@ thead { display: table-header-group; } tr { page-break-inside: avoid; }
       if (!want) { try { want = localStorage.getItem(EX_SEL_KEY); } catch (e) {} }
       ex.shift = ex.shifts.find(s => s.id === want) || ex.shifts[0] || null;
       if (ex.shift) await exLoadTables(); else ex.tables = [];
+      const wrap = silent ? document.querySelector('#exModal .ex-wrap') : null;
+      const st = wrap ? [wrap.scrollTop, wrap.scrollLeft] : null;
       exRender();
+      if (st) { const w = document.querySelector('#exModal .ex-wrap'); if (w) { w.scrollTop = st[0]; w.scrollLeft = st[1]; } }
     }
 
     async function exLoadTables() {
@@ -305,6 +333,9 @@ thead { display: table-header-group; } tr { page-break-inside: avoid; }
           `<option value="${x.id}"${s && s.id === x.id ? ' selected' : ''}>${escapeHtml(exShiftLabel(x))}</option>`).join('')}</select>`);
       }
       bar.push(`<button type="button" class="fm-btn" onclick="exReload()">🔄 ${escapeHtml(fmL('Neu laden', 'Reload'))}</button>`);
+      const full = !!document.querySelector('#exModal.ex-full');
+      bar.push(`<button type="button" class="fm-btn" id="exFullBtn" onclick="exToggleFull()">${full ? '🗗 ' + escapeHtml(fmL('Verkleinern', 'Shrink')) : '⛶ ' + escapeHtml(fmL('Vollbild', 'Full screen'))}</button>`,
+        `<span class="ex-live" title="${escapeHtml(fmL('Aktualisiert sich alle 5 Sekunden', 'Refreshes every 5 seconds'))}">● ${escapeHtml(fmL('live', 'live'))}</span>`);
       if (s) {
         bar.push(`<button type="button" class="fm-btn" onclick="exPrintDialog()">🖨️ ${escapeHtml(fmL('Drucken', 'Print'))}</button>`,
           `<button type="button" class="fm-btn" onclick="exExportXlsx()">📊 Excel</button>`);

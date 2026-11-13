@@ -12,6 +12,12 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.17', range: '', date: 'November 2026', title: 'Exklusiv-Schicht: automatisch aktuell, Vollbild, Drehen',
+    changes: [
+      ['new', 'Exklusiv-Schicht: Solange das Fenster offen ist, holt sich die App alle 5 Sekunden die neuesten Daten aus der Bar (Anzeige „● live“). „Neu laden“ ist nicht mehr nötig, bleibt aber als Knopf. Die Scroll-Position bleibt erhalten.'],
+      ['new', 'Neuer Knopf „⛶ Vollbild“: Die Tabelle füllt das ganze Fenster, damit man alles sieht.'],
+      ['fixed', 'Handy drehen: Die installierte App war auf Hochformat festgelegt, jetzt dreht sie mit (Querformat möglich). Falls es noch nicht dreht: Drehsperre des Handys ausschalten und die App neu vom Home-Bildschirm öffnen (gegebenenfalls einmal neu installieren).']
+    ] },
   { version: '1.0.16', range: '', date: 'November 2026', title: 'Bestellliste Gemüse / Obst',
     changes: [
       ['new', 'Neue Kachel „🥬 Bestellliste Gemüse / Obst“ für alle. Jeder trägt ein, was bestellt werden muss: Rubriken zum Aufklappen, Mengen mit + / −, Suche und „Nur Bestellte“. Die Produkte stammen aus der Vorlage „Hye Bestelliste.xlsx“, eigene Produkte lassen sich mit „＋ Produkt“ ergänzen.'],

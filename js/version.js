@@ -10,7 +10,7 @@
 
    Diese Datei wird in index.html OHNE „?v=“ geladen (damit sie immer frisch ist).
    ============================================================ */
-    const APP_VERSION = '1.0.16';
+    const APP_VERSION = '1.0.17';
 
     // Dateinamen mit Versionsnummer (Cache-Busting), z. B. appAsset('js/ui.js') -> 'js/ui.js?v=4.1.05'
     function appAsset(path) { return path + '?v=' + encodeURIComponent(APP_VERSION); }
