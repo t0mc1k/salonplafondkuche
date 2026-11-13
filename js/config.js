@@ -60,7 +60,7 @@
     let currentStaffExtraRoles = [];   // Zusatzrollen, z. B. ['dishwasher']
     function staffHasRole(r) { return currentStaffRole === r || currentStaffExtraRoles.indexOf(r) !== -1; }
     let userIsAdmin = false;   // manager / developer (vom Server)
-    let userCanEdit = false;   // darf Getränke bearbeiten (vom Server)
+    let userCanEdit = false;   // darf Rezepte bearbeiten (vom Server)
     let staffDatabaseRecords = [];
     let currentEnteredPin = "";
     let selectedWaiterForPin = "";

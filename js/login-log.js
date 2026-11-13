@@ -6,7 +6,7 @@
    ============================================================ */
 
     const LL_SECTIONS = {
-      dashboard: 'Dashboard', drinks: 'Getränke & Rezepte', allergens: 'Speisekarte & Allergene', checklist: 'Checkliste', myplan: 'Mein Arbeitsplan',
+      dashboard: 'Dashboard', drinks: 'Rezepte', allergens: 'Speisekarte & Allergene', checklist: 'Checkliste', myplan: 'Mein Arbeitsplan',
       swaps: 'Schichttausch', chat: 'Team-Chat', faults: 'Störungen', fridge: 'Kühlschrank-Temperaturen', wash: 'Abwasher', loss: 'Verluste & Bruch', help: 'Hilfe', tomi: 'TomiAI',
       shopping: 'Einkaufsliste', profile: 'Profil', settings: 'Einstellungen', news: 'Was ist neu?', support: 'Support', teamplan: 'Team & Arbeitsplan',
       payroll: 'Stunden & Lohn', staff: 'Personal & PINs', loginlog: 'Login-Protokoll', season: 'Saison', impexp: 'Import & Export', print: 'Karten-Druck', multiview: 'Multi-View'
@@ -16,7 +16,7 @@
       swap_decide: ['✅', 'Tausch entschieden'], swap_decline: ['❌', 'Tausch abgelehnt'], swap_cancel: ['↩️', 'Tausch zurückgezogen'],
       fault_report: ['🛠️', 'Störung gemeldet'], fault_status: ['🛠️', 'Störung bearbeitet'], loss_report: ['🔨', 'Bruch/Verlust gemeldet'],
       plan_change: ['📆', 'Arbeitsplan geändert'],
-      drink_new: ['🍸', 'Getränk angelegt'], drink_edit: ['🍸', 'Getränk geändert'], drink_delete: ['🗑️', 'Getränk gelöscht'],
+      drink_new: ['🍳', 'Rezept angelegt'], drink_edit: ['🍳', 'Rezept geändert'], drink_delete: ['🗑️', 'Rezept gelöscht'],
       chat_msg: ['💬', 'Im Chat geschrieben'], ticket_new: ['🛟', 'Ticket erstellt'], news_new: ['📣', 'Team-News veröffentlicht']
     };
     const LL_END = { logout: 'Abgemeldet', timeout: 'Keine Aktivität mehr', closed: 'App geschlossen' };

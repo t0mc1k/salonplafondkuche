@@ -17,7 +17,7 @@
       const drinkSub = n ? t('dash.drinksSub', { n }) : t('dash.drinksSub0');
       const adm = !!userIsAdmin;
       return {
-        drinks:   { icon: '🍸', title: t('dash.drinks'), sub: drinkSub, run: 'openDrinksView', need: 'all', primary: true },
+        drinks:   { icon: '🍳', title: t('dash.drinks'), sub: drinkSub, run: 'openDrinksView', need: 'all', primary: true },
         allergens:{ icon: '🍽️', title: t('dash.allergens'), sub: t('dash.allergensSub'), run: 'openAllergenModal', need: 'all' },
         exclusive:{ icon: '🍽️', title: t('dash.exclusive'), sub: t('dash.exclusiveSub'), run: 'openExclusiveModal', need: 'kitchen' },
         specials: { icon: '🍰', title: t('dash.specials'), sub: t('dash.specialsSub'), run: 'openSpecialsModal', need: 'all' },

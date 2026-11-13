@@ -1,7 +1,7 @@
 {
-  "name": "Salonplafond BAR",
+  "name": "Salonplafond Küche",
   "short_name": "Salonplafond",
-  "description": "Getränkekarte, Rezepte und Team-Chat der Salonplafond BAR",
+  "description": "Rezepte, Dienstplan und Team-Chat der Salonplafond Küche",
   "lang": "de",
   "start_url": "./",
   "scope": "./",

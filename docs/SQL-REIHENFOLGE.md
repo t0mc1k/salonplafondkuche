@@ -15,6 +15,8 @@ Neue Datenbank = alle der Reihe nach. Bei einem Update nur die neuen Dateien.
 | `1.0.07_betrieb.sql` | Checklisten, Schichttausch, Stunden, Speisekarte & Allergene, Störungen, Verluste & Bruch | 1.0.09 |
 | `1.0.08_push.sql` | Push-Meldungen (Server-Teil) und TomiAI-Zähler | 1.0.09 |
 | `1.0.09_presence_absence_inbox.sql` | Online-Status & Login-Protokoll, Urlaub/Krank, Tagesangebot, Mitteilungen | 1.0.09 |
+| `1.0.10_pin_change.sql` | PIN beim ersten Login ändern, Start-PIN für Developer sichtbar | 1.0.10 |
+| `1.0.11_kitchen_areas.sql` | Checklisten-Bereiche der Küche (Küche, Patisserie, Lager) | 1.0.10 |
 
 **Nur für die BAR-Datenbank:** `sql/bar-side/bar_bridge_for_kitchen.sql`, Anleitung in `docs/BAR-BRIDGE.md`.
 

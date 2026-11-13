@@ -224,6 +224,7 @@
       if (typeof pushOnLogin === 'function') pushOnLogin();   // Gerät für Benachrichtigungen dieser Person zuordnen
       if (typeof presenceStart === 'function') presenceStart();   // Sitzung für Login-Protokoll / Online-Status
       if (opts && opts.fresh && typeof introMaybePlay === 'function') introMaybePlay();   // Begrüßungsanimation (nur nach echter Anmeldung)
+      if (typeof pinForceChangeIfNeeded === 'function') pinForceChangeIfNeeded();   // Start-PIN? Dann eigenen PIN verlangen (v1.0.10)
     }
 
     // ---------- Hinweis, wenn sich ein Kollege anmeldet ----------
@@ -289,7 +290,7 @@
       if (typeof updateHeaderAvatarUI === 'function') updateHeaderAvatarUI();
       if (typeof renderDashboard === 'function' && !isDrinksViewOpen()) renderDashboard();
       const mobileLabel = document.getElementById('mobileUserLabel');
-      if (mobileLabel) mobileLabel.textContent = (currentWaiterName || '') + ' (' + (({ developer: t('role.developer'), manager: t('role.manager') })[currentStaffRole] || t('role.staff')) + ')';
+      if (mobileLabel) mobileLabel.textContent = (currentWaiterName || '') + ' (' + (({ developer: t('role.developer'), manager: t('role.manager'), dishwasher: t('role.dishwasher') })[currentStaffRole] || t('role.kitchen')) + ')';
       const label = document.getElementById('currentUserEmail');
       if (label) {
         const roleTxt = (userIsAdmin || userCanEdit) && currentStaffRole && currentStaffRole !== 'staff' ? ` (${escapeHtml(currentStaffRole)})` : '';

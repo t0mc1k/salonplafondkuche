@@ -354,7 +354,7 @@
         : "Für diesen Mitarbeiter ist noch kein PIN gesetzt: bitte 4 bis 6 Ziffern eingeben.";
       setStaffRole(staff.role || 'kitchen');
       document.getElementById('staffInputExtraDish').checked = Array.isArray(staff.extra_roles) && staff.extra_roles.indexOf('dishwasher') !== -1;
-      // „Darf Getränke bearbeiten“ nach setStaffRole erneut korrekt setzen (Admins immer)
+      // „Darf Rezepte bearbeiten“ nach setStaffRole erneut korrekt setzen (Admins immer)
       if (!(staff.role === 'manager' || staff.role === 'developer')) {
         document.getElementById('staffInputCanEdit').checked = !!staff.can_edit_drinks;
       }

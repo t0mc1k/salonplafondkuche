@@ -123,8 +123,8 @@
   "en": "Open recipe database"
  },
  "menu.addDrink": {
-  "de": "➕ Neues Getränk hinzufügen",
-  "en": "➕ Add new drink"
+  "de": "➕ Neues Rezept hinzufügen",
+  "en": "➕ Add new recipe"
  },
  "menu.secDrinks": {
   "de": "Rezepte & Saison",
@@ -135,7 +135,7 @@
   "en": "Choose season"
  },
  "menu.seasonSub": {
-  "de": "Aktive Karte wechseln",
+  "de": "Aktive Speisekarte wechseln",
   "en": "Switch the active menu"
  },
  "menu.newSeason": {
@@ -143,7 +143,7 @@
   "en": "Create new season"
  },
  "menu.newSeasonSub": {
-  "de": "Neue Karte anlegen",
+  "de": "Neue Speisekarte anlegen",
   "en": "Set up a new menu"
  },
  "menu.shopping": {
@@ -207,8 +207,8 @@
   "en": "Refresh data"
  },
  "menu.refreshSub": {
-  "de": "Getränke neu laden",
-  "en": "Reload the drinks"
+  "de": "Rezepte neu laden",
+  "en": "Reload the recipes"
  },
  "menu.install": {
   "de": "App installieren",
@@ -315,8 +315,8 @@
   "en": "❤️ Shift favourites"
  },
  "dv.glass": {
-  "de": "🍸 Nach Glas-Typ filtern:",
-  "en": "🍸 Filter by glass type:"
+  "de": "🔥 Nach Garmethode filtern:",
+  "en": "🔥 Filter by cooking method:"
  },
  "set.title": {
   "de": "⚙️ Einstellungen & Zentrale",
@@ -339,8 +339,8 @@
   "en": "Style"
  },
  "set.skinSub": {
-  "de": "„NeXuS Glass“: Glas-Look mit Bar-Hintergrund (immer dunkel). Braucht mehr Leistung, bei Ruckeln „Weichzeichner“ ausschalten.",
-  "en": "“NeXuS Glass”: glass look with a bar background (always dark). Needs more performance; if it stutters, turn off “Blur effect”."
+  "de": "„NeXuS Glass“: Glas-Look mit Hintergrundbild (immer dunkel). Braucht mehr Leistung, bei Ruckeln „Weichzeichner“ ausschalten.",
+  "en": "“NeXuS Glass”: glass look with a background image (always dark). Needs more performance; if it stutters, turn off “Blur effect”."
  },
  "set.skinClassic": {
   "de": "Original",
@@ -395,8 +395,8 @@
   "en": "Less movement and transitions; calmer and easier on the battery."
  },
  "set.drinks": {
-  "de": "🍸 Getränke",
-  "en": "🍸 Drinks"
+  "de": "🍳 Rezepte",
+  "en": "🍳 Recipes"
  },
  "set.view": {
   "de": "Ansicht",
@@ -419,8 +419,8 @@
   "en": "Sorting"
  },
  "set.sortSub": {
-  "de": "Reihenfolge der Getränke in der Liste.",
-  "en": "Order of the drinks in the list."
+  "de": "Reihenfolge der Rezepte in der Liste.",
+  "en": "Order of the recipes in the list."
  },
  "set.sortNew": {
   "de": "Neueste zuerst",
@@ -491,12 +491,12 @@
   "en": "View mode"
  },
  "set.modeSub": {
-  "de": "Kellner-Ansicht blendet Verwaltungs-Knöpfe aus.",
-  "en": "The waiter view hides the management buttons."
+  "de": "Die Koch-Ansicht blendet Verwaltungs-Knöpfe aus.",
+  "en": "The cook view hides the management buttons."
  },
  "set.modeStaff": {
-  "de": "Kellner",
-  "en": "Waiter"
+  "de": "Koch",
+  "en": "Cook"
  },
  "set.modeAdmin": {
   "de": "Verwaltung",
@@ -707,8 +707,8 @@
   "en": "Report Breakage"
  },
  "dash.lossSS": {
-  "de": "Gläser, Verschüttetes",
-  "en": "Glasses, spills"
+  "de": "Zerbrochenes, Verschüttetes",
+  "en": "Breakage, spills"
  },
  "dash.teamplan": {
   "de": "Dienstplan",
@@ -971,12 +971,12 @@
   "en": "⚡ Multi-View: recipes side by side"
  },
  "rep.title": {
-  "de": "🔄 Drink ersetzen",
-  "en": "🔄 Replace drink"
+  "de": "🔄 Rezept ersetzen",
+  "en": "🔄 Replace recipe"
  },
  "rep.sub": {
-  "de": "Wähle einen neuen Drink aus der aktuellen Saison aus, der diesen ersetzen soll:",
-  "en": "Choose a new drink from the current season to replace this one:"
+  "de": "Wähle ein neues Rezept aus der aktuellen Saison, das dieses ersetzen soll:",
+  "en": "Choose a new recipe from the current season to replace this one:"
  },
  "shop.empty": {
   "de": "Keine Zutaten in dieser Saison gefunden.",
@@ -1003,8 +1003,8 @@
   "en": "Use and amounts"
  },
  "tray.max": {
-  "de": "Für den Schnellvergleich können maximal 6 Getränke gleichzeitig ausgewählt werden.",
-  "en": "You can select a maximum of 6 drinks for the quick comparison."
+  "de": "Für den Schnellvergleich können maximal 6 Rezepte gleichzeitig ausgewählt werden.",
+  "en": "You can select a maximum of 6 recipes for the quick comparison."
  },
  "tray.already": {
   "de": "„{name}“ ist schon im Multi-View",
@@ -1035,8 +1035,8 @@
   "en": "🔄 Swap"
  },
  "tray.glass": {
-  "de": "Glas:",
-  "en": "Glass:"
+  "de": "Methode:",
+  "en": "Method:"
  },
  "tray.ingredients": {
   "de": "Zutaten:",
@@ -1075,8 +1075,8 @@
   "en": "About me"
  },
  "prof.btnBar": {
-  "de": "🍸 Hinter der Bar",
-  "en": "🍸 Behind the bar"
+  "de": "🍳 In der Küche",
+  "en": "🍳 In the kitchen"
  },
  "prof.btnPause": {
   "de": "☕ In der Pause",
@@ -1131,8 +1131,8 @@
   "en": "No description given."
  },
  "prof.bioBar": {
-  "de": "🍸 Hinter der Bar",
-  "en": "🍸 Behind the bar"
+  "de": "🍳 In der Küche",
+  "en": "🍳 In the kitchen"
  },
  "prof.bioPause": {
   "de": "☕ In der Pause",
@@ -1159,8 +1159,8 @@
   "en": "View recipes, use the chat, edit your own profile"
  },
  "prof.r2": {
-  "de": "Getränke anlegen, ändern und löschen",
-  "en": "Create, change and delete drinks"
+  "de": "Rezepte anlegen, ändern und löschen",
+  "en": "Create, change and delete recipes"
  },
  "prof.r3": {
   "de": "Personal, PINs und Login-Protokoll verwalten",
@@ -1283,8 +1283,8 @@
   "en": "🏠 Dashboard"
  },
  "set.startDrinks": {
-  "de": "🍸 Getränke",
-  "en": "🍸 Drinks"
+  "de": "🍳 Rezepte",
+  "en": "🍳 Recipes"
  },
  "set.startSaved": {
   "de": "Startseite gespeichert",
@@ -1771,12 +1771,12 @@
   "en": "How do I make a Negroni?"
  },
  "tomi.chipS2": {
-  "de": "Welche Drinks sind vegan?",
-  "en": "Which drinks are vegan?"
+  "de": "Welche Rezepte sind vegan?",
+  "en": "Which recipes are vegan?"
  },
  "tomi.chipS3": {
-  "de": "Was kann ein Gast mit Nuss-Allergie essen?",
-  "en": "What can a guest with a nut allergy eat?"
+  "de": "Was darf jemand mit Nuss-Allergie essen?",
+  "en": "What can someone with a nut allergy eat?"
  },
  "tomi.chipS4": {
   "de": "Wann arbeite ich diese Woche?",

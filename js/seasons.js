@@ -17,21 +17,21 @@
     function createNewSeasonPrompt() {
       closeSettingsMenu();
       checkDrinkEditAuth(async () => {
-        let newSeasonName = prompt("Namen für die neue Saison eingeben (z. B. Sommer 2027 oder 01.05.2027 - 31.10.2027):");
+        let newSeasonName = prompt("Namen für die neue Saison eingeben (z. B. Winter 2027 oder 01.11.2027 - 31.03.2028):");
         if (!newSeasonName || newSeasonName.trim() === '') return;
 
         let formatted = newSeasonName.trim();
         
         const { error } = await _supabase.from('recipes').insert([{
-          name: "Willkommens-Drink (Saison-Start)",
-          category: "Cocktails",
+          name: "Erstes Rezept (Saison-Start)",
+          category: "Hauptgerichte",
           season: formatted,
-          glass_type: "Coupette",
-          method: "Build",
-          ice: "Cubed",
-          garnish: "Mint",
+          portions: "1 Portion",
+          method: "Kochen",
+          prep_time: "",
+          plating: "",
           ingredients_json: [{ name: "Saison-Eröffnung", amount: "1x" }],
-          recipe: "Erster Drink dieser neuen Saison.",
+          recipe: "Platzhalter für die neue Saison. Du kannst es bearbeiten oder löschen, sobald die ersten echten Rezepte da sind.",
           is_featured: false
         }]);
 
@@ -98,11 +98,11 @@
     async function deleteEntireSeason(seasonKey, event) {
       if (event) event.stopPropagation();
       checkDrinkEditAuth(async () => {
-        if (!confirm(`Möchten Sie wirklich die gesamte Saison "${seasonKey}" und alle darin enthaltenen Getränke permanent löschen?`)) return;
+        if (!confirm(`Möchten Sie wirklich die gesamte Saison "${seasonKey}" und alle darin enthaltenen Rezepte permanent löschen?`)) return;
 
         const { error: drinksErr } = await _supabase.from('recipes').delete().eq('season', seasonKey);
         if (drinksErr) {
-          alert("Fehler beim Löschen der Getränke der Saison: " + drinksErr.message);
+          alert("Fehler beim Löschen der Rezepte der Saison: " + drinksErr.message);
           return;
         }
 

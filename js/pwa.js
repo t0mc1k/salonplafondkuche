@@ -44,7 +44,7 @@
         title: 'Am Computer (Chrome / Edge)',
         steps: [
           'Klicke rechts in der Adressleiste auf das <b>Installieren-Symbol</b> (⊕ oder Monitor mit Pfeil).',
-          'Alternativ: Browser-Menü ⋮ → <b>„Salonplafond BAR installieren“</b>.',
+          'Alternativ: Browser-Menü ⋮ → <b>„Salonplafond Küche installieren“</b>.',
           'Safari (Mac): <b>Teilen → „Zum Dock hinzufügen“</b>.'
         ]
       };

@@ -80,7 +80,7 @@
           <p class="intro-hello">${escapeHtml(t('intro.welcome', { name: currentWaiterName || '' }))}</p>
           <p class="intro-system">${escapeHtml(t('intro.system'))}</p>
           <h2 class="intro-title">Salonplafond NeXuS</h2>
-          <p class="intro-sub">BAR</p>
+          <p class="intro-sub">KÜCHE</p>
           <p class="intro-tag">powered by TomiAI ✨</p>
           <p class="intro-skip">${escapeHtml(t('intro.skip'))}</p>
         </div>`;

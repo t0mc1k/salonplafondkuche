@@ -1,6 +1,6 @@
 /* ============================================================
    js/tray.js
-   Multi-View-Korb inkl. Drag & Drop und Getränk tauschen
+   Multi-View-Korb inkl. Drag & Drop und Rezept tauschen
    ============================================================ */
     function toggleBarTrayItem(id, event) {
       if (event) event.stopPropagation();
@@ -56,7 +56,7 @@
     }
 
 
-    // ===== Drag & Drop: Getränk in den Multi-View-Korb ziehen =====
+    // ===== Drag & Drop: Rezept in den Multi-View-Korb ziehen =====
     function showTrayToast(msg) {
       let toastEl = document.getElementById('trayToast');
       if (!toastEl) {
@@ -295,10 +295,10 @@
               ${photoHtml}
               <h4 class="text-base font-bold mb-3">${escapeHtml(d.name)}${priceText}</h4>
               <div class="text-xs space-y-1 mb-3 custom-box p-2.5 rounded-lg border">
-                <div><b>${escapeHtml(t('tray.glass'))}</b> ${escapeHtml(d.glass_type || '-')}</div>
-                <div><b>Method:</b> ${escapeHtml(d.method || '-')}</div>
-                <div><b>Ice:</b> ${escapeHtml(d.ice || '-')}</div>
-                <div><b>Garnish:</b> ${escapeHtml(d.garnish || '-')}</div>
+                <div><b>${escapeHtml(fmL('Portionen:', 'Portions:'))}</b> ${escapeHtml(d.portions || '-')}</div>
+                <div><b>${escapeHtml(fmL('Methode:', 'Method:'))}</b> ${escapeHtml(d.method || '-')}</div>
+                <div><b>${escapeHtml(fmL('Zeit:', 'Time:'))}</b> ${escapeHtml(d.prep_time || '-')}</div>
+                <div><b>${escapeHtml(fmL('Anrichten:', 'Plating:'))}</b> ${escapeHtml(d.plating || '-')}</div>
               </div>
               <div class="text-xs custom-box p-2.5 rounded-lg border mb-2">
                 <div class="font-bold text-amber-600 dark:text-amber-400 mb-1 pb-1 border-b border-slate-200 dark:border-slate-800 grid grid-cols-2"><span>${escapeHtml(t('tray.ingredients'))}</span><span>${escapeHtml(t('tray.amount'))}</span></div>

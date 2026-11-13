@@ -2,7 +2,7 @@
    js/absence.js  (v4.1.05)
    Urlaub beantragen & Krankmeldung
 
-   - Kellner/Barkeeper: Urlaub beantragen (von–bis), sich krank melden, eigene Meldungen sehen/zurückziehen.
+   - Mitarbeiter: Urlaub beantragen (von–bis), sich krank melden, eigene Meldungen sehen/zurückziehen.
    - Manager/Developer: Urlaub genehmigen oder ablehnen, Krankmeldungen zur Kenntnis nehmen und
      Urlaub (U) bzw. Krank (K) mit einem Klick in den Arbeitsplan eintragen.
    - Benachrichtigungen (Push) kommen aus der Datenbank (Trigger push_on_absence).

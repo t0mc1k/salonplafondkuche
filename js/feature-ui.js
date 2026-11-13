@@ -94,7 +94,7 @@
     function fmIso(d) {
       return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }
-    // „Betriebstag“: bis 5 Uhr früh zählt noch der Vortag (Bar schließt nach Mitternacht)
+    // „Betriebstag“: bis 5 Uhr früh zählt noch der Vortag (Spätdienst arbeitet nach Mitternacht)
     function fmBizDate() {
       return fmIso(new Date(Date.now() - 5 * 3600 * 1000));
     }
@@ -122,7 +122,7 @@
       return fmIso(d) + 'T' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     }
 
-    // ---------- Foto-Upload (Bucket „drinks“, wie Chat & Getränke) ----------
+    // ---------- Foto-Upload (Bucket „photos“, wie Chat & Rezepte) ----------
     async function fmUploadPhoto(file, prefix) {
       if (!file || !/^image\//.test(file.type)) throw new Error(fmL('Bitte ein Bild auswählen.', 'Please choose an image.'));
       const prepared = (typeof compressImageFile === 'function') ? await compressImageFile(file) : file;

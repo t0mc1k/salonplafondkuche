@@ -57,7 +57,7 @@
         </div>
         <div class="login-head-text">
           <h1>Salonplafond NeXuS</h1>
-          <span><span data-brand-header>BAR</span> · <span data-i18n="login.title">Anmeldung</span></span>
+          <span><span data-brand-header>KÜCHE</span> · <span data-i18n="login.title">Anmeldung</span></span>
         </div>
       </header>
 
@@ -109,7 +109,7 @@
         <div id="pinAuthError" class="login-error hidden"></div>
       </div>
 
-      <p class="login-credit">Salonplafond NeXuS • BAR v<span data-app-number></span> • Developed by Tomas Kardos © 2026</p>
+      <p class="login-credit">Salonplafond NeXuS • KÜCHE v<span data-app-number></span> • Developed by Tomas Kardos © 2026</p>
     </div>
   </div>
 
@@ -326,7 +326,7 @@
           <textarea id="profileInputBio" rows="2" maxlength="140" oninput="onProfileBioInput()" placeholder="Schreibe etwas über dich oder deinen Status ..." data-i18n-ph="prof.bioPh" class="ui-field"></textarea>
           <div class="flex items-center justify-between gap-2 mt-1.5 flex-wrap">
             <div class="flex gap-1.5 flex-wrap">
-              <button type="button" class="ui-chip" onclick="setProfileBio(t('prof.bioBar'))" data-i18n="prof.btnBar">🍸 Hinter der Bar</button>
+              <button type="button" class="ui-chip" onclick="setProfileBio(t('prof.bioBar'))" data-i18n="prof.btnBar">🍳 In der Küche</button>
               <button type="button" class="ui-chip" onclick="setProfileBio(t('prof.bioPause'))" data-i18n="prof.btnPause">☕ In der Pause</button>
               <button type="button" class="ui-chip" onclick="setProfileBio(t('prof.bioIn'))" data-i18n="prof.btnIn">🔥 Voll dabei</button>
               <button type="button" class="ui-chip" onclick="setProfileBio('')" data-i18n="prof.clear">Leeren</button>
@@ -380,6 +380,7 @@
       <div>
         <h4 id="userDetailName" class="text-lg font-bold text-slate-900 dark:text-white"></h4>
         <span id="userDetailRole" class="text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 font-semibold block mt-0.5"></span>
+        <span id="userDetailPin" class="hidden text-[11px] text-slate-700 dark:text-slate-300 block mt-1"></span>
       </div>
       <div class="w-full custom-box p-3 rounded-xl border text-left">
         <span class="text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400 block mb-1" data-i18n="prof.aboutColon">Über mich:</span>
@@ -395,7 +396,7 @@
     <!-- Header -->
     <header id="appBar" class="app-bar">
       <div class="flex items-center gap-2.5 md:gap-3 min-w-0">
-        <div class="header-logo-container" onclick="showRandomMotivation(event)" title="Klick mich für Osterei-Motivation! 🍸">
+        <div class="header-logo-container" onclick="showRandomMotivation(event)" title="Klick mich für Osterei-Motivation! 🍳">
           <span class="logo-macron" id="headerLogoMacron"></span>
           <span class="logo-main-char" id="headerLogoChar">O</span>
           <span class="logo-dot" id="headerLogoDot">•</span>
@@ -403,7 +404,7 @@
 
         <div class="flex flex-col justify-center min-w-0">
           <h1 class="text-lg md:text-3xl font-bold tracking-tight text-amber-700 dark:text-amber-400 leading-none whitespace-nowrap">Salonplafond NeXuS</h1>
-          <span class="text-[10px] md:text-xs text-slate-600 dark:text-slate-400 font-medium block mt-0.5" data-brand-header>BAR</span>
+          <span class="text-[10px] md:text-xs text-slate-600 dark:text-slate-400 font-medium block mt-0.5" data-brand-header>KÜCHE</span>
         </div>
       </div>
 
@@ -447,15 +448,15 @@
               <span class="menu-text"><span class="menu-label" data-i18n="menu.dashboard">Dashboard</span><span class="menu-sub" data-i18n="menu.dashboardSub">Zurück zur Startseite</span></span>
             </button>
             <button type="button" onclick="closeSettingsMenu(); openDrinksView();" class="menu-item">
-              <span class="menu-ico">🍸</span>
-              <span class="menu-text"><span class="menu-label" data-i18n="menu.drinks">Getränke & Rezepte</span><span class="menu-sub" data-i18n="menu.drinksSub">Datenbank öffnen</span></span>
+              <span class="menu-ico">🍳</span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.drinks">Rezepte</span><span class="menu-sub" data-i18n="menu.drinksSub">Datenbank öffnen</span></span>
             </button>
 
             <button type="button" onclick="openAddDrinkModalFromMenu()" id="menuAddDrinkBtn" class="hidden menu-primary mt-1" data-i18n="menu.addDrink">
               ➕ Neues Rezept hinzufügen
             </button>
 
-            <div class="menu-section" data-i18n="menu.secDrinks">Getränke & Karte</div>
+            <div class="menu-section" data-i18n="menu.secDrinks">Rezepte & Saison</div>
 
             <button type="button" onclick="openSeasonModal()" class="menu-item">
               <span class="menu-ico">📅</span>
@@ -505,7 +506,7 @@
             </button>
             <button type="button" onclick="refreshData()" class="menu-item">
               <span class="menu-ico">🔄</span>
-              <span class="menu-text"><span class="menu-label" data-i18n="menu.refresh">Daten aktualisieren</span><span class="menu-sub" data-i18n="menu.refreshSub">Getränke neu laden</span></span>
+              <span class="menu-text"><span class="menu-label" data-i18n="menu.refresh">Daten aktualisieren</span><span class="menu-sub" data-i18n="menu.refreshSub">Rezepte neu laden</span></span>
             </button>
             <button type="button" onclick="openInstallSettings()" id="menuInstallBtn" class="hidden menu-item">
               <span class="menu-ico">📲</span>
@@ -581,7 +582,7 @@
       <div id="dashGroups" class="dash-groups"></div>
     </main>
 
-    <!-- ===== GETRÄNKE-DATENBANK ===== -->
+    <!-- ===== REZEPT-DATENBANK ===== -->
     <div id="drinksView" class="hidden">
       <div class="dash-back-bar">
         <button type="button" onclick="showDashboard()" class="dash-back-btn" title="Zurück zum Dashboard" data-i18n-title="dv.backTitle">← Dashboard</button>
@@ -625,12 +626,12 @@
           </div>
 
           <div>
-            <span class="text-xs text-slate-600 dark:text-slate-400 font-semibold mb-1.5 block" data-i18n="dv.glass">🍸 Nach Glas-Typ filtern:</span>
+            <span class="text-xs text-slate-600 dark:text-slate-400 font-semibold mb-1.5 block" data-i18n="dv.glass">🔥 Nach Garmethode filtern:</span>
             <div id="glassFilterContainer" class="flex gap-1.5 flex-wrap text-xs"></div>
           </div>
         </div>
 
-    <!-- Neues Getränk: am Handy runder ➕-Knopf unten rechts -->
+    <!-- Neues Rezept: am Handy runder ➕-Knopf unten rechts -->
     <div id="addDrinkBtnContainer" class="hidden fab-wrap">
       <button type="button" onclick="openAddDrinkModal()" class="fab-add" title="Neues Rezept hinzufügen">
         <span class="fab-ico">➕</span><span class="fab-label">Neues Rezept hinzufügen</span>
@@ -644,7 +645,7 @@
     </div><!-- /drinksView -->
 
     <footer class="mt-20 pt-6 border-t border-slate-300 dark:border-slate-800 text-center text-xs text-slate-500">
-      Salonplafond NeXuS • BAR v<span data-app-number></span> • Developed by <span class="text-amber-600 dark:text-amber-400 font-semibold">Tomas Kardos © 2026</span>
+      Salonplafond NeXuS • KÜCHE v<span data-app-number></span> • Developed by <span class="text-amber-600 dark:text-amber-400 font-semibold">Tomas Kardos © 2026</span>
     </footer>
 
   </div>
@@ -913,7 +914,7 @@
       <div class="set-tabs" id="settingsTabs" role="tablist">
         <button type="button" class="set-tab active" data-settab="general" onclick="setSettingsTab('general')" data-i18n="set.tabGeneral">🏠 Allgemein</button>
         <button type="button" class="set-tab" data-settab="look" onclick="setSettingsTab('look')" data-i18n="set.tabLook">🎨 Darstellung</button>
-        <button type="button" class="set-tab" data-settab="drinks" onclick="setSettingsTab('drinks')" data-i18n="set.tabDrinks">🍸 Getränke</button>
+        <button type="button" class="set-tab" data-settab="drinks" onclick="setSettingsTab('drinks')" data-i18n="set.tabDrinks">🍳 Rezepte</button>
         <button type="button" class="set-tab" data-settab="notif" onclick="setSettingsTab('notif')" data-i18n="set.tabNotif">🔔 Hinweise</button>
         <button type="button" class="set-tab" data-settab="account" onclick="setSettingsTab('account')" data-i18n="set.tabAccount">👤 Konto</button>
         <button type="button" class="set-tab" data-settab="app" onclick="setSettingsTab('app')" data-i18n="set.tabApp">🧰 App</button>
@@ -937,7 +938,7 @@
             <div class="set-text"><b data-i18n="set.startTitle">Nach dem Login öffnen</b><small data-i18n="set.startSub">Welche Seite sich nach der Anmeldung zuerst öffnet. Gilt auf allen deinen Geräten.</small></div>
             <div class="seg">
               <button type="button" class="seg-btn" data-startpage="dashboard" onclick="setStartPage('dashboard')" data-i18n="set.startDash">🏠 Dashboard</button>
-              <button type="button" class="seg-btn" data-startpage="drinks" onclick="setStartPage('drinks')" data-i18n="set.drinks">🍸 Getränke</button>
+              <button type="button" class="seg-btn" data-startpage="drinks" onclick="setStartPage('drinks')" data-i18n="set.drinks">🍳 Rezepte</button>
             </div>
           </div>
           <div class="set-row">
@@ -951,14 +952,14 @@
         <section class="set-card">
           <h4 class="set-head" data-i18n="set.appearance">🎨 Darstellung</h4>
           <div class="set-row">
-            <div class="set-text"><b data-i18n="set.skin">Stil</b><small data-i18n="set.skinSub">„NeXuS Glass“: Glas-Look mit Bar-Hintergrund (immer dunkel). Braucht mehr Leistung, bei Ruckeln „Weichzeichner“ ausschalten.</small></div>
+            <div class="set-text"><b data-i18n="set.skin">Stil</b><small data-i18n="set.skinSub">„NeXuS Glass“: Glas-Look mit Hintergrundbild (immer dunkel). Braucht mehr Leistung, bei Ruckeln „Weichzeichner“ ausschalten.</small></div>
             <div class="seg">
               <button type="button" class="seg-btn" data-setting="skin" data-value="classic" onclick="setSetting('skin','classic')" data-i18n="set.skinClassic">Original</button>
               <button type="button" class="seg-btn" data-setting="skin" data-value="glass" onclick="setSetting('skin','glass')">✨ NeXuS Glass</button>
             </div>
           </div>
           <div class="set-row">
-            <div class="set-text"><b data-i18n="set.theme">Design</b><small id="settingsThemeInfo">Hell ist augenschonend bei Tageslicht, Dunkel für die Bar am Abend.</small></div>
+            <div class="set-text"><b data-i18n="set.theme">Design</b><small id="settingsThemeInfo">Hell ist augenschonend bei Tageslicht, Dunkel für die Küche am Abend.</small></div>
             <div class="seg">
               <button type="button" class="seg-btn" data-setting="theme" data-value="light" onclick="setSetting('theme','light')" data-i18n="set.light">☀️ Hell</button>
               <button type="button" class="seg-btn" data-setting="theme" data-value="dark" onclick="setSetting('theme','dark')" data-i18n="set.dark">🌙 Dunkel</button>
@@ -1016,7 +1017,7 @@
 
         <div class="set-panel" data-panel="drinks">
         <section class="set-card">
-          <h4 class="set-head" data-i18n="set.drinks">🍸 Getränke</h4>
+          <h4 class="set-head" data-i18n="set.drinks">🍳 Rezepte</h4>
 
           <div class="set-row">
             <div class="set-text"><b data-i18n="set.view">Ansicht</b><small data-i18n="set.viewSub">Karten mit Foto oder kompakte Liste.</small></div>
@@ -1027,7 +1028,7 @@
           </div>
 
           <div class="set-row">
-            <div class="set-text"><b data-i18n="set.sort">Sortierung</b><small data-i18n="set.sortSub">Reihenfolge der Getränke in der Liste.</small></div>
+            <div class="set-text"><b data-i18n="set.sort">Sortierung</b><small data-i18n="set.sortSub">Reihenfolge der Rezepte in der Liste.</small></div>
             <select id="unifiedSortSelect" onchange="setSetting('sort',this.value)" class="ui-field set-select">
               <option value="newest" data-i18n="set.sortNew">Neueste zuerst</option>
               <option value="name_asc" data-i18n="set.sortName">Name A – Z</option>
@@ -1096,9 +1097,9 @@
 
           <h4 class="set-head" data-i18n="set.rights">👤 Ansicht für Mitarbeiter mit Rechten</h4>
           <div class="set-row">
-            <div class="set-text"><b data-i18n="set.mode">Ansichtsmodus</b><small data-i18n="set.modeSub">Kellner-Ansicht blendet Verwaltungs-Knöpfe aus.</small></div>
+            <div class="set-text"><b data-i18n="set.mode">Ansichtsmodus</b><small data-i18n="set.modeSub">Die Koch-Ansicht blendet Verwaltungs-Knöpfe aus.</small></div>
             <div class="seg">
-              <button type="button" class="seg-btn" id="unifiedModeStaff" onclick="setAdminView(false)" data-i18n="set.modeStaff">Kellner</button>
+              <button type="button" class="seg-btn" id="unifiedModeStaff" onclick="setAdminView(false)" data-i18n="set.modeStaff">Koch</button>
               <button type="button" class="seg-btn" id="unifiedModeAdmin" onclick="setAdminView(true)" data-i18n="set.modeAdmin">Verwaltung</button>
             </div>
           </div>
@@ -1123,7 +1124,7 @@
         <section class="set-card">
           <h4 class="set-head" data-i18n="set.app">🧰 App</h4>
           <div class="set-row">
-            <div class="set-text"><b data-i18n="set.version">Version</b><small>Salonplafond NeXuS • BAR v<span data-app-number></span></small></div>
+            <div class="set-text"><b data-i18n="set.version">Version</b><small>Salonplafond NeXuS • KÜCHE v<span data-app-number></span></small></div>
             <button type="button" onclick="closeUnifiedSettingsModal(); openChangelogModal();" class="ui-btn-ghost" data-i18n="set.news">🚀 Was ist neu?</button>
           </div>
           <div class="set-row">
@@ -1161,8 +1162,8 @@
   <div id="replaceDrinkModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-[270]">
     <div class="card max-w-md w-full p-6 relative flex flex-col gap-4 border-amber-500/50 shadow-2xl max-h-[80vh] overflow-y-auto">
       <button onclick="closeReplaceDrinkModal()" class="absolute top-4 right-4 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl font-bold">&times;</button>
-      <h3 class="text-lg font-bold text-amber-600 dark:text-amber-400" data-i18n="rep.title">🔄 Drink ersetzen</h3>
-      <p class="text-xs text-slate-600 dark:text-slate-400" data-i18n="rep.sub">Wähle einen neuen Drink aus der aktuellen Saison aus, der diesen ersetzen soll:</p>
+      <h3 class="text-lg font-bold text-amber-600 dark:text-amber-400" data-i18n="rep.title">🔄 Rezept ersetzen</h3>
+      <p class="text-xs text-slate-600 dark:text-slate-400" data-i18n="rep.sub">Wähle ein neues Rezept aus der aktuellen Saison, das dieses ersetzen soll:</p>
       <input type="hidden" id="replaceIndexTarget" value="">
       <div id="replaceDrinkListContainer" class="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1"></div>
     </div>
@@ -1319,7 +1320,7 @@
       <div>
         <button onclick="closeModal()" class="no-print absolute top-4 right-4 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-2xl font-bold">&times;</button>
         <div id="modalContent"></div>
-        <div class="print-watermark-footer">Salonplafond NeXuS • BAR • Developed by Tomas Kardos © 2026</div>
+        <div class="print-watermark-footer">Salonplafond NeXuS • KÜCHE • Developed by Tomas Kardos © 2026</div>
       </div>
       <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex gap-2 no-print items-center flex-wrap">
         <button id="modalPhotoBtn" onclick="openPhotoPreviewFromModal()" class="hidden px-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-400 font-bold rounded-xl transition text-sm flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-700" data-i18n="drm.photo">
@@ -1436,35 +1437,30 @@
     </div>
   </div>
 
-  <!-- Jednotný Import & Export Dialog Modal s dvoma záložkami (Drinky vs Pracovný plán) -->
+  <!-- Rezepte: Import & Export -->
   <div id="importExportModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="card max-w-2xl w-full relative flex flex-col max-h-[90vh] overflow-hidden p-0 border-amber-500/50 shadow-2xl">
 
       <!-- Hlavička Modalu -->
       <div class="ui-head">
         <div>
-          <h3 class="ui-head-title">📊 Import & Export (Zentrale)</h3>
-          <p class="ui-head-sub">Verwaltung von Rezepten und monatlichem Arbeitsplan (DPL).</p>
+          <h3 class="ui-head-title">📊 Rezepte: Import & Export</h3>
+          <p class="ui-head-sub">Rezepte als Excel-Tabelle sichern oder viele Rezepte auf einmal einspielen. Der Dienstplan wird im Dienstplan importiert.</p>
         </div>
         <button type="button" onclick="closeImportExportModal()" class="ui-close" aria-label="Schließen">&times;</button>
       </div>
 
-      <!-- Prepínač Záložiek (Tab-Leiste) -->
-      <div class="flex border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/50 p-1 gap-1">
-        <button type="button" onclick="switchImportTab('drinks')" id="tabBtnDrinks" class="flex-1 py-2 px-3 text-xs font-bold rounded-lg transition bg-amber-500 text-slate-950 shadow-sm">🍸 Getränke Import / Export</button>
-        <button type="button" onclick="switchImportTab('schedule')" id="tabBtnSchedule" class="flex-1 py-2 px-3 text-xs font-bold rounded-lg transition text-slate-600 dark:text-slate-400 hover:text-amber-500">📅 Arbeitsplan Import (DPL)</button>
-      </div>
 
       <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
 
-        <!-- KARTA 1: GETRÄNKE IMPORT & EXPORT -->
+        <!-- Rezepte Import & Export -->
         <div id="importSectionDrinks" class="flex flex-col gap-5">
 
           <!-- Export Sekcia -->
           <div class="custom-box p-4 rounded-xl border flex flex-col gap-3">
-            <h4 class="text-sm font-bold flex items-center gap-1.5 text-amber-600 dark:text-amber-400">📤 Getränke exportieren</h4>
+            <h4 class="text-sm font-bold flex items-center gap-1.5 text-amber-600 dark:text-amber-400">📤 Rezepte exportieren</h4>
             <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-              Wähle die gewünschte Saison aus und exportiere die Rezepte in dein bevorzugtes Format (Excel oder CSV).
+              Wähle die Saison und speichere die Rezepte als Excel oder CSV. Die Excel-Datei kannst du später wieder importieren.
             </p>
             
             <div class="flex flex-col gap-1.5 mt-1">
@@ -1482,11 +1478,11 @@
             </div>
           </div>
 
-          <!-- Import Sekcia pre Drinky -->
+          <!-- Rezepte importieren -->
           <div class="custom-box p-4 rounded-xl border flex flex-col gap-3">
-            <h4 class="text-sm font-bold flex items-center gap-1.5 text-amber-600 dark:text-amber-400">📥 Getränke importieren (Assistent)</h4>
+            <h4 class="text-sm font-bold flex items-center gap-1.5 text-amber-600 dark:text-amber-400">📥 Rezepte importieren (Excel-Tabelle)</h4>
             <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-              Lade eine strukturierte Excel-Datei (.xlsx, .xls) hoch, um neue Rezepte direkt in eine gewählte Saison einzuspielen.
+              Eine Zeile pro Rezept, die Spalten stehen in der ersten Zeile: Name, Kategorie, Portionen, Zubereitungszeit, Garmethode, Anrichten, Zutaten, Zubereitung, Allergene, Wareneinsatz, Verkaufspreis. Zutaten in einer Zelle, z. B. „Mehl: 200 g; Butter: 100 g“. Rezepte mit gleichem Namen in der Saison werden übersprungen.
             </p>
             
             <div class="flex flex-col gap-2.5 mt-1">
@@ -1502,59 +1498,14 @@
 
             <div id="wizardStatus" class="text-xs text-amber-600 dark:text-amber-400 font-medium text-center"></div>
 
+            <button type="button" onclick="downloadRecipeTemplate()" class="py-2.5 px-3 custom-box hover:bg-slate-200 dark:hover:bg-slate-800 text-amber-700 dark:text-amber-400 font-bold rounded-lg text-xs border transition">📄 Vorlage (Excel) herunterladen</button>
             <button onclick="executeWizardImport()" class="py-3 bg-amber-500 hover:bg-amber-600 font-bold text-slate-950 rounded-xl text-xs transition shadow-lg mt-1">
-              🚀 Getränke-Import starten
+              🚀 Rezepte importieren
             </button>
           </div>
 
         </div>
 
-        <!-- KARTA 2: ARBEITSPLAN IMPORT (DPL MA) -->
-        <div id="importSectionSchedule" class="hidden flex-col gap-5">
-          <div class="custom-box p-4 rounded-xl border flex flex-col gap-3 border-amber-500/30">
-            <h4 class="text-sm font-bold flex items-center gap-1.5 text-amber-600 dark:text-amber-400">📅 Monatlichen Arbeitsplan importieren (DPL MA)</h4>
-            <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-              Importieren Sie den monatlichen Arbeitsplan im offiziellen Formular-Format (z. B. <i>DPL MA. NOVEMOBER 2026.xlsx</i>). Der Parser verarbeitet automatisch zweizeilige Mitarbeiter-Schichten sowie Teilschichten (Früh- und Spätschicht an einem Tag).
-            </p>
-
-            <div class="flex flex-col gap-3 mt-1">
-              <div>
-                <label class="text-[11px] font-semibold mb-1 block">1. Excel-Arbeitsplan-Datei wählen (.xlsx):</label>
-                <input type="file" id="scheduleExcelFile" accept=".xlsx, .xls" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer w-full custom-box p-2 rounded-lg border">
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="text-[11px] font-semibold mb-1 block">2. Monat wählen:</label>
-                  <select id="scheduleMonthSelect" class="p-2.5 rounded-lg border text-xs w-full bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700">
-                    <option value="1">Januar</option>
-                    <option value="2">Februar</option>
-                    <option value="3">März</option>
-                    <option value="4">April</option>
-                    <option value="5">Mai</option>
-                    <option value="6">Juni</option>
-                    <option value="7">Juli</option>
-                    <option value="8">August</option>
-                    <option value="9">September</option>
-                    <option value="10">Oktober</option>
-                    <option value="11" selected>November</option>
-                    <option value="12">Dezember</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="text-[11px] font-semibold mb-1 block">3. Jahr wählen:</label>
-                  <input type="number" id="scheduleYearInput" value="2026" min="2024" max="2035" class="p-2.5 rounded-lg border text-xs w-full bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700 font-bold">
-                </div>
-              </div>
-            </div>
-
-            <div id="scheduleStatus" class="text-xs text-amber-600 dark:text-amber-400 font-medium text-center"></div>
-
-            <button onclick="executeScheduleImport()" class="py-3 bg-amber-500 hover:bg-amber-600 font-bold text-slate-950 rounded-xl text-xs transition shadow-lg mt-1">
-              🗓️ Arbeitsplan importieren & speichern
-            </button>
-          </div>
-        </div>
 
       </div>
 
@@ -1610,7 +1561,7 @@
       
       <div class="flex flex-col gap-4">
         <div>
-          <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400">💬 Bar-Tickets & Anfragen</h3>
+          <h3 class="text-xl font-bold text-amber-600 dark:text-amber-400">💬 Support-Tickets & Anfragen</h3>
           <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Schreibe eine Anfrage oder einen Änderungswunsch als <b id="ticketAuthorDisplay" class="text-amber-600 dark:text-amber-300"></b>.</p>
         </div>
 

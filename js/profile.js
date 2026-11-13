@@ -242,12 +242,76 @@
       });
     }
 
+    // ---------- PIN-Pflicht: nach dem Login einen eigenen PIN wählen (v1.0.10) ----------
+    const PIN_WEAK = ['1234', '4321', '0123', '123456', '654321', '1212', '1004', '2580', '121212', '012345'];
+    function pinClientCheck(p1, p2) {
+      if (!/^\d{4,6}$/.test(p1)) return fmL('Der PIN muss aus 4 bis 6 Ziffern bestehen.', 'The PIN must be 4 to 6 digits.');
+      if (PIN_WEAK.indexOf(p1) !== -1 || /^(\d)\1+$/.test(p1)) return fmL('Dieser PIN ist zu einfach (z. B. 1234 oder 1111). Bitte einen anderen wählen.', 'This PIN is too easy (e.g. 1234 or 1111). Please choose another one.');
+      if (p1 !== p2) return fmL('Die beiden PINs stimmen nicht überein.', 'The two PINs do not match.');
+      return '';
+    }
+
+    async function pinForceChangeIfNeeded() {
+      try {
+        const { data, error } = await _supabase.rpc('get_my_pin_state');
+        if (error || data !== true) return;   // Datenbank-Update fehlt oder PIN schon geändert
+      } catch (e) { return; }
+      const m = fmOpen('pinForce', {
+        title: '🔐 ' + fmL('Eigenen PIN festlegen', 'Choose your own PIN'),
+        sub: fmL('Du verwendest noch den Start-PIN. Wähle jetzt deinen eigenen PIN (4 bis 6 Ziffern). Danach geht es weiter.', 'You are still using the start PIN. Choose your own PIN now (4 to 6 digits).'),
+        layer: 2
+      });
+      m.root.style.zIndex = '9500';
+      const x = m.root.querySelector('[data-fm-close]'); if (x) x.remove();   // nicht schließbar
+      m.setBody(`<div class="fm-stack">
+        <div class="fm-field"><label class="form-label" for="pfPin1">${escapeHtml(fmL('Neuer PIN', 'New PIN'))}</label>
+          <input type="password" id="pfPin1" inputmode="numeric" maxlength="6" autocomplete="new-password" class="ui-field tracking-widest" onkeydown="if(event.key==='Enter')document.getElementById('pfPin2').focus()"></div>
+        <div class="fm-field"><label class="form-label" for="pfPin2">${escapeHtml(fmL('PIN wiederholen', 'Repeat PIN'))}</label>
+          <input type="password" id="pfPin2" inputmode="numeric" maxlength="6" autocomplete="new-password" class="ui-field tracking-widest" onkeydown="if(event.key==='Enter')pinForceSave()"></div>
+        <p id="pfErr" class="fm-hint" style="color:#ef4444;min-height:1.2em"></p>
+        <p class="fm-hint">${escapeHtml(fmL('Merke dir den PIN gut. Nicht 1234 oder 1111. Vergessen? Der Manager kann ihn zurücksetzen.', 'Remember your PIN. Not 1234 or 1111. Forgot it? The manager can reset it.'))}</p>
+      </div>`);
+      m.setFoot(`<button type="button" class="ui-btn-ghost" onclick="fmClose('pinForce'); handleLogout()">${escapeHtml(fmL('Abmelden', 'Log out'))}</button>
+        <button type="button" class="ui-btn-primary" id="pfBtn" onclick="pinForceSave()">💾 ${escapeHtml(fmL('PIN speichern', 'Save PIN'))}</button>`);
+      setTimeout(() => { const i = document.getElementById('pfPin1'); if (i) i.focus(); }, 50);
+    }
+
+    async function pinForceSave() {
+      const p1 = document.getElementById('pfPin1').value.trim(), p2 = document.getElementById('pfPin2').value.trim();
+      const err = document.getElementById('pfErr');
+      const msg = pinClientCheck(p1, p2);
+      if (msg) { err.textContent = msg; return; }
+      const btn = document.getElementById('pfBtn'); btn.disabled = true;
+      const { error } = await _supabase.rpc('update_my_profile', { p_pin: p1, p_bio: null, p_avatar: '' });
+      btn.disabled = false;
+      if (error) { err.textContent = error.message; return; }
+      fmClose('pinForce');
+      showAppToast({ initial: '🔐', title: fmL('PIN gespeichert', 'PIN saved'), text: fmL('Ab jetzt meldest du dich mit deinem neuen PIN an.', 'From now on you sign in with your new PIN.') });
+    }
+
+    // Developer: Start-PIN anderer Personen im Profil (nur bis die Person einen eigenen PIN gesetzt hat)
+    async function pinShowForDeveloper(name) {
+      const el = document.getElementById('userDetailPin');
+      if (!el) return;
+      el.classList.add('hidden');
+      if (currentStaffRole !== 'developer') return;
+      try {
+        const { data, error } = await _supabase.rpc('dev_get_staff_pin', { p_name: name });
+        if (error || !data) return;
+        el.classList.remove('hidden');
+        if (data.pin) el.innerHTML = '🔑 Start-PIN: <b style="letter-spacing:.15em">' + escapeHtml(data.pin) + '</b> <span class="opacity-70">(noch nicht von der Person geändert)</span>';
+        else if (data.own_pin_set) el.innerHTML = '🔒 Hat einen eigenen PIN gesetzt (nicht sichtbar). Bei Bedarf unter „Personal & PIN“ zurücksetzen.';
+        else el.classList.add('hidden');
+      } catch (e) {}
+    }
+
     async function openUserDetailModal(userName) {
       const { data, error } = await fetchStaffByName(userName);
       if (error || !data) {
         alert("Benutzerdetails konnten nicht geladen werden.");
         return;
       }
+      pinShowForDeveloper(data.name);
 
       document.getElementById('userDetailName').innerText = data.name;
       document.getElementById('userDetailRole').innerText = t('prof.role', { role: profileRoleLabel(data.role || 'staff') });

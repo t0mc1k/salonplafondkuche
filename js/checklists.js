@@ -1,33 +1,34 @@
 /* ============================================================
    js/checklists.js  (v3.2.03)
-   Checklisten & Standards: Öffnung / Laufend / Schließung für Bar, Service, Terrasse.
+   Checklisten & Standards: Öffnung / Laufend / Schließung für Küche, Patisserie, Lager.
    - Eine gemeinsame Liste pro Betriebstag. Wer abhakt, steht mit Name + Uhrzeit dabei.
    - Manager/Developer verwalten die Aufgaben selbst (Bereich ⚙ Aufgaben).
-   Tabellen: checklist_tasks, checklist_done (siehe sql/3.2.03_betrieb.sql)
+   Tabellen: checklist_tasks, checklist_done (siehe sql/1.0.07_betrieb.sql und 1.0.11_kitchen_areas.sql)
    ============================================================ */
 
-    const CL_AREAS = { bar: '🍸 Bar', service: '🍽️ Service', terrasse: '🌿 Terrasse' };
+    const CL_AREAS = { kueche: '🍳 Küche', patisserie: '🧁 Patisserie', lager: '📦 Lager & Kühlung' };
     const CL_PHASES = { opening: '🌅 Öffnung', ongoing: '🔄 Laufend', closing: '🌙 Schließung' };
     const CL_PHASE_ORDER = ['opening', 'ongoing', 'closing'];
 
     // Beispielaufgaben, die der Manager mit einem Klick einfügen kann (danach frei änderbar)
     const CL_SAMPLE_TASKS = [
-      ['bar', 'opening', 'Eis auffüllen'],
-      ['bar', 'opening', 'Kühlschränke und Vorräte kontrollieren'],
-      ['bar', 'opening', 'Kaffeemaschine einschalten und spülen'],
-      ['bar', 'opening', 'Garnituren vorbereiten (Zitrone, Limette, Minze)'],
-      ['bar', 'ongoing', 'Bar abwischen und Gläser nachpolieren'],
-      ['bar', 'closing', 'Kaffeemaschine reinigen'],
-      ['bar', 'closing', 'Kassa zählen und Abrechnung machen'],
-      ['bar', 'closing', 'Flaschen auffüllen und Bar putzen'],
-      ['service', 'opening', 'Tische eindecken, Servietten und Speisekarten auflegen'],
-      ['service', 'ongoing', 'Servietten nachfüllen'],
-      ['service', 'closing', 'Tische abwischen, Stühle ordnen'],
-      ['terrasse', 'opening', 'Terrasse aufsperren und Möbel aufstellen'],
-      ['terrasse', 'ongoing', 'Terrasse laufend aufräumen'],
-      ['terrasse', 'closing', 'Terrasse einräumen und absperren']
+      ['kueche', 'opening', 'Arbeitsflächen und Geräte reinigen und desinfizieren'],
+      ['kueche', 'opening', 'Mise en place nach Tagesplan vorbereiten'],
+      ['kueche', 'opening', 'Kühlschrank-Temperaturen kontrollieren und eintragen'],
+      ['kueche', 'opening', 'Handwaschbecken prüfen (Seife, Papier)'],
+      ['kueche', 'ongoing', 'Arbeitsflächen laufend sauber halten'],
+      ['kueche', 'ongoing', 'Lebensmittel beschriften (Datum) und richtig lagern'],
+      ['kueche', 'closing', 'Herd, Grill und Fritteuse reinigen'],
+      ['kueche', 'closing', 'Vorbereitetes abdecken, beschriften und kühlen'],
+      ['kueche', 'closing', 'Boden kehren und wischen, Müll entsorgen'],
+      ['patisserie', 'opening', 'Arbeitsplatz und Waage reinigen'],
+      ['patisserie', 'opening', 'Tagesangebot (Kuchen, Suppe) laut Plan vorbereiten'],
+      ['patisserie', 'closing', 'Backöfen abschalten und reinigen'],
+      ['patisserie', 'closing', 'Kühlung der Patisserie kontrollieren'],
+      ['lager', 'opening', 'Wareneingang prüfen (Temperatur, Datum, Menge)'],
+      ['lager', 'ongoing', 'Ware nach FIFO einräumen'],
+      ['lager', 'closing', 'Lager und Kühlräume schließen, Bestellliste aktualisieren']
     ];
-
     let cl = { m: null, date: '', tasks: [], done: {}, area: 'all', manage: false };
 
     async function openChecklistModal() {
@@ -48,9 +49,8 @@
         const { data } = await _supabase.from('work_schedules').select('station, employee_name')
           .eq('year', p[0]).eq('month', p[1]).eq('day', p[2]).ilike('employee_name', '%' + currentWaiterName + '%');
         const s = String(((data || [])[0] || {}).station || '').toLowerCase();
-        if (/terr/.test(s)) cl.area = 'terrasse';
-        else if (/bar/.test(s)) cl.area = 'bar';
-        else if (/serv|saal|kell/.test(s)) cl.area = 'service';
+        if (/pat/.test(s)) cl.area = 'patisserie';
+        else if (/lager|k[uü]hl|wareneingang/.test(s)) cl.area = 'lager';
       } catch (e) {}
     }
 
@@ -243,7 +243,7 @@
             <input type="text" id="clEdTitle" class="ui-field" maxlength="120" placeholder="z. B. Eis auffüllen" value="${escapeHtml(t ? t.title : '')}"></div>
           <div class="fm-grid2">
             <div class="fm-field"><label class="form-label" for="clEdArea">Bereich</label>
-              <select id="clEdArea" class="ui-field">${opt(CL_AREAS, t ? t.area : (cl.area !== 'all' ? cl.area : 'bar'))}</select></div>
+              <select id="clEdArea" class="ui-field">${opt(CL_AREAS, t ? t.area : (cl.area !== 'all' ? cl.area : 'kueche'))}</select></div>
             <div class="fm-field"><label class="form-label" for="clEdPhase">Zeitpunkt</label>
               <select id="clEdPhase" class="ui-field">${opt(CL_PHASES, t ? t.phase : 'opening')}</select></div>
           </div>

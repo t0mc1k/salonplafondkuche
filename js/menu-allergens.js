@@ -1,9 +1,9 @@
 /* ============================================================
    js/menu-allergens.js  (v3.2.03)
-   Speisekarte & Allergene (Quick Specs für den Service)
+   Speisekarte & Allergene (Quick Specs für die Küche)
    - Speisekarte pro Saison: Gerichte mit Kategorie, Preis, Beschreibung, Allergenen A–R.
      Manager/Developer pflegen sie (auch per Einfügen aus Excel).
-   - Getränke: Allergene stehen bei jedem Getränk als Text; hier schnell durchsuchbar.
+   - Rezepte: Allergene stehen bei jedem Rezept als Text; hier schnell durchsuchbar.
    Tabellen: food_menus, food_items (siehe sql/3.2.03_betrieb.sql)
    ============================================================ */
 
@@ -20,7 +20,7 @@
     // Namen der Allergene in der gewählten Sprache (Buchstaben A–R bleiben gleich)
     function alApplyLocale() { Object.assign(AL_CODES, (typeof currentLang !== 'undefined' && currentLang === 'en') ? AL_EN : AL_DE); }
     const AL_ORDER = Object.keys(AL_CODES);
-    // Schlagwörter, mit denen Allergene in den Textangaben der Getränke erkannt werden
+    // Schlagwörter, mit denen Allergene in den Textangaben der Rezepte erkannt werden
     const AL_DRINK_WORDS = {
       A: ['gluten', 'weizen', 'gerste', 'hafer', 'roggen', 'malz', 'bier'], B: ['krebs'], C: [' ei ', 'eier', 'eiweiß', 'eiweiss', 'egg'], D: ['fisch'],
       E: ['erdnuss', 'erdnüsse'], F: ['soja'], G: ['milch', 'laktose', 'lactose', 'sahne', 'rahm', 'obers', 'butter'],
@@ -45,7 +45,7 @@
         mq,
         _supabase.from('food_items').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true })
       ]);
-      // Ohne SQL funktionieren zumindest die Getränke weiterhin
+      // Ohne SQL funktionieren zumindest die Rezepte weiterhin
       fa.sqlError = (mm.error || ii.error) || null;
       fa.menus = mm.error ? [] : (mm.data || []);
       fa.items = ii.error ? [] : (ii.data || []);
@@ -77,13 +77,13 @@
       const isAdmin = !!userIsAdmin;
       const tabs = `<div class="fm-tabs">
           <button type="button" class="fm-tab${fa.tab === 'food' ? ' active' : ''}" onclick="faSetTab('food')">🍽️ Speisekarte</button>
-          <button type="button" class="fm-tab${fa.tab === 'drinks' ? ' active' : ''}" onclick="faSetTab('drinks')">🍸 Getränke</button>
+          <button type="button" class="fm-tab${fa.tab === 'drinks' ? ' active' : ''}" onclick="faSetTab('drinks')">🍳 Rezepte</button>
           <button type="button" class="fm-tab" onclick="faShowLegend()">ℹ️ A–R</button>
         </div>`;
       const searchVal = fa.tab === 'food' ? fa.q : fa.dq;
       if (!keepSearch || !document.getElementById('faSearch')) {
         fa.m.setToolbar(`${tabs}
-          <input type="search" id="faSearch" class="ui-search" placeholder="🔍 ${fa.tab === 'food' ? 'Gericht suchen ...' : 'Getränk suchen ...'}" value="${escapeHtml(searchVal)}" oninput="faSearch(this.value)">
+          <input type="search" id="faSearch" class="ui-search" placeholder="🔍 ${fa.tab === 'food' ? 'Gericht suchen ...' : 'Rezept suchen ...'}" value="${escapeHtml(searchVal)}" oninput="faSearch(this.value)">
           <div id="faFilterBox">${faFilterHtml()}</div>`);
       } else {
         const box = document.getElementById('faFilterBox');
@@ -147,7 +147,7 @@
       return html;
     }
 
-    // ---------- Drinks ----------
+    // ---------- Rezepte ----------
     function faDrinkLetters(text) {
       // „glutenfrei“, „laktosefrei“, „ohne Nüsse“ enthalten das Allergen NICHT
       const t = ' ' + String(text || '').toLowerCase().replace(/\S*(frei|free)\b/g, ' ').replace(/ohne\s+\S+/g, ' ') + ' ';
@@ -164,8 +164,8 @@
         }
         return true;
       }).sort((a, b) => String(a.name).localeCompare(String(b.name), 'de', { sensitivity: 'base' }));
-      let html = `<p class="fm-hint" style="margin-bottom:.6rem">Bei Getränken stehen die Allergene als Text in der Datenbank. Der Filter sucht darin nach Stichwörtern. Bei Unsicherheit immer das Getränk selbst öffnen.</p>`;
-      if (!list.length) return html + '<p class="staff-empty">Kein Getränk gefunden.</p>';
+      let html = `<p class="fm-hint" style="margin-bottom:.6rem">Bei Rezepten stehen die Allergene als Text in der Datenbank. Der Filter sucht darin nach Stichwörtern. Bei Unsicherheit immer das Getränk selbst öffnen.</p>`;
+      if (!list.length) return html + '<p class="staff-empty">Kein Rezept gefunden.</p>';
       html += list.slice(0, 250).map(d => {
         const letters = faDrinkLetters(d.allergens);
         return `<div class="fm-item">

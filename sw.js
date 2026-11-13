@@ -87,10 +87,10 @@ self.addEventListener('message', event => {
    ============================================================ */
 self.addEventListener('push', event => {
   let d = {};
-  try { d = event.data ? event.data.json() : {}; } catch (e) { d = { title: 'Salonplafond BAR', body: event.data ? event.data.text() : '' }; }
+  try { d = event.data ? event.data.json() : {}; } catch (e) { d = { title: 'Salonplafond Küche', body: event.data ? event.data.text() : '' }; }
   event.waitUntil((async () => {
     const tag = d.tag || 'general';
-    let title = d.title || 'Salonplafond BAR';
+    let title = d.title || 'Salonplafond Küche';
     let body = d.body || '';
     let count = 1;
     if (d.groupBody) {

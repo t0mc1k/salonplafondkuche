@@ -2,9 +2,9 @@
    js/reports.js  (v3.2.03)
    Zwei getrennte Funktionen (Fundsachen wurde in der Küchen-Version entfernt):
    1) Störungen melden (Geräte/Ausstattung) – sichtbar für Melder + Manager/Developer
-   3) Verluste / Bruch (Gläser, Verschüttetes, Abschreibungen)
+   3) Verluste / Bruch (Geschirr, Verschüttetes, verdorbene Ware, Abschreibungen)
    Tabellen: maintenance_reports, loss_reports
-   Fotos: gleicher Speicher wie Getränke/Chat (Bucket „drinks“).
+   Fotos: gleicher Speicher wie Rezepte/Chat (Bucket „photos“).
    ============================================================ */
 
     // ---------------------------------------------------------------
@@ -12,11 +12,11 @@
     // ---------------------------------------------------------------
     // TESTLISTE: hier einfach Bereiche und Geräte anpassen/ergänzen.
     const MAINT_LOCATIONS = {
-      'Bar': ['Kühlschrank / Kühlung', 'Eismaschine', 'Kaffeemaschine', 'Gläserspüler', 'Spüle / Wasserhahn', 'Zapfanlage', 'Beleuchtung', 'Musikanlage'],
-      'Service / Gastraum': ['Heizung / Klimaanlage', 'Beleuchtung', 'Kassa / Bonprinter', 'Tische / Stühle', 'Türen / Fenster'],
-      'Terrasse': ['Heizstrahler', 'Beleuchtung', 'Schirme / Markise', 'Möbel'],
-      'WC': ['Wasser / Spülung', 'Licht', 'Seife / Papier-Spender', 'Sonstiges'],
-      'Lager / Küche': ['Kühlraum', 'Spülmaschine', 'Regale', 'Sonstiges'],
+      'Küche': ['Herd / Backofen', 'Kombidämpfer', 'Kühlschrank / Kühlung', 'Tiefkühler', 'Fritteuse / Grill', 'Dunstabzug', 'Spüle / Wasserhahn', 'Beleuchtung', 'Bonprinter / Bildschirm'],
+      'Patisserie': ['Backofen', 'Kühlung', 'Mixer / Schlagmaschine', 'Teigausroller', 'Waage'],
+      'Spülküche': ['Geschirrspüler', 'Abfluss / Fettabscheider', 'Wasser / Boiler', 'Regale', 'Müll / Entsorgung'],
+      'Lager / Kühlraum': ['Kühlraum', 'Tiefkühlraum', 'Regale', 'Tür / Dichtung', 'Beleuchtung'],
+      'WC / Garderobe': ['Wasser / Spülung', 'Licht', 'Seife / Papier-Spender', 'Spind / Schloss'],
       'Sonstiges': ['Sonstiges']
     };
     const MAINT_URGENCY = { normal: ['Normal', 'gray'], dringend: ['Dringend', 'amber'], notfall: ['Notfall', 'red'] };
@@ -251,8 +251,8 @@
       const m = fmOpen('lsForm', { title: '🔨 Verlust / Bruch melden', layer: 2 });
       m.setBody(`<div class="fm-stack">
         <div class="fm-field"><label class="form-label" for="lsItem">Was?</label>
-          <input type="text" id="lsItem" class="ui-field" list="lsItems" maxlength="120" placeholder="z. B. Weinglas, Negroni, Flasche Gin" autocomplete="off">
-          <datalist id="lsItems">${names.map(n => `<option value="${escapeHtml(n)}">`).join('')}<option value="Weinglas"><option value="Longdrinkglas"><option value="Tumbler"><option value="Sektglas"><option value="Teller"></datalist></div>
+          <input type="text" id="lsItem" class="ui-field" list="lsItems" maxlength="120" placeholder="z. B. Teller, GN-Behälter, Pfanne, verdorbene Ware" autocomplete="off">
+          <datalist id="lsItems">${names.map(n => `<option value="${escapeHtml(n)}">`).join('')}<option value="Teller"><option value="Schüssel"><option value="Glas"><option value="GN-Behälter"><option value="Pfanne"><option value="Messer"><option value="Verdorbene Ware"><option value="Verbranntes Essen"></datalist></div>
         <div class="fm-grid2">
           <div class="fm-field"><label class="form-label" for="lsQty">Anzahl</label>
             <input type="number" id="lsQty" class="ui-field" min="1" max="999" value="1"></div>

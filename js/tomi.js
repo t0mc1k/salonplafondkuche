@@ -1,7 +1,7 @@
 /* ============================================================
    js/tomi.js  (v4.1.05)
    TomiAI: KI-Assistent für alle Mitarbeiter.
-   - Kellner: Fragen zu Rezepten, Allergenen, Speisekarte, Checklisten und zur App.
+   - Köche: Fragen zu Rezepten, Allergenen, Speisekarte, Checklisten und zur App.
    - Manager/Developer: zusätzlich Hilfe bei Plan, Stunden, Tausch und Tickets.
      Die KI ändert NIE selbst etwas. Sie macht Vorschläge, die der Manager hier bestätigen muss.
    - Der API-Schlüssel liegt nur auf dem Server (Edge Function tomi-ai, Secret GEMINI_API_KEY).

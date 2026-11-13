@@ -104,11 +104,11 @@
     const motivationalQuotes = [
       "„Frau gut? Ruhe bitte!“ 🤫",
       "„Keine Zeit!“ ⏱️",
-      "„Shaken, einschenken, lächeln! Ihr macht das großartig!“ 🍸✨",
-      "„Kein Stress hinter der Bar – die Drinks schmecken besser mit Gelassenheit!“ 🧊",
-      "„Ein perfekter Drink ist wie Kunst. Und ihr seid die Künstler heute Abend!“ 🎨🍾",
-      "„Fokus, Teamwork und ein guter Cocktail – das Erfolgsrezept für jeden Abend!“ 🔥",
-      "„Egal wie lang die Schlange ist: Einen Drink nach dem anderen. Du schaffst das!“ 💪",
+      "„Mise en place ist die halbe Miete – gut vorbereitet kocht es sich entspannt!“ 🔪",
+      "„Kein Stress in der Küche – das Essen schmeckt besser mit Gelassenheit!“ 🧊",
+      "„Ein perfekter Teller ist wie Kunst. Und ihr seid die Künstler heute!“ 🎨🍽️",
+      "„Fokus, Teamwork und Sauberkeit – das Erfolgsrezept für jeden Service!“ 🔥",
+      "„Egal wie viele Bons hängen: Ein Teller nach dem anderen. Du schaffst das!“ 💪",
       "„Weißt du, wer der beste Spüler im Salonplafond ist? Natürlich Tomas Kardos, der auch diese App für euch programmiert hat! Er grüßt euch und freut sich, dass ihr diese App nutzt!“ 🧽✨"
     ];
 
