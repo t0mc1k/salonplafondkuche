@@ -12,7 +12,7 @@
    ============================================================ */
 
     const CHANGELOG = [
-  { version: '1.0.00', range: '', date: 'November 2026', title: 'Salonplafond Küche: neue Grundlage (Personal, Rollen, PIN-Login)',
+  { version: '1.0.01', range: '', date: 'November 2026', title: 'Salonplafond Küche: Rezepte, Dienstplan nach KW, Rollen',
     changes: [
       ['new', 'Neue Rollen: Koch, Abwasher, Manager, Developer. Zusatzrollen sind möglich (z. B. Developer, der auch Abwasher ist).'],
       ['new', 'Neue Datenbank: sql/1.0.00_init.sql legt Personal, PIN-Login und Login-Historie an. Start-PIN für alle: 1234.'],
