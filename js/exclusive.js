@@ -283,7 +283,23 @@ thead { display: table-header-group; } tr { page-break-inside: avoid; }
       root.classList.toggle('ex-full');
       const on = root.classList.contains('ex-full');
       const b = document.getElementById('exFullBtn'); if (b) b.textContent = (on ? '🗗 ' : '⛶ ') + (on ? fmL('Verkleinern', 'Shrink') : fmL('Vollbild', 'Full screen'));
+      setTimeout(exFit, 30);
     }
+    // Vollbild: Tabelle so skalieren, dass sie komplett auf den Bildschirm passt (ohne Scrollen)
+    function exFit() {
+      const root = document.getElementById('exModal'); if (!root) return;
+      const wrap = root.querySelector('.ex-wrap'), t = document.getElementById('exTable'); if (!wrap || !t) return;
+      t.style.transform = ''; t.style.marginLeft = '';
+      if (!root.classList.contains('ex-full')) return;
+      const aw = wrap.clientWidth - 4, ah = wrap.clientHeight - 4, tw = t.offsetWidth, th = t.offsetHeight;
+      if (!aw || !ah || !tw || !th) return;
+      const k = Math.min(aw / tw, ah / th, 2.2);
+      t.style.transformOrigin = '0 0';
+      t.style.transform = 'scale(' + k + ')';
+      t.style.marginLeft = Math.max(0, (aw - tw * k) / 2) + 'px';
+    }
+    window.addEventListener('resize', () => setTimeout(exFit, 60));
+    window.addEventListener('orientationchange', () => setTimeout(exFit, 250));
 
     async function exLoadShifts(selectId, silent) {
       let res;
@@ -367,6 +383,7 @@ thead { display: table-header-group; } tr { page-break-inside: avoid; }
         <div class="ex-wrap"><table class="ex-table" id="exTable"><thead>${head}</thead><tbody>${bodyRows}${empty}</tbody><tfoot>${foot}</tfoot></table></div>`);
       exUpdateTotals();
       exBindKeys();
+      exFit();
     }
 
     function exUpdateTotals() {

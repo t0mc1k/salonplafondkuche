@@ -12,6 +12,10 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.18', range: '', date: 'November 2026', title: 'Exklusiv-Schicht: Vollbild passt die ganze Tabelle an',
+    changes: [
+      ['improved', 'Vollbild: Die Tabelle wird automatisch so skaliert, dass sie komplett auf den Bildschirm passt, ohne Scrollen (auch nach dem Drehen des Handys). Der Kopf mit Titel ist im Vollbild ausgeblendet, damit mehr Platz bleibt.']
+    ] },
   { version: '1.0.17', range: '', date: 'November 2026', title: 'Exklusiv-Schicht: automatisch aktuell, Vollbild, Drehen',
     changes: [
       ['new', 'Exklusiv-Schicht: Solange das Fenster offen ist, holt sich die App alle 5 Sekunden die neuesten Daten aus der Bar (Anzeige „● live“). „Neu laden“ ist nicht mehr nötig, bleibt aber als Knopf. Die Scroll-Position bleibt erhalten.'],
