@@ -711,12 +711,12 @@
   "en": "Glasses, spills"
  },
  "dash.teamplan": {
-  "de": "Team & Arbeitsplan",
-  "en": "Team Schedule"
+  "de": "Dienstplan",
+  "en": "Weekly roster"
  },
  "dash.teamplanSub": {
-  "de": "Monatsraster, Stunden, Schichten",
-  "en": "Month grid, hours, shifts"
+  "de": "Woche (KW), Schichten, Veröffentlichung",
+  "en": "Week, shifts, publishing"
  },
  "dash.swaps": {
   "de": "Schichttausch",

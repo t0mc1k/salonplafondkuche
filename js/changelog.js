@@ -20,8 +20,12 @@
       ['improved', 'Karten-Druck (A3) für Getränke wurde entfernt (Menüpunkt, Kachel und Fenster).'],
       ['new', 'Rezepte statt Getränke: Kategorien (Vorspeisen, Suppen, Hauptgerichte ...), Portionen, Zubereitungszeit, Garmethode, Zutaten mit Menge, Zubereitung, Anrichten, Allergene, bis zu 3 Fotos.'],
       ['new', 'Am Ende jedes Rezepts steht, wer es angelegt und wer es zuletzt geändert hat (wird von der Datenbank eingetragen).'],
-      ['new', 'Rezepte bearbeiten dürfen Manager, Developer und Köche mit der Berechtigung „Darf Rezepte bearbeiten“. Abwasher sehen keine Rezepte.'],
+      ['new', 'Rezepte bearbeiten dürfen Manager, Developer und Köche mit der Berechtigung „Darf Rezepte bearbeiten“. Abwasher dürfen Rezepte nur ansehen.'],
       ['info', 'Einrichtung: sql/1.0.01_recipes.sql im Supabase SQL Editor ausführen (Tabelle recipes, Foto-Speicher „photos“).'],
+      ['new', 'Dienstplan nach Kalenderwochen: oben Datumsbereich und KW (z. B. KW 45 · 02.11.26 – 08.11.26), Spalten Name, Mo–So, Gesamt, Unterschrift, gruppiert nach Teams.'],
+      ['new', 'Manager planen auch kommende Wochen (Entwurf) und veröffentlichen sie. Wechsel mit ‹ ›, Wochenwahl, „Heute“ und Chips der geplanten Wochen. „Vorwoche kopieren“ spart Zeit.'],
+      ['new', 'Das Team sieht den Dienstplan nur lesend und nur veröffentlichte Wochen. Codes: OFF, U, K, ZA, dazu Station (z. B. GM, Entre).'],
+      ['info', 'Einrichtung: sql/1.0.02_workplan.sql im Supabase SQL Editor ausführen (Tabellen work_schedules und plan_weeks).'],
       ['info', 'Weitere Küchen-Funktionen (Rezepte, Dienstplan, Kühlschrank-Temperaturen, Abwasher) folgen in den nächsten Versionen.']
     ] },
   { version: '4.2.02', range: '', date: 'November 2026', title: 'Neue Kachel „Reservierungen“ (Gastronaut)',

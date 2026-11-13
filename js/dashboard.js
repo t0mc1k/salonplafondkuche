@@ -27,7 +27,7 @@
         checklist:{ icon: '✅', title: adm ? t('dash.checklistA') : t('dash.checklistS'), sub: adm ? t('dash.checklistAS') : t('dash.checklistSS'), run: 'openChecklistModal', need: 'all' },
         maint:    { icon: '🛠️', title: adm ? t('dash.maintA') : t('dash.maintS'), sub: adm ? t('dash.maintAS') : t('dash.maintSS'), run: 'openMaintenanceModal', need: 'all', badge: 'dashMaintBadge' },
         loss:     { icon: '🔨', title: adm ? t('dash.lossA') : t('dash.lossS'), sub: adm ? t('dash.lossAS') : t('dash.lossSS'), run: 'openLossModal', need: 'all' },
-        teamplan: { icon: '📆', title: t('dash.teamplan'), sub: t('dash.teamplanSub'), run: 'openTeamPlanModal', need: 'admin' },
+        teamplan: { icon: '📆', title: t('dash.teamplan'), sub: t('dash.teamplanSub'), run: 'openTeamPlanModal', need: 'all' },
         swaps:    { icon: '🔄', title: t('dash.swaps'), sub: adm ? t('dash.swapsA') : t('dash.swapsS'), run: 'openSwapModal', need: 'all', badge: 'dashSwapBadge' },
         absence:  { icon: '🏖️', title: t('dash.absence'), sub: adm ? t('dash.absenceA') : t('dash.absenceS'), run: 'openAbsenceModal', need: 'all', badge: 'dashAbsBadge' },
         payroll:  { icon: '💶', title: t('dash.payroll'), sub: t('dash.payrollSub'), run: 'openPayrollModal', need: 'admin' },
@@ -54,15 +54,15 @@
           { title: t('dash.g.info'), ids: ['news', 'tomi', 'help', 'support'] }
         ];
       }
-      // Abwasher: keine Rezepte (Abwasher-Aufgaben kommen in einer späteren Version)
+      // Abwasher: Rezepte nur ansehen (Abwasher-Aufgaben kommen in einer späteren Version)
       if (currentStaffRole === 'dishwasher') {
-        return [{ title: t('dash.g.shift'), ids: ['myplan', 'swaps', 'absence', 'chat', 'help', 'news'] }];
+        return [{ title: t('dash.g.shift'), ids: ['myplan', 'teamplan', 'swaps', 'absence', 'chat', 'drinks', 'help', 'news'] }];
       }
       // Koch (+ Import, falls Rezepte-Recht)
       const bar = ['drinks', 'allergens', 'specials', 'reserv', 'maint', 'loss', 'tomi', 'help', 'news'];
       if (userCanEdit) bar.splice(1, 0, 'impexp');
       return [
-        { title: t('dash.g.shift'),      ids: ['checklist', 'myplan', 'swaps', 'absence', 'chat'] },
+        { title: t('dash.g.shift'),      ids: ['checklist', 'myplan', 'teamplan', 'swaps', 'absence', 'chat'] },
         { title: t('dash.g.barService'), ids: bar }
       ];
     }

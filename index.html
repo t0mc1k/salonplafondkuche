@@ -689,13 +689,13 @@
     </div>
   </div>
 
-  <!-- TEAM & ARBEITSPLAN (Monatsraster, Manager/Developer) -->
+  <!-- DIENSTPLAN (Wochenraster; Manager/Developer planen, alle sehen veröffentlichte Wochen) -->
   <div id="teamPlanModal" class="fixed inset-0 modal-bg backdrop-blur-sm hidden items-center justify-center p-2 sm:p-4 z-[295]">
     <div class="card w-full max-w-[98vw] relative flex flex-col h-[94vh] max-h-[94vh] overflow-hidden p-0 border-amber-500/50 shadow-2xl">
       <div class="ui-head !items-center">
         <div class="min-w-0">
-          <h3 class="ui-head-title">📆 Team & Arbeitsplan</h3>
-          <p class="ui-head-sub">Monatsübersicht für das ganze Team: Schichten, Stunden und Planung. Tippe auf ein Feld, um die Schicht zu ändern.</p>
+          <h3 class="ui-head-title">📆 Dienstplan <span id="tpWeekKw" class="tp-kw">KW</span> <span id="tpWeekRange" class="tp-range">–</span> <span id="tpWeekState" class="tp-state hidden"></span></h3>
+          <p class="ui-head-sub">Wochenplan Mo–So. Manager planen auch kommende Wochen und veröffentlichen sie; das Team sieht nur veröffentlichte Wochen.</p>
         </div>
         <button type="button" onclick="closeTeamPlanModal()" class="ui-close" aria-label="Schließen">&times;</button>
       </div>
@@ -703,16 +703,18 @@
       <div class="ui-toolbar">
         <div class="flex gap-2 flex-wrap items-center">
           <div class="tp-monthnav">
-            <button type="button" onclick="teamPlanShiftMonth(-1)" class="ui-btn-ghost" aria-label="Vorheriger Monat">‹</button>
-            <b id="tpMonthLabel" class="tp-month-label">–</b>
-            <button type="button" onclick="teamPlanShiftMonth(1)" class="ui-btn-ghost" aria-label="Nächster Monat">›</button>
+            <button type="button" onclick="teamPlanShiftWeek(-1)" class="ui-btn-ghost" aria-label="Vorherige Woche">‹</button>
+            <input type="week" id="tpWeekPick" onchange="teamPlanPickWeek(this.value)" class="ui-field tp-week-pick" aria-label="Woche wählen">
+            <button type="button" onclick="teamPlanShiftWeek(1)" class="ui-btn-ghost" aria-label="Nächste Woche">›</button>
           </div>
           <button type="button" onclick="teamPlanToday()" class="ui-btn-ghost">Heute</button>
           <input type="search" id="tpSearch" oninput="onTeamPlanSearch(this.value)" placeholder="🔍 Mitarbeiter ..." class="ui-search flex-1 min-w-[9rem]">
-          <select id="tpAddEmployee" onchange="teamPlanAddEmployee(this)" class="ui-field tp-add-select"></select>
+          <button type="button" id="tpCopyBtn" onclick="teamPlanCopyPrevWeek()" class="hidden ui-btn-ghost" title="Plan der Vorwoche in diese Woche kopieren">📋 Vorwoche kopieren</button>
+          <button type="button" id="tpPublishBtn" onclick="teamPlanTogglePublish()" class="hidden ui-btn-primary">📢 Veröffentlichen</button>
           <button type="button" onclick="exportTeamPlanExcel()" class="ui-btn-ghost">📗 Excel</button>
           <button type="button" id="tpImportBtn" onclick="closeTeamPlanModal(); openImportExportModal(); switchImportTab('schedule');" class="ui-btn-ghost">📥 Plan importieren</button>
         </div>
+        <div id="tpWeekChips" class="flex gap-1.5 flex-wrap mt-1.5"></div>
         <div id="tpSummary" class="tp-summary"></div>
       </div>
 
@@ -721,7 +723,7 @@
       </div>
 
       <div class="ui-foot !justify-between flex-wrap">
-        <span class="tp-legend"><i class="tp-dot tp-dot-work"></i>Schicht <i class="tp-dot tp-dot-free"></i>Frei (X) <i class="tp-dot tp-dot-special"></i>U / K / Sonstiges <i class="tp-dot tp-dot-today"></i>Heute</span>
+        <span class="tp-legend"><i class="tp-dot tp-dot-work"></i>Schicht <i class="tp-dot tp-dot-free"></i>Frei (OFF) <i class="tp-dot tp-dot-special"></i>U / K / ZA / Sonstiges <i class="tp-dot tp-dot-today"></i>Heute</span>
         <button type="button" onclick="closeTeamPlanModal()" class="ui-btn-primary">Fertig</button>
       </div>
     </div>
@@ -739,9 +741,10 @@
       </div>
       <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
         <div class="flex gap-1.5 flex-wrap">
-          <button type="button" class="ui-chip" onclick="tpCellPreset('X')">Frei (X)</button>
+          <button type="button" class="ui-chip" onclick="tpCellPreset('OFF')">Frei (OFF)</button>
           <button type="button" class="ui-chip" onclick="tpCellPreset('U')">Urlaub (U)</button>
           <button type="button" class="ui-chip" onclick="tpCellPreset('K')">Krank (K)</button>
+          <button type="button" class="ui-chip" onclick="tpCellPreset('ZA')">Zeitausgleich (ZA)</button>
         </div>
         <div class="form-section">
           <div class="form-section-title">Schicht 1</div>
@@ -759,7 +762,7 @@
         </div>
         <div>
           <label class="form-label" for="tpStation">Station</label>
-          <input type="text" id="tpStation" maxlength="30" autocomplete="off" placeholder="z. B. Bar, Service" class="ui-field">
+          <input type="text" id="tpStation" maxlength="30" autocomplete="off" placeholder="z. B. GM, Entre, Sc, EXP" class="ui-field">
         </div>
         <p id="tpCellHours" class="form-hint"></p>
         <input type="hidden" id="tpCellPresetCode" value="">

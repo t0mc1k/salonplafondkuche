@@ -1,6 +1,6 @@
 -- Version 1.0.01 (Küche): Rezepte + Foto-Speicher
 -- Im Supabase SQL Editor ausführen (nach 1.0.00_init.sql).
--- Sehen: Manager, Developer, Köche (Abwasher nicht). Bearbeiten: Manager/Developer und Personen mit „darf Rezepte bearbeiten“.
+-- Sehen: alle Angemeldeten (Abwasher nur ansehen). Bearbeiten: Manager/Developer und Personen mit „darf Rezepte bearbeiten“.
 -- „Angelegt von“ / „Zuletzt geändert von“ setzt die Datenbank selbst (nicht fälschbar).
 
 -- Wer darf Rezepte bearbeiten?
@@ -10,10 +10,10 @@ returns boolean language sql stable security definer set search_path = public as
                    from public.staff s where s.id = public.current_staff_id()), false)
 $$;
 
--- Wer darf Rezepte sehen? Alle Angemeldeten außer reinen Abwashern (Hauptrolle dishwasher)
+-- Wer darf Rezepte sehen? Alle Angemeldeten (auch Abwasher, nur ansehen)
 create or replace function public.can_see_recipes()
 returns boolean language sql stable security definer set search_path = public as $$
-  select coalesce((select s.role <> 'dishwasher' from public.staff s where s.id = public.current_staff_id()), false)
+  select public.current_staff_id() is not null
 $$;
 
 create table if not exists public.recipes (

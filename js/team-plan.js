@@ -1,24 +1,21 @@
 /* ============================================================
    js/team-plan.js
-   Team & Arbeitsplan (nur Manager/Developer): Monatsraster für das ganze Team
-   mit Schichten, Stunden pro Mitarbeiter, Besetzung pro Tag und Schicht-Planung.
+   Dienstplan nach Kalenderwochen (Mo–So): Kopf mit Datumsbereich und KW, Spalten Name, Mo–So,
+   Gesamt, Unterschrift. Manager/Developer planen auch Wochen im Voraus (Entwurf) und
+   veröffentlichen sie; alle anderen sehen nur veröffentlichte Wochen (nur ansehen).
 
-   Daten: Tabelle work_schedules (wie beim Import in import-export.js)
-   Spalten: employee_name, station, month, year, day,
-            shift_1_start, shift_1_end, shift_2_start, shift_2_end
-   Zeiten werden als "HH:MM" gespeichert. Excel-Dezimalwerte aus dem
-   Import werden mit excelDecimalToTime() (schedule.js) gelesen.
-   Sonderwerte im Beginn-Feld: X = frei, U = Urlaub, K = krank.
+   Daten (sql/1.0.02_workplan.sql): work_schedules (eine Zeile pro Person und Tag:
+   employee_name, station, year, month, day, shift_1_start/end, shift_2_start/end) und
+   plan_weeks (week_start = Montag, published).
+   Zeiten "HH:MM". Sonderwerte im Beginn-Feld: OFF/X = frei, U = Urlaub, K = krank, ZA = Zeitausgleich.
    ============================================================ */
 
-    let tpYear = new Date().getFullYear();
-    let tpMonth = new Date().getMonth() + 1;
-    let tpRows = [];            // alle Schichten des Monats
-    let tpExtraEmployees = [];  // Mitarbeiter, die nur im Raster stehen (noch ohne Schicht)
+    let tpWeekStart = new Date();   // Montag der angezeigten Woche (wird beim Öffnen gesetzt)
+    let tpRows = [];            // alle Schichten der Woche
+    let tpWeeks = {};           // 'YYYY-MM-DD' (Montag) -> Zeile aus plan_weeks
     let tpQuery = '';
-    let tpEditing = null;       // { employee, day, existing }
+    let tpEditing = null;       // { employee, date, existing }
 
-    const TP_MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
     const TP_WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 
     // ---------- Zeit-Hilfen ----------
@@ -76,24 +73,49 @@
       return m ? String(m[1]).padStart(2, '0') + ':' + m[2] : '';
     }
 
+    // ---------- Kalenderwoche (Montag bis Sonntag) ----------
+    function tpMondayOf(d) {
+      const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+      return x;
+    }
+    function tpAddDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+    function tpIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+    function tpParseIso(s) { const p = String(s).split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+    function tpDmy(d) { return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getFullYear()).slice(2); }
+    function tpDm(d) { return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.'; }
+    function tpIsoKw(d) {
+      const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+      const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+      return Math.ceil(((t - y0) / 86400000 + 1) / 7);
+    }
+    function tpWeekRange(ws) { return tpDmy(ws) + ' – ' + tpDmy(tpAddDays(ws, 6)); }   // z. B. 02.11.26 – 08.11.26
+
+    const TP_GROUP_ORDER = ['Leitung', 'AM-Team', 'Lehrling', 'PM-Team', 'Reinigung', 'Küche'];
+    function tpStaffGroup(name) {
+      const s = (staffDatabaseRecords || []).find(x => String(x.name).toLowerCase() === String(name).toLowerCase());
+      if (!s) return 'Küche';
+      if (s.team) return s.team;
+      return s.role === 'manager' ? 'Leitung' : 'Küche';
+    }
+
     // ---------- Öffnen / Schließen ----------
+    // Alle dürfen den veröffentlichten Plan ansehen; bearbeiten nur Manager/Developer.
     function openTeamPlanModal() {
       closeSettingsMenu();
-      checkManagerAuth(() => {
-        const now = new Date();
-        tpYear = now.getFullYear();
-        tpMonth = now.getMonth() + 1;
-        tpQuery = '';
-        tpExtraEmployees = [];
-        const s = document.getElementById('tpSearch');
-        if (s) s.value = '';
-        const imp = document.getElementById('tpImportBtn');
-        if (imp) imp.classList.toggle('hidden', !userCanEdit);
-        const modal = document.getElementById('teamPlanModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        loadTeamPlan();
+      tpWeekStart = tpMondayOf(new Date());
+      tpQuery = '';
+      const s = document.getElementById('tpSearch');
+      if (s) s.value = '';
+      ['tpPublishBtn', 'tpCopyBtn', 'tpImportBtn'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('hidden', !userIsAdmin);
       });
+      const modal = document.getElementById('teamPlanModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      loadTeamPlan();
     }
 
     function closeTeamPlanModal() {
@@ -103,19 +125,15 @@
       modal.classList.add('hidden');
     }
 
-    function teamPlanShiftMonth(delta) {
-      tpMonth += delta;
-      if (tpMonth < 1) { tpMonth = 12; tpYear--; }
-      if (tpMonth > 12) { tpMonth = 1; tpYear++; }
-      tpExtraEmployees = [];
-      loadTeamPlan();
-    }
-
-    function teamPlanToday() {
-      const now = new Date();
-      tpYear = now.getFullYear();
-      tpMonth = now.getMonth() + 1;
-      tpExtraEmployees = [];
+    function teamPlanShiftWeek(delta) { tpWeekStart = tpAddDays(tpWeekStart, 7 * delta); loadTeamPlan(); }
+    function teamPlanToday() { tpWeekStart = tpMondayOf(new Date()); loadTeamPlan(); }
+    function teamPlanGoWeek(iso) { tpWeekStart = tpMondayOf(tpParseIso(iso)); loadTeamPlan(); }
+    function teamPlanPickWeek(value) {
+      // <input type="week"> liefert z. B. "2026-W46"
+      const m = /^(\d{4})-W(\d{2})$/.exec(String(value || ''));
+      if (!m) return;
+      const jan4 = new Date(Number(m[1]), 0, 4);
+      tpWeekStart = tpAddDays(tpMondayOf(jan4), 7 * (Number(m[2]) - 1));
       loadTeamPlan();
     }
 
@@ -127,156 +145,218 @@
     // ---------- Laden ----------
     async function loadTeamPlan() {
       const wrap = document.getElementById('tpGridWrap');
-      const label = document.getElementById('tpMonthLabel');
-      if (label) label.textContent = TP_MONTHS[tpMonth - 1] + ' ' + tpYear;
-      if (wrap) { wrap.innerHTML = '<p class="staff-empty">Lade Arbeitsplan ...</p>'; delete wrap.dataset.scrolled; }
-      const { data, error } = await _supabase
-        .from('work_schedules')
-        .select('*')
-        .eq('month', tpMonth)
-        .eq('year', tpYear)
-        .order('employee_name', { ascending: true })
-        .order('day', { ascending: true });
-      if (error) {
-        if (wrap) wrap.innerHTML = `<p class="staff-empty" style="color:#ef4444">Fehler beim Laden: ${escapeHtml(error.message)}</p>`;
+      if (wrap) wrap.innerHTML = '<p class="staff-empty">Lade Arbeitsplan ...</p>';
+      tpUpdateWeekHeader();
+      const iso = tpIso(tpWeekStart);
+      const from = tpIso(tpAddDays(tpMondayOf(new Date()), -14));
+      const [rowsRes, weeksRes] = await Promise.all([
+        _supabase.from('work_schedules').select('*').eq('week_start', iso).order('employee_name', { ascending: true }).order('day', { ascending: true }),
+        _supabase.from('plan_weeks').select('*').gte('week_start', from < iso ? from : iso).order('week_start', { ascending: true })
+      ]);
+      if (rowsRes.error) {
+        if (wrap) wrap.innerHTML = `<p class="staff-empty" style="color:#ef4444">Fehler beim Laden: ${escapeHtml(rowsRes.error.message)}</p>`;
         return;
       }
-      tpRows = data || [];
+      tpRows = rowsRes.data || [];
+      tpWeeks = {};
+      (weeksRes.data || []).forEach(w => { tpWeeks[w.week_start] = w; });
+      tpUpdateWeekHeader();
       renderTeamPlan();
+    }
+
+    // Kopf: Datumsbereich + KW + Status + Wochenauswahl
+    function tpUpdateWeekHeader() {
+      const iso = tpIso(tpWeekStart);
+      const meta = tpWeeks[iso];
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      set('tpWeekRange', tpWeekRange(tpWeekStart));
+      set('tpWeekKw', 'KW ' + tpIsoKw(tpWeekStart));
+      const st = document.getElementById('tpWeekState');
+      if (st) {
+        const pub = !!(meta && meta.published);
+        st.textContent = pub ? '✅ Veröffentlicht' : '✏️ Entwurf';
+        st.className = 'tp-state ' + (pub ? 'tp-state-pub' : 'tp-state-draft');
+        st.classList.toggle('hidden', !userIsAdmin && !pub);
+      }
+      const btn = document.getElementById('tpPublishBtn');
+      if (btn) btn.textContent = (meta && meta.published) ? '↩️ Zurückziehen' : '📢 Veröffentlichen';
+      const pick = document.getElementById('tpWeekPick');
+      if (pick) {
+        const kw = String(tpIsoKw(tpWeekStart)).padStart(2, '0');
+        const thu = tpAddDays(tpWeekStart, 3);   // das Jahr der KW richtet sich nach dem Donnerstag
+        pick.value = thu.getFullYear() + '-W' + kw;
+      }
+      const chips = document.getElementById('tpWeekChips');
+      if (chips) {
+        const cur = tpIso(tpMondayOf(new Date()));
+        const list = Object.keys(tpWeeks).filter(k => k >= tpIso(tpAddDays(tpMondayOf(new Date()), -14)) && (userIsAdmin || tpWeeks[k].published));
+        if (list.indexOf(cur) === -1) list.push(cur);
+        if (list.indexOf(iso) === -1) list.push(iso);
+        list.sort();
+        chips.innerHTML = list.map(k => {
+          const d = tpParseIso(k);
+          const pub = tpWeeks[k] && tpWeeks[k].published;
+          const mark = pub ? '✅' : (userIsAdmin ? '✏️' : '');
+          return `<button type="button" class="ui-chip${k === iso ? ' active' : ''}" onclick="teamPlanGoWeek(${jsArg(k)})" title="${escapeHtml(tpWeekRange(d))}">KW ${tpIsoKw(d)} · ${tpDm(d)}${mark ? ' ' + mark : ''}</button>`;
+        }).join('');
+      }
     }
 
     // ---------- Raster zeichnen ----------
     function tpEmployees() {
-      const map = new Map();   // name(lower) -> { name, station }
-      tpRows.forEach(r => {
-        const key = String(r.employee_name || '').trim().toLowerCase();
+      const map = new Map();   // name(lower) -> { name, station, group }
+      const add = (name, station) => {
+        const key = String(name || '').trim().toLowerCase();
         if (!key) return;
-        if (!map.has(key)) map.set(key, { name: String(r.employee_name).trim(), station: r.station || '' });
-        else if (!map.get(key).station && r.station) map.get(key).station = r.station;
+        if (!map.has(key)) map.set(key, { name: String(name).trim(), station: station || '', group: tpStaffGroup(name) });
+      };
+      (staffDatabaseRecords || []).forEach(s => add(s.name, ''));
+      tpRows.forEach(r => add(r.employee_name, r.station));
+      return Array.from(map.values()).sort((a, b) => {
+        const ga = TP_GROUP_ORDER.indexOf(a.group), gb = TP_GROUP_ORDER.indexOf(b.group);
+        const oa = ga === -1 ? 99 : ga, ob = gb === -1 ? 99 : gb;
+        return oa - ob || a.name.localeCompare(b.name, 'de', { sensitivity: 'base' });
       });
-      tpExtraEmployees.forEach(n => {
-        const key = String(n).trim().toLowerCase();
-        if (key && !map.has(key)) map.set(key, { name: String(n).trim(), station: '' });
-      });
-      return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
     }
 
-    function tpFindRow(employee, day) {
+    function tpFindRow(employee, date) {
       const e = String(employee).trim().toLowerCase();
-      return tpRows.find(r => Number(r.day) === Number(day) && String(r.employee_name || '').trim().toLowerCase() === e) || null;
+      return tpRows.find(r => Number(r.day) === date.getDate() && Number(r.month) === date.getMonth() + 1 && Number(r.year) === date.getFullYear()
+        && String(r.employee_name || '').trim().toLowerCase() === e) || null;
     }
 
-    function tpCellHtml(row, employee, day) {
+    function tpCellHtml(row, employee, date) {
       let cls = 'tp-cell', inner = '';
       const code = tpSpecialCode(row);
       if (code) {
-        if (code === 'X') { cls += ' tp-free'; inner = '<span class="tp-x">X</span>'; }
+        if (code === 'X' || code === 'OFF') { cls += ' tp-free'; inner = '<span class="tp-x">OFF</span>'; }
         else { cls += ' tp-special'; inner = `<span class="tp-code">${escapeHtml(code)}</span>`; }
       } else if (row && tpCellMinutes(row) > 0) {
         cls += ' tp-work';
         const l1 = `${tpShortTime(row.shift_1_start)}–${tpShortTime(row.shift_1_end)}`;
         const has2 = tpToMinutes(row.shift_2_start) !== null && tpToMinutes(row.shift_2_end) !== null;
-        inner = `<span class="tp-t">${escapeHtml(l1)}</span>` + (has2 ? `<span class="tp-t">${escapeHtml(tpShortTime(row.shift_2_start) + '–' + tpShortTime(row.shift_2_end))}</span>` : '');
+        inner = `<span class="tp-t">${escapeHtml(l1)}</span>` + (has2 ? `<span class="tp-t">${escapeHtml(tpShortTime(row.shift_2_start) + '–' + tpShortTime(row.shift_2_end))}</span>` : '')
+          + (row.station ? `<small class="tp-station">${escapeHtml(row.station)}</small>` : '');
       }
-      return `<td class="${cls}" onclick="openTeamPlanCell(${jsArg(employee)}, ${day})" title="${escapeHtml(employee)} · ${day}.${tpMonth}.">${inner}</td>`;
+      const click = userIsAdmin ? ` onclick="openTeamPlanCell(${jsArg(employee)}, ${jsArg(tpIso(date))})"` : '';
+      return `<td class="${cls}"${click} title="${escapeHtml(employee)} · ${tpDm(date)}">${inner}</td>`;
     }
 
     function renderTeamPlan() {
       const wrap = document.getElementById('tpGridWrap');
       if (!wrap) return;
-      const daysInMonth = new Date(tpYear, tpMonth, 0).getDate();
-      const today = new Date();
-      const todayDay = (today.getFullYear() === tpYear && today.getMonth() + 1 === tpMonth) ? today.getDate() : -1;
+      const today = tpIso(new Date());
+      const days = [0, 1, 2, 3, 4, 5, 6].map(i => tpAddDays(tpWeekStart, i));
       const meKey = String(currentWaiterName || '').trim().toLowerCase();
+      const iso = tpIso(tpWeekStart);
+      const meta = tpWeeks[iso];
 
-      let employees = tpEmployees();
-      if (tpQuery) employees = employees.filter(e => e.name.toLowerCase().indexOf(tpQuery) !== -1);
-
-      // Auswahl „Mitarbeiter aufnehmen“
-      const present = new Set(tpEmployees().map(e => e.name.toLowerCase()));
-      const addSel = document.getElementById('tpAddEmployee');
-      if (addSel) {
-        const candidates = (staffDatabaseRecords || []).map(s => s.name).filter(n => n && !present.has(String(n).toLowerCase()))
-          .sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }));
-        addSel.innerHTML = '<option value="">➕ Mitarbeiter aufnehmen ...</option>' + candidates.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
-        addSel.classList.toggle('hidden', candidates.length === 0);
-      }
-
-      if (!employees.length) {
-        wrap.innerHTML = `<p class="staff-empty">${tpRows.length || tpExtraEmployees.length ? 'Kein Mitarbeiter gefunden.' : 'Für diesen Monat gibt es noch keinen Plan. Importiere einen Excel-Plan oder nimm oben Mitarbeiter auf und plane die Schichten direkt im Raster.'}</p>`;
+      // Mitarbeiter sehen nur veröffentlichte Wochen (die Datenbank liefert sonst auch nichts)
+      if (!userIsAdmin && !(meta && meta.published)) {
+        wrap.innerHTML = '<p class="staff-empty">Für diese Woche ist noch kein Dienstplan veröffentlicht.</p>';
         document.getElementById('tpSummary').innerHTML = '';
         return;
       }
 
-      // Kopf
-      let head = '<tr><th class="tp-name-col tp-corner">Mitarbeiter</th>';
-      for (let d = 1; d <= daysInMonth; d++) {
-        const wd = new Date(tpYear, tpMonth - 1, d).getDay();
-        const cls = 'tp-day' + (wd === 0 || wd === 6 ? ' tp-weekend' : '') + (d === todayDay ? ' tp-today' : '');
-        head += `<th class="${cls}"><span class="tp-wd">${TP_WEEKDAYS[wd]}</span><span class="tp-dn">${d}</span></th>`;
+      let employees = tpEmployees();
+      if (tpQuery) employees = employees.filter(e => e.name.toLowerCase().indexOf(tpQuery) !== -1);
+      if (!employees.length) {
+        wrap.innerHTML = '<p class="staff-empty">Kein Mitarbeiter gefunden.</p>';
+        document.getElementById('tpSummary').innerHTML = '';
+        return;
       }
-      head += '<th class="tp-sum-col">Std.</th></tr>';
 
-      // Zeilen
-      let totalMin = 0, totalShifts = 0;
-      const perDay = new Array(daysInMonth + 1).fill(0);
+      let head = '<tr><th class="tp-name-col tp-corner">Name</th>';
+      days.forEach((d, i) => {
+        const cls = 'tp-day' + (i >= 5 ? ' tp-weekend' : '') + (tpIso(d) === today ? ' tp-today' : '');
+        head += `<th class="${cls}"><span class="tp-wd">${TP_WEEKDAYS[d.getDay()]}</span><span class="tp-dn">${tpDm(d)}</span></th>`;
+      });
+      head += '<th class="tp-sum-col">Gesamt</th><th class="tp-sign-col">Unterschrift</th></tr>';
+
+      let totalMin = 0, totalShifts = 0, lastGroup = null;
+      const perDay = [0, 0, 0, 0, 0, 0, 0];
       let body = '';
       employees.forEach(emp => {
-        let rowMin = 0, rowShifts = 0;
-        let cells = '';
-        for (let d = 1; d <= daysInMonth; d++) {
-          const row = tpFindRow(emp.name, d);
-          if (tpHasShift(row)) { rowMin += tpCellMinutes(row); rowShifts++; perDay[d]++; }
-          let html = tpCellHtml(row, emp.name, d);
-          if (d === todayDay) html = html.replace('class="tp-cell', 'class="tp-cell tp-col-today');
-          else if (new Date(tpYear, tpMonth - 1, d).getDay() % 6 === 0) html = html.replace('class="tp-cell', 'class="tp-cell tp-col-weekend');
-          cells += html;
+        if (emp.group !== lastGroup) {
+          body += `<tr class="tp-group"><th colspan="10">${escapeHtml(emp.group)}</th></tr>`;
+          lastGroup = emp.group;
         }
+        let rowMin = 0, rowShifts = 0, cells = '';
+        days.forEach((d, i) => {
+          const row = tpFindRow(emp.name, d);
+          if (tpHasShift(row)) { rowMin += tpCellMinutes(row); rowShifts++; perDay[i]++; }
+          let html = tpCellHtml(row, emp.name, d);
+          if (tpIso(d) === today) html = html.replace('class="tp-cell', 'class="tp-cell tp-col-today');
+          else if (i >= 5) html = html.replace('class="tp-cell', 'class="tp-cell tp-col-weekend');
+          cells += html;
+        });
         totalMin += rowMin; totalShifts += rowShifts;
-        const isMe = meKey && emp.name.toLowerCase().indexOf(meKey) !== -1;
+        const isMe = meKey && emp.name.toLowerCase() === meKey;
         body += `<tr class="${isMe ? 'tp-me' : ''}">
-          <th class="tp-name-col"><span class="tp-name">${escapeHtml(emp.name)}</span>${emp.station ? `<small class="tp-station">${escapeHtml(emp.station)}</small>` : ''}</th>
+          <th class="tp-name-col"><span class="tp-name">${escapeHtml(emp.name)}</span></th>
           ${cells}
           <td class="tp-sum-col"><b>${tpFormatHours(rowMin)}</b><small>${rowShifts} Tage</small></td>
+          <td class="tp-sign-col"></td>
         </tr>`;
       });
 
-      // Fuß: Besetzung pro Tag
       let foot = '<tr><th class="tp-name-col tp-foot-label">Besetzung</th>';
-      for (let d = 1; d <= daysInMonth; d++) {
-        foot += `<td class="tp-foot${d === todayDay ? ' tp-col-today' : ''}">${perDay[d] || ''}</td>`;
-      }
-      foot += `<td class="tp-sum-col"><b>${tpFormatHours(totalMin)}</b></td></tr>`;
+      days.forEach((d, i) => { foot += `<td class="tp-foot${tpIso(d) === today ? ' tp-col-today' : ''}">${perDay[i] || ''}</td>`; });
+      foot += `<td class="tp-sum-col"><b>${tpFormatHours(totalMin)}</b></td><td class="tp-sign-col"></td></tr>`;
 
       wrap.innerHTML = `<table class="tp-table"><thead>${head}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table>`;
-
       document.getElementById('tpSummary').innerHTML =
-        `<span><b>${employees.length}</b> Mitarbeiter</span><span><b>${totalShifts}</b> Schichten</span><span><b>${tpFormatHours(totalMin)}</b> Std. gesamt</span>` +
-        (employees.length ? `<span>Ø <b>${tpFormatHours(Math.round(totalMin / employees.length))}</b> Std. pro Person</span>` : '');
-
-      // heute ins Bild scrollen (nur beim ersten Zeichnen des Monats)
-      if (todayDay > 0 && !wrap.dataset.scrolled) {
-        const th = wrap.querySelector('th.tp-today');
-        if (th) wrap.scrollLeft = Math.max(0, th.offsetLeft - 160);
-      }
-      wrap.dataset.scrolled = '1';
+        `<span><b>${employees.length}</b> Mitarbeiter</span><span><b>${totalShifts}</b> Schichten</span><span><b>${tpFormatHours(totalMin)}</b> Std. gesamt</span>`;
     }
 
-    function teamPlanAddEmployee(sel) {
-      const name = sel.value;
-      if (!name) return;
-      if (tpExtraEmployees.indexOf(name) === -1) tpExtraEmployees.push(name);
-      sel.value = '';
-      renderTeamPlan();
+    // ---------- Veröffentlichen / Woche kopieren (nur Manager/Developer) ----------
+    async function tpEnsureWeekRow() {
+      const iso = tpIso(tpWeekStart);
+      if (tpWeeks[iso]) return true;
+      const { error } = await _supabase.from('plan_weeks').upsert({ week_start: iso, published: false }, { onConflict: 'week_start', ignoreDuplicates: true });
+      if (error) { alert('Woche konnte nicht angelegt werden: ' + error.message); return false; }
+      tpWeeks[iso] = { week_start: iso, published: false };
+      return true;
+    }
+
+    async function teamPlanTogglePublish() {
+      if (!userIsAdmin) return;
+      const iso = tpIso(tpWeekStart);
+      const publish = !(tpWeeks[iso] && tpWeeks[iso].published);
+      const label = 'KW ' + tpIsoKw(tpWeekStart) + ' (' + tpWeekRange(tpWeekStart) + ')';
+      if (!confirm(publish ? label + ' jetzt für das ganze Team veröffentlichen?' : label + ' zurückziehen? Das Team sieht diese Woche dann nicht mehr.')) return;
+      const { error } = await _supabase.from('plan_weeks').upsert({ week_start: iso, published: publish }, { onConflict: 'week_start' });
+      if (error) return alert('Fehlgeschlagen: ' + error.message);
+      await loadTeamPlan();
+      showAppToast({ initial: '📆', title: publish ? 'Dienstplan veröffentlicht' : 'Dienstplan zurückgezogen', text: label });
+    }
+
+    async function teamPlanCopyPrevWeek() {
+      if (!userIsAdmin) return;
+      const prevIso = tpIso(tpAddDays(tpWeekStart, -7));
+      const { data, error } = await _supabase.from('work_schedules').select('*').eq('week_start', prevIso);
+      if (error) return alert('Fehler: ' + error.message);
+      if (!data || !data.length) return alert('In der Vorwoche gibt es keinen Plan zum Kopieren.');
+      if (!confirm('Plan der Vorwoche (' + data.length + ' Einträge) in diese Woche kopieren? Vorhandene Einträge bleiben unverändert.')) return;
+      if (!await tpEnsureWeekRow()) return;
+      const rows = data.map(r => {
+        const d = tpAddDays(tpParseIso(r.work_date), 7);
+        return { employee_name: r.employee_name, station: r.station, year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(),
+          shift_1_start: r.shift_1_start, shift_1_end: r.shift_1_end, shift_2_start: r.shift_2_start, shift_2_end: r.shift_2_end };
+      });
+      const res = await _supabase.from('work_schedules').upsert(rows, { onConflict: 'employee_name,year,month,day', ignoreDuplicates: true });
+      if (res.error) return alert('Kopieren fehlgeschlagen: ' + res.error.message);
+      await loadTeamPlan();
     }
 
     // ---------- Schicht bearbeiten ----------
-    function openTeamPlanCell(employee, day) {
-      const row = tpFindRow(employee, day);
-      tpEditing = { employee: employee, day: day, existing: row };
-      const wd = TP_WEEKDAYS[new Date(tpYear, tpMonth - 1, day).getDay()];
+    function openTeamPlanCell(employee, iso) {
+      if (!userIsAdmin) return;
+      const date = tpParseIso(iso);
+      const row = tpFindRow(employee, date);
+      tpEditing = { employee: employee, date: date, existing: row };
       document.getElementById('tpCellTitle').textContent = employee;
-      document.getElementById('tpCellSub').textContent = `${wd}, ${day}. ${TP_MONTHS[tpMonth - 1]} ${tpYear}`;
+      document.getElementById('tpCellSub').textContent = `${TP_WEEKDAYS[date.getDay()]}, ${tpDmy(date)} · KW ${tpIsoKw(date)}`;
 
       const code = tpSpecialCode(row);
       document.getElementById('tpCellPresetCode').value = code;
@@ -284,11 +364,7 @@
       document.getElementById('tpS1End').value = code ? '' : tpTimeInput(row && row.shift_1_end);
       document.getElementById('tpS2Start').value = code ? '' : tpTimeInput(row && row.shift_2_start);
       document.getElementById('tpS2End').value = code ? '' : tpTimeInput(row && row.shift_2_end);
-
-      // Station: aus der Schicht, sonst die übliche Station des Mitarbeiters
-      let station = row && row.station;
-      if (!station) { const emp = tpEmployees().find(e => e.name.toLowerCase() === String(employee).toLowerCase()); station = emp ? emp.station : ''; }
-      document.getElementById('tpStation').value = station || '';
+      document.getElementById('tpStation').value = (row && row.station) || '';
 
       document.getElementById('tpCellDeleteBtn').classList.toggle('hidden', !row);
       ['tpS1Start', 'tpS1End', 'tpS2Start', 'tpS2End'].forEach(id => { document.getElementById(id).oninput = tpUpdateCellHours; });
@@ -318,7 +394,7 @@
       const el = document.getElementById('tpCellHours');
       if (!el) return;
       if (code) {
-        el.textContent = ({ X: 'Frei (X): keine Arbeitszeit.', U: 'Urlaub (U)', K: 'Krank (K)' })[code] || 'Eintrag: ' + code;
+        el.textContent = ({ X: 'Frei (OFF): keine Arbeitszeit.', OFF: 'Frei (OFF): keine Arbeitszeit.', U: 'Urlaub (U)', K: 'Krank (K)', ZA: 'Zeitausgleich (ZA)' })[code] || 'Eintrag: ' + code;
         return;
       }
       const v = id => document.getElementById(id).value;
@@ -329,7 +405,7 @@
     async function saveTeamPlanCell() {
       if (!tpEditing) return;
       const v = id => document.getElementById(id).value.trim();
-      let code = document.getElementById('tpCellPresetCode').value;
+      const code = document.getElementById('tpCellPresetCode').value;
       const s1a = v('tpS1Start'), s1b = v('tpS1End'), s2a = v('tpS2Start'), s2b = v('tpS2End');
       if (!code) {
         if ((s1a && !s1b) || (!s1a && s1b)) return alert('Schicht 1: bitte Beginn und Ende angeben.');
@@ -337,6 +413,8 @@
         if (!s1a && s2a) return alert('Bitte zuerst Schicht 1 ausfüllen.');
         if (!s1a) return alert('Bitte eine Schicht eintragen oder Frei / Urlaub / Krank wählen.');
       }
+      if (!await tpEnsureWeekRow()) return;
+      const d = tpEditing.date;
       const payload = {
         station: v('tpStation') || null,
         shift_1_start: code || s1a || null,
@@ -344,7 +422,7 @@
         shift_2_start: code ? null : (s2a || null),
         shift_2_end: code ? null : (s2b || null)
       };
-      const key = { employee_name: tpEditing.employee, month: tpMonth, year: tpYear, day: tpEditing.day };
+      const key = { employee_name: tpEditing.employee, month: d.getMonth() + 1, year: d.getFullYear(), day: d.getDate() };
       let res;
       if (tpEditing.existing) {
         res = await _supabase.from('work_schedules').update(payload).match(key).select();
@@ -359,42 +437,44 @@
 
     async function deleteTeamPlanCell() {
       if (!tpEditing || !tpEditing.existing) return;
-      const key = { employee_name: tpEditing.employee, month: tpMonth, year: tpYear, day: tpEditing.day };
+      const d = tpEditing.date;
+      const key = { employee_name: tpEditing.employee, month: d.getMonth() + 1, year: d.getFullYear(), day: d.getDate() };
       const { error } = await _supabase.from('work_schedules').delete().match(key);
       if (error) return alert('Löschen fehlgeschlagen: ' + error.message);
       closeTeamPlanCell();
       await loadTeamPlan();
     }
 
-    // ---------- Excel-Export ----------
+    // ---------- Excel-Export (Wochenliste wie „Stundenliste Wöchentlich“) ----------
     function exportTeamPlanExcel() {
       if (typeof XLSX === 'undefined') return alert('Excel-Bibliothek nicht geladen.');
       const employees = tpEmployees();
-      if (!employees.length) return alert('Für diesen Monat gibt es keine Daten zum Exportieren.');
-      const daysInMonth = new Date(tpYear, tpMonth, 0).getDate();
-      const header = ['Mitarbeiter', 'Station'];
-      for (let d = 1; d <= daysInMonth; d++) header.push(TP_WEEKDAYS[new Date(tpYear, tpMonth - 1, d).getDay()] + ' ' + d);
-      header.push('Stunden');
-      const aoa = [header];
+      if (!employees.length) return alert('Keine Daten zum Exportieren.');
+      const days = [0, 1, 2, 3, 4, 5, 6].map(i => tpAddDays(tpWeekStart, i));
+      const names = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+      const aoa = [[tpWeekRange(tpWeekStart), 'KW ' + tpIsoKw(tpWeekStart)], ['NAME'].concat(names, ['Gesamt', 'Unterschrift'])];
+      let lastGroup = null;
       employees.forEach(emp => {
-        const line = [emp.name, emp.station || ''];
+        if (emp.group !== lastGroup) { aoa.push([emp.group]); lastGroup = emp.group; }
+        const line = [emp.name];
         let min = 0;
-        for (let d = 1; d <= daysInMonth; d++) {
+        days.forEach(d => {
           const row = tpFindRow(emp.name, d);
           const code = tpSpecialCode(row);
-          if (code) { line.push(code); continue; }
-          if (!row || tpCellMinutes(row) === 0) { line.push(''); continue; }
+          if (code) { line.push(code === 'X' ? 'OFF' : code); return; }
+          if (!row || tpCellMinutes(row) === 0) { line.push(''); return; }
           min += tpCellMinutes(row);
-          let t = tpTimeInput(row.shift_1_start) + '-' + tpTimeInput(row.shift_1_end);
-          if (tpToMinutes(row.shift_2_start) !== null) t += ' / ' + tpTimeInput(row.shift_2_start) + '-' + tpTimeInput(row.shift_2_end);
+          let t = tpTimeInput(row.shift_1_start) + ' - ' + tpTimeInput(row.shift_1_end);
+          if (tpToMinutes(row.shift_2_start) !== null) t += ' / ' + tpTimeInput(row.shift_2_start) + ' - ' + tpTimeInput(row.shift_2_end);
+          if (row.station) t += '/' + row.station;
           line.push(t);
-        }
-        line.push(Math.round(min / 6) / 10);
+        });
+        line.push(Math.round(min / 6) / 10, '');
         aoa.push(line);
       });
       const ws = XLSX.utils.aoa_to_sheet(aoa);
-      ws['!cols'] = [{ wch: 18 }, { wch: 10 }].concat(new Array(daysInMonth).fill({ wch: 12 })).concat([{ wch: 9 }]);
+      ws['!cols'] = [{ wch: 22 }].concat(new Array(7).fill({ wch: 20 })).concat([{ wch: 9 }, { wch: 18 }]);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, TP_MONTHS[tpMonth - 1] + ' ' + tpYear);
-      XLSX.writeFile(wb, `Arbeitsplan_${tpYear}-${String(tpMonth).padStart(2, '0')}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, 'KW ' + tpIsoKw(tpWeekStart));
+      XLSX.writeFile(wb, `Dienstplan_KW${String(tpIsoKw(tpWeekStart)).padStart(2, '0')}_${tpIso(tpWeekStart)}.xlsx`);
     }
