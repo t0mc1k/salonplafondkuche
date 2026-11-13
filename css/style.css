@@ -875,6 +875,44 @@ thead .ft-day-col { z-index: 4; }
 .ft-man-name { flex: 2 1 9rem; }
 .ft-man-min, .ft-man-max { flex: 1 1 4.5rem; max-width: 6rem; }
 .ft-man-act { font-size: .72rem; display: inline-flex; align-items: center; gap: .25rem; }
+/* Bestellliste Gemüse / Obst (v1.0.16) */
+.ol-tools { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; width: 100%; }
+.ol-search { flex: 1 1 10rem; min-width: 0; padding: .55rem .7rem; border-radius: .6rem; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-text); font-size: 1rem; }
+.ol-chip.on { background: rgba(245,158,11,.22); border-color: #f59e0b; color: #f59e0b; }
+.ol-wrap { padding: .3rem .6rem 1rem; }
+.ol-sec { margin-top: .4rem; border: 1px solid var(--ui-border); border-radius: .7rem; overflow: hidden; }
+.ol-head { display: flex; align-items: center; gap: .5rem; width: 100%; padding: .75rem .8rem; background: rgba(148,163,184,.10); border: 0; color: var(--ui-text); font-size: 1rem; text-align: left; cursor: pointer; }
+.ol-head b { flex: 1; }
+.ol-count { font-size: .72rem; color: var(--ui-muted); }
+.ol-count.on { color: #16a34a; font-weight: 700; }
+.ol-row { display: flex; align-items: center; gap: .5rem; padding: .45rem .7rem; border-top: 1px solid var(--ui-border); transition: background .4s; }
+.ol-row.ol-has { background: rgba(34,197,94,.10); }
+.ol-row.ol-flash { background: rgba(245,158,11,.30); }
+.ol-name { flex: 1; min-width: 0; font-size: .95rem; color: var(--ui-text); overflow-wrap: anywhere; }
+.ol-unit { width: 3.6rem; font-size: .78rem; color: var(--ui-muted); }
+.ol-ctl { display: inline-flex; align-items: center; gap: .25rem; }
+.ol-step { width: 2.6rem; height: 2.6rem; border-radius: .6rem; border: 1px solid var(--ui-border); background: rgba(148,163,184,.12); color: var(--ui-text); font-size: 1.4rem; line-height: 1; cursor: pointer; }
+.ol-step:active:not(:disabled) { background: rgba(245,158,11,.3); }
+.ol-step:disabled, .ol-in:disabled { opacity: .4; }
+.ol-in { width: 3.6rem; height: 2.6rem; text-align: center; border-radius: .6rem; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-text); font-size: 1.05rem; font-weight: 700; }
+.ol-in:focus { outline: 2px solid #f59e0b; outline-offset: -1px; }
+.ol-del { padding: .3rem .6rem; color: #ef4444; }
+.ol-banner { margin: .4rem 0; padding: .7rem .9rem; border-radius: .7rem; font-size: .9rem; }
+.ol-banner-done { background: rgba(34,197,94,.14); border: 1px solid #16a34a; }
+.ol-banner-act { margin-top: .5rem; }
+.ol-foot { display: flex; flex-direction: column; gap: .5rem; width: 100%; }
+.ol-last { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .7rem; font-size: .8rem; color: var(--ui-muted); }
+.ol-last b { color: var(--ui-text); }
+.ol-total { margin-left: auto; font-weight: 700; color: #16a34a; }
+.ol-live { width: .6rem; height: .6rem; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 0 rgba(34,197,94,.6); animation: olPulse 2s infinite; }
+@keyframes olPulse { 70% { box-shadow: 0 0 0 .5rem rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
+.ol-foot-btns { display: flex; flex-wrap: nowrap; gap: .35rem; }
+.ol-foot-btns .ui-btn-ghost { padding: .6rem .5rem; font-size: .8rem; white-space: nowrap; }
+.ol-foot-btns .ui-btn-primary { flex: 1 1 auto; padding: .7rem .5rem; font-size: .95rem; white-space: nowrap; }
+.ol-last { gap: .1rem .6rem; }
+.ol-units { display: flex; flex-wrap: wrap; gap: .3rem; }
+.ol-hist { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: .8rem; }
+.ol-hist small { color: var(--ui-muted); }
 /* Exklusiv-Schicht: oranger Tageskopf (v1.0.04) */
 .tp-table th.tp-excl { background: #ed7d31 !important; color: #fff !important; }
 .tp-table th.tp-excl .tp-wd, .tp-table th.tp-excl .tp-dn { color: #fff !important; }

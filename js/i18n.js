@@ -726,6 +726,14 @@
   "de": "Temperaturliste, einmal täglich",
   "en": "Temperature log, once a day"
  },
+ "dash.order": {
+  "de": "Bestellliste Gemüse / Obst",
+  "en": "Vegetable / fruit order list"
+ },
+ "dash.orderSub": {
+  "de": "Alle tragen ein, live, mit Druck & Excel",
+  "en": "Everyone adds items, live, with print & Excel"
+ },
  "dash.wash": {
   "de": "Abwasher",
   "en": "Dishwashing"

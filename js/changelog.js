@@ -12,6 +12,14 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.16', range: '', date: 'November 2026', title: 'Bestellliste Gemüse / Obst',
+    changes: [
+      ['new', 'Neue Kachel „🥬 Bestellliste Gemüse / Obst“ für alle. Jeder trägt ein, was bestellt werden muss: Rubriken zum Aufklappen, Mengen mit + / −, Suche und „Nur Bestellte“. Die Produkte stammen aus der Vorlage „Hye Bestelliste.xlsx“, eigene Produkte lassen sich mit „＋ Produkt“ ergänzen.'],
+      ['new', 'Live: Trägt ein Kollege etwas ein, erscheint es sofort auch bei den anderen. Unter der Liste steht, wer zuletzt etwas geändert hat und wann.'],
+      ['new', '„✅ Ich bin fertig“ schließt die Liste mit Name und Zeit. Danach startet man eine neue Bestellung, frühere Bestellungen stehen unter 📜.'],
+      ['new', '📗 Excel und 🖨️ Drucken im Aussehen der Vorlage (drei Blöcke Produkt | Menge | Einheit, A4 hoch), darunter Name und Zeit der letzten Änderung.'],
+      ['info', 'Einrichtung: sql/1.0.12_order_list.sql im Supabase SQL Editor der Küche ausführen.']
+    ] },
   { version: '1.0.15', range: '', date: 'November 2026', title: 'Dienstplan per Foto einlesen',
     changes: [
       ['new', 'Im Dienstplan: „📷 Foto scannen“ (Manager/Developer). Den ausgedruckten Plan mit der Handykamera fotografieren oder ein Foto aus der Galerie wählen. Die KI liest die Tabelle (Zeiten, Stationen, OFF, K, U, ZA, geteilte Dienste, Exklusiv-Tage).'],
