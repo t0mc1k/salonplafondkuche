@@ -266,10 +266,13 @@
         return;
       }
 
+      const excl = (meta && Array.isArray(meta.exclusive_days)) ? meta.exclusive_days : [];   // 0 = Montag … 6 = Sonntag
       let head = '<tr><th class="tp-name-col tp-corner">Name</th>';
       days.forEach((d, i) => {
-        const cls = 'tp-day' + (i >= 5 ? ' tp-weekend' : '') + (tpIso(d) === today ? ' tp-today' : '');
-        head += `<th class="${cls}"><span class="tp-wd">${TP_WEEKDAYS[d.getDay()]}</span><span class="tp-dn">${tpDm(d)}</span></th>`;
+        const isEx = excl.indexOf(i) !== -1;
+        const cls = 'tp-day' + (i >= 5 ? ' tp-weekend' : '') + (tpIso(d) === today ? ' tp-today' : '') + (isEx ? ' tp-excl' : '');
+        const tog = userIsAdmin ? ` onclick="tpToggleExclusive(${i})" style="cursor:pointer" title="${isEx ? 'Exklusiv-Schicht entfernen' : 'Als Exklusiv-Schicht markieren'}"` : (isEx ? ' title="Exklusiv-Schicht"' : '');
+        head += `<th class="${cls}"${tog}><span class="tp-wd">${TP_WEEKDAYS[d.getDay()]}</span><span class="tp-dn">${tpDm(d)}</span>${isEx ? '<span class="tp-ex-tag">⭐ Exklusiv</span>' : ''}</th>`;
       });
       head += '<th class="tp-sum-col">Gesamt</th><th class="tp-sign-col">Unterschrift</th></tr>';
 
@@ -288,6 +291,7 @@
           let html = tpCellHtml(row, emp.name, d);
           if (tpIso(d) === today) html = html.replace('class="tp-cell', 'class="tp-cell tp-col-today');
           else if (i >= 5) html = html.replace('class="tp-cell', 'class="tp-cell tp-col-weekend');
+          if (excl.indexOf(i) !== -1) html = html.replace('class="tp-cell', 'class="tp-cell tp-col-excl');
           cells += html;
         });
         totalMin += rowMin; totalShifts += rowShifts;
@@ -317,6 +321,19 @@
       if (error) { alert('Woche konnte nicht angelegt werden: ' + error.message); return false; }
       tpWeeks[iso] = { week_start: iso, published: false };
       return true;
+    }
+
+    // Exklusiv-Schicht pro Tag ein/aus (Klick auf den Tageskopf, nur Manager/Developer)
+    async function tpToggleExclusive(i) {
+      if (!userIsAdmin) return;
+      const iso = tpIso(tpWeekStart);
+      const cur = (tpWeeks[iso] && Array.isArray(tpWeeks[iso].exclusive_days)) ? tpWeeks[iso].exclusive_days.slice() : [];
+      const next = cur.indexOf(i) === -1 ? cur.concat([i]).sort() : cur.filter(x => x !== i);
+      if (!await tpEnsureWeekRow()) return;
+      const { error } = await _supabase.from('plan_weeks').update({ exclusive_days: next }).eq('week_start', iso);
+      if (error) return alert('Speichern fehlgeschlagen: ' + error.message + '\n(Wurde sql/1.0.03_exclusive_days.sql ausgeführt?)');
+      tpWeeks[iso].exclusive_days = next;
+      renderTeamPlan();
     }
 
     async function teamPlanTogglePublish() {
@@ -389,28 +406,72 @@
       return null;                                // freie Notizen ignorieren
     }
 
+    // Farbiger Hintergrund (jede Farbe außer Weiß, Grau und „ohne Füllung“) = Exklusiv-Schicht
+    function tpIsMarked(cell) {
+      const fg = cell && cell.s && cell.s.patternType === 'solid' ? cell.s.fgColor : null;
+      if (!fg) return false;
+      if (fg.rgb && /^[0-9a-f]{6}([0-9a-f]{2})?$/i.test(fg.rgb)) {
+        const h = fg.rgb.slice(-6);
+        const c = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+        return Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]) >= 40;   // Weiß/Grau/Schwarz haben kaum Farbanteil
+      }
+      if (typeof fg.theme === 'number') return fg.theme >= 4 && fg.theme <= 9;   // Akzentfarben des Office-Designs (0–3 = Weiß/Schwarz/Grautöne)
+      if (typeof fg.indexed === 'number') return fg.indexed >= 10 && fg.indexed !== 64;   // Standard-Palette (8/9 = Weiß/Schwarz)
+      return false;
+    }
+
+    // Kennzeichen eines Blatts: Montag aus der Datumszeile, „KW 46“ im Blatt, KW im Blattnamen
+    function tpSheetInfo(ws) {
+      const info = { monday: '', kwText: 0, kwName: 0 };
+      for (let r = 1; r <= 4; r++) {
+        for (let c = 0; c < 10; c++) {
+          const cell = ws[XLSX.utils.encode_cell({ r: r - 1, c: c })];
+          if (!cell) continue;
+          if (typeof cell.v === 'string' && !info.kwText) {
+            const m = /^KW\s*0*(\d+)/i.exec(cell.v.trim());
+            if (m) info.kwText = Number(m[1]);
+          }
+          if (!info.monday && c === 2 && typeof cell.v === 'number' && cell.v > 40000 && cell.v < 60000) {   // Spalte C = Montag
+            const d = new Date(Math.round((cell.v - 25569) * 86400000));
+            info.monday = tpIso(tpMondayOf(new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())));
+          }
+        }
+      }
+      return info;
+    }
+
     async function teamPlanImportFile(input) {
       const file = input.files && input.files[0];
       input.value = '';
       if (!file || !userIsAdmin) return;
       if (typeof XLSX === 'undefined') return alert('Excel-Bibliothek nicht geladen.');
       try {
-        const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+        const wb = XLSX.read(await file.arrayBuffer(), { type: 'array', cellStyles: true });   // cellStyles: Hintergrundfarben lesen
         const kw = tpIsoKw(tpWeekStart);
-        // Blatt mit passender KW im Namen (z. B. „KW46 1211-1811“), sonst das erste Blatt
-        // 1) Blatt mit der KW der angezeigten Woche im Namen (z. B. „KW46 1211-1811“) wird automatisch gewählt.
-        // 2) Gibt es keins (oder mehrere), fragen wir mit einer nummerierten Liste nach.
-        const kwSheets = wb.SheetNames.filter(n => { const m = /^KW\s*0*(\d+)/i.exec(n.trim()); return m && Number(m[1]) === kw; });
-        let sheetName = kwSheets.length === 1 ? kwSheets[0] : '';
+        // Blatt automatisch wählen, in dieser Reihenfolge:
+        //   1) Datumszeile im Blatt passt zum Montag der angezeigten Woche
+        //   2) „KW 46“ steht in einer der ersten Zeilen im Blatt
+        //   3) KW steht im Blattnamen (z. B. „KW46 1211-1811“)
+        // Gibt es keinen eindeutigen Treffer, erscheint eine nummerierte Liste.
+        const infos = wb.SheetNames.map(n => {
+          const m = /^KW\s*0*(\d+)/i.exec(n.trim());
+          return Object.assign({ name: n }, tpSheetInfo(wb.Sheets[n]), { kwName: m ? Number(m[1]) : 0 });
+        });
+        let cand = infos.filter(i => i.monday === tpIso(tpWeekStart));
+        if (!cand.length) cand = infos.filter(i => i.kwText === kw);
+        if (!cand.length) cand = infos.filter(i => i.kwName === kw);
+        let sheetName = cand.length === 1 ? cand[0].name : '';
         if (!sheetName) {
-          const list = kwSheets.length ? kwSheets : wb.SheetNames;
-          const pick = prompt((kwSheets.length ? 'Mehrere Blätter für KW ' + kw + ' gefunden.' : 'Kein Blatt für KW ' + kw + ' gefunden.') + '\nBitte Nummer wählen:\n\n'
+          const list = cand.length ? cand.map(i => i.name) : wb.SheetNames;
+          const pick = prompt((cand.length ? 'Mehrere Blätter passen zu KW ' + kw + '.' : 'Kein Blatt für KW ' + kw + ' gefunden.') + '\nBitte Nummer wählen:\n\n'
             + list.map((n, i) => (i + 1) + ' = ' + n.trim()).join('\n'), '1');
           const idx = parseInt(pick, 10) - 1;
           if (!(idx >= 0 && idx < list.length)) return;
           sheetName = list[idx];
         }
-        const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, raw: true, defval: '' });
+        const ws = wb.Sheets[sheetName];
+        const rng = XLSX.utils.decode_range(ws['!ref'] || 'A1');   // sheet_to_json zählt ab dem Anfang des Bereichs
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
         const dayNames = ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag'];
         let headRow = -1, cols = [];
         for (let i = 0; i < rows.length && headRow < 0; i++) {
@@ -437,15 +498,25 @@
           });
         }
         if (!out.length) return alert('In der Datei wurden keine Schichten gefunden.');
+        // Exklusiv-Tage: farbiger Hintergrund im Datum (Zeile über „Montag“) oder im Tagesnamen
+        const exclusive = [];
+        cols.forEach((c, i) => {
+          const hit = [headRow, headRow - 1].some(r => r >= 0 && tpIsMarked(ws[XLSX.utils.encode_cell({ r: rng.s.r + r, c: rng.s.c + c })]));
+          if (hit) exclusive.push(i);
+        });
+        const dayShort = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
         const msg = `Blatt „${sheetName}“ in KW ${kw} (${tpWeekRange(tpWeekStart)}) importieren?\n${out.length} Einträge.`
+          + `\nExklusiv-Tage (farbig markiert): ${exclusive.length ? exclusive.map(i => dayShort[i]).join(', ') : 'keine'}`
           + (unknown.size ? `\n\nNamen, die nicht im Personal stehen (werden trotzdem importiert):\n${Array.from(unknown).join(', ')}` : '')
           + '\n\nVorhandene Einträge dieser Woche für diese Personen werden überschrieben.';
         if (!confirm(msg)) return;
         if (!await tpEnsureWeekRow()) return;
         const res = await _supabase.from('work_schedules').upsert(out, { onConflict: 'employee_name,year,month,day' });
         if (res.error) return alert('Import fehlgeschlagen: ' + res.error.message);
+        const ex = await _supabase.from('plan_weeks').update({ exclusive_days: exclusive }).eq('week_start', tpIso(tpWeekStart));
+        const exNote = ex.error ? ' (Exklusiv-Tage nicht gespeichert: SQL 1.0.03 ausführen)' : '';
         await loadTeamPlan();
-        showAppToast({ initial: '📥', title: 'Dienstplan importiert', text: `KW ${kw}: ${out.length} Einträge (Entwurf, noch nicht veröffentlicht)` });
+        showAppToast({ initial: '📥', title: 'Dienstplan importiert', text: `KW ${kw}: ${out.length} Einträge, ${exclusive.length} Exklusiv-Tage${exNote}` });
       } catch (e) {
         alert('Datei konnte nicht gelesen werden: ' + (e && e.message ? e.message : e));
       }
@@ -555,7 +626,10 @@
       if (!employees.length) return alert('Keine Daten zum Exportieren.');
       const days = [0, 1, 2, 3, 4, 5, 6].map(i => tpAddDays(tpWeekStart, i));
       const names = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
-      const aoa = [[tpWeekRange(tpWeekStart), 'KW ' + tpIsoKw(tpWeekStart)], ['NAME'].concat(names, ['Gesamt', 'Unterschrift'])];
+      const exDays = (tpWeeks[tpIso(tpWeekStart)] || {}).exclusive_days || [];
+      const aoa = [[tpWeekRange(tpWeekStart), 'KW ' + tpIsoKw(tpWeekStart)],
+        [''].concat(days.map((d, i) => tpDm(d) + (exDays.indexOf(i) !== -1 ? ' ⭐ Exklusiv' : ''))),
+        ['NAME'].concat(names, ['Gesamt', 'Unterschrift'])];
       let lastGroup = null;
       employees.forEach(emp => {
         if (emp.group !== lastGroup) { aoa.push([emp.group]); lastGroup = emp.group; }

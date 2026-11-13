@@ -12,6 +12,17 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.05', range: '', date: 'November 2026', title: 'Dienstplan-Import: jede Farbe markiert Exklusiv-Tage',
+    changes: [
+      ['improved', 'Als Exklusiv-Tag gilt jetzt jede Hintergrundfarbe im Datum oder Tagesnamen (nicht nur Orange). Weiß, Grau und „ohne Füllung“ zählen nicht.']
+    ] },
+  { version: '1.0.04', range: '', date: 'November 2026', title: 'Dienstplan: Exklusiv-Schicht und schlauere Blatt-Wahl',
+    changes: [
+      ['new', 'Exklusiv-Schicht pro Tag: Der Tageskopf wird orange mit „⭐ Exklusiv“. Manager schalten es per Klick auf den Tageskopf ein oder aus; das Team sieht es in veröffentlichten Wochen.'],
+      ['new', 'Der Excel-Import erkennt orangen Hintergrund im Datum (oder Tagesnamen) als Exklusiv-Tag und zeigt ihn in der Bestätigung an.'],
+      ['improved', 'Import wählt das Blatt zuerst nach der Datumszeile im Blatt, dann nach „KW 46“ im Blatt, dann nach dem Blattnamen. Bei Unklarheit erscheint eine nummerierte Liste.'],
+      ['info', 'Einrichtung: sql/1.0.03_exclusive_days.sql im Supabase SQL Editor ausführen.']
+    ] },
   { version: '1.0.03', range: '', date: 'November 2026', title: 'Dienstplan-Import: Blatt-Auswahl',
     changes: [
       ['improved', 'Import: Bei Excel-Dateien mit vielen Blättern wird das Blatt mit der passenden KW automatisch gewählt. Gibt es keins oder mehrere, erscheint eine nummerierte Liste zur Auswahl. Das gewählte Blatt steht in der Bestätigung.']
