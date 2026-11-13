@@ -19,7 +19,7 @@
       return {
         drinks:   { icon: '🍸', title: t('dash.drinks'), sub: drinkSub, run: 'openDrinksView', need: 'all', primary: true },
         allergens:{ icon: '🍽️', title: t('dash.allergens'), sub: t('dash.allergensSub'), run: 'openAllergenModal', need: 'all' },
-        exclusive:{ icon: '🍽️', title: t('dash.exclusive'), sub: t('dash.exclusiveSub'), run: 'openExclusiveModal', need: 'admin' },
+        exclusive:{ icon: '🍽️', title: t('dash.exclusive'), sub: t('dash.exclusiveSub'), run: 'openExclusiveModal', need: 'kitchen' },
         specials: { icon: '🍰', title: t('dash.specials'), sub: t('dash.specialsSub'), run: 'openSpecialsModal', need: 'all' },
         reserv:   { icon: '📒', title: t('dash.reserv'), sub: t('dash.reservSub'), run: 'openReservationsModal', need: 'all' },
         season:   { icon: '📅', title: t('dash.season'), sub: seasonSub, run: 'openSeasonModal', need: 'admin' },
@@ -61,7 +61,7 @@
         return [{ title: t('dash.g.shift'), ids: ['wash', 'myplan', 'teamplan', 'swaps', 'absence', 'chat', 'drinks', 'help', 'news'] }];
       }
       // Koch (+ Import, falls Rezepte-Recht)
-      const bar = ['drinks', 'allergens', 'specials', 'reserv', 'maint', 'loss', 'tomi', 'help', 'news'];
+      const bar = ['drinks', 'allergens', 'specials', 'reserv', 'exclusive', 'maint', 'loss', 'tomi', 'help', 'news'];
       if (userCanEdit) bar.splice(1, 0, 'impexp');
       return [
         { title: t('dash.g.shift'),      ids: ['checklist', 'myplan', 'teamplan', 'swaps', 'absence', 'chat'] },

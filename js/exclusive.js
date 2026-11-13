@@ -207,10 +207,28 @@ thead { display: table-header-group; } tr { page-break-inside: avoid; }
     // ---------------------------------------------------------------
     // Zustand und Laden
     // ---------------------------------------------------------------
-    let ex = { m: null, shifts: [], shift: null, tables: [] };
+    let ex = { m: null, shifts: [], shift: null, tables: [], byShift: {} };
     const EX_SEL_KEY = 'nexus_ex_shift';
 
-    const exReadOnly = () => !ex.shift || ex.shift.status === 'closed';
+    // KÜCHE: Die Exklusiv-Schichten werden in der Bar-App angelegt und gepflegt. Hier nur ansehen, drucken, Excel.
+    const exReadOnly = () => true;
+
+    // Zugang zur Bar-Datenbank: Der gemeinsame Schlüssel kommt aus der Küchen-Datenbank (nur Manager/Developer/Köche).
+    let barKeyCache = '';
+    async function barBridgeKey() {
+      if (barKeyCache) return barKeyCache;
+      const { data, error } = await _supabase.rpc('get_bar_bridge_key');
+      if (error) throw error;
+      if (!data) throw new Error('Kein Schlüssel für die Bar-Datenbank hinterlegt (siehe docs/BAR-BRIDGE.md).');
+      barKeyCache = data;
+      return data;
+    }
+    async function barRpc(fn, args) {
+      const key = await barBridgeKey();
+      const res = await _barSupabase.rpc(fn, Object.assign({ p_key: key }, args || {}));
+      if (res.error && /Kein Zugriff/i.test(res.error.message || '')) barKeyCache = '';   // Schlüssel falsch/geändert: beim nächsten Mal neu holen
+      return res;
+    }
     const exFmtDate = iso => fmParseIso(iso).toLocaleDateString(langLocale(), { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
     const exShiftLabel = s => exFmtDate(s.shift_date) + ' · ' + s.title + (s.status === 'closed' ? ' 🔒' : '');
 
@@ -219,10 +237,15 @@ thead { display: table-header-group; } tr { page-break-inside: avoid; }
       const code = (err && err.code) ? String(err.code) : '';
       if (/does not exist|schema cache|could not find/i.test(msg) || code === '42P01' || code === '42883' || /^PGRST20/.test(code)) {
         return `<p class="staff-empty" style="color:#ef4444">${escapeHtml(fmL(
-          'Die Datenbank ist für diese Funktion noch nicht eingerichtet. Bitte zuerst sql/4.2.00_exclusive.sql im Supabase SQL Editor ausführen.',
-          'The database is not set up for this feature yet. Please run sql/4.2.00_exclusive.sql in the Supabase SQL editor first.'))}</p>`;
+          'Die Bar-Datenbank ist noch nicht für die Küche freigegeben. Bitte sql/bar-side/bar_bridge_for_kitchen.sql in der BAR-Datenbank ausführen (Anleitung: docs/BAR-BRIDGE.md).',
+          'The bar database is not yet shared with the kitchen. Please run sql/bar-side/bar_bridge_for_kitchen.sql in the BAR database (see docs/BAR-BRIDGE.md).'))}</p>`;
       }
-      return fmErrorHtml(err);
+      if (/Kein Zugriff/i.test(msg)) {
+        return `<p class="staff-empty" style="color:#ef4444">${escapeHtml(fmL(
+          'Kein Zugriff auf die Bar-Datenbank: Der Schlüssel in Küche und Bar stimmt nicht überein (docs/BAR-BRIDGE.md).',
+          'No access to the bar database: the key does not match between kitchen and bar (docs/BAR-BRIDGE.md).'))}</p>`;
+      }
+      return `<p class="staff-empty" style="color:#ef4444">${escapeHtml(msg)}</p>`;
     }
     function exToastError(err) {
       const msg = (err && err.message) ? String(err.message) : String(err || '');
@@ -231,11 +254,11 @@ thead { display: table-header-group; } tr { page-break-inside: avoid; }
     }
 
     function openExclusiveModal() {
-      if (!userIsAdmin) return;
+      if (!userIsAdmin && currentStaffRole !== 'kitchen') return;
       closeSettingsMenu();
       ex.m = fmOpen('exModal', {
-        title: '🍽️ ' + fmL('Exklusiv-Schicht', 'Exclusive shift'),
-        sub: fmL('Tische, Gäste und Gerichte – Summen unten.', 'Tables, guests and dishes – totals at the bottom.'),
+        title: '🍽️ ' + fmL('Exklusiv-Schicht (aus der Bar)', 'Exclusive shift (from the bar)'),
+        sub: fmL('Tische, Gäste und Gerichte – von der Bar eingetragen. Nur ansehen.', 'Tables, guests and dishes – entered by the bar. View only.'),
         wide: true
       });
       ex.m.root.classList.add('ex-root');
@@ -244,10 +267,12 @@ thead { display: table-header-group; } tr { page-break-inside: avoid; }
     }
 
     async function exLoadShifts(selectId) {
-      const { data, error } = await _supabase.from('exclusive_shifts').select('id,title,shift_date,status,dishes,created_by')
-        .order('shift_date', { ascending: false }).order('created_at', { ascending: false }).limit(60);
-      if (error) { ex.m.setBody(exErrorHtml(error)); ex.m.setToolbar(''); ex.m.setFoot(''); return; }
-      ex.shifts = (data || []).map(s => Object.assign(s, { dishes: Array.isArray(s.dishes) ? s.dishes : [] }));
+      let res;
+      try { res = await barRpc('kitchen_read_exclusive'); } catch (e) { res = { data: null, error: e }; }
+      if (res.error) { ex.m.setBody(exErrorHtml(res.error)); ex.m.setToolbar(`<div class="ex-bar"><button type="button" class="fm-btn" onclick="exReload()">🔄 ${escapeHtml(fmL('Neu laden', 'Reload'))}</button></div>`); ex.m.setFoot(''); return; }
+      const list = Array.isArray(res.data) ? res.data : [];
+      ex.byShift = {};
+      ex.shifts = list.map(x => { ex.byShift[x.shift.id] = x.tables || []; return Object.assign({}, x.shift, { dishes: Array.isArray(x.shift.dishes) ? x.shift.dishes : [] }); });
       let want = selectId;
       if (!want) { try { want = localStorage.getItem(EX_SEL_KEY); } catch (e) {} }
       ex.shift = ex.shifts.find(s => s.id === want) || ex.shifts[0] || null;
@@ -256,10 +281,10 @@ thead { display: table-header-group; } tr { page-break-inside: avoid; }
     }
 
     async function exLoadTables() {
-      const { data, error } = await _supabase.from('exclusive_tables').select('*').eq('shift_id', ex.shift.id).limit(300);
-      if (error) { ex.tables = []; fmToast(fmDbError(error)); return; }
-      ex.tables = (data || []).map(r => Object.assign(r, { cells: (r.cells && typeof r.cells === 'object') ? r.cells : {} }));
+      ex.tables = (ex.byShift[ex.shift.id] || []).map(r => Object.assign({}, r, { cells: (r.cells && typeof r.cells === 'object') ? r.cells : {} }));
     }
+
+    function exReload() { ex.m.setBody('<p class="staff-empty">' + escapeHtml(fmL('Lade ...', 'Loading ...')) + '</p>'); exLoadShifts(ex.shift ? ex.shift.id : null); }
 
     async function exSelectShift(id) {
       ex.shift = ex.shifts.find(s => s.id === id) || null;
@@ -279,21 +304,16 @@ thead { display: table-header-group; } tr { page-break-inside: avoid; }
         bar.push(`<select id="exShiftSel" class="ui-field ex-sel" onchange="exSelectShift(this.value)">${ex.shifts.map(x =>
           `<option value="${x.id}"${s && s.id === x.id ? ' selected' : ''}>${escapeHtml(exShiftLabel(x))}</option>`).join('')}</select>`);
       }
-      bar.push(`<button type="button" class="fm-btn" onclick="exNewShift()">➕ ${escapeHtml(fmL('Neue Schicht', 'New shift'))}</button>`);
+      bar.push(`<button type="button" class="fm-btn" onclick="exReload()">🔄 ${escapeHtml(fmL('Neu laden', 'Reload'))}</button>`);
       if (s) {
-        const ro = exReadOnly();
-        if (!ro) bar.push(`<button type="button" class="fm-btn fm-btn-ok" onclick="exAddTable()">➕ ${escapeHtml(fmL('Tisch hinzufügen', 'Add table'))}</button>`,
-          `<button type="button" class="fm-btn" onclick="exEditDishes()">🍽️ ${escapeHtml(fmL('Gerichte', 'Dishes'))}</button>`);
         bar.push(`<button type="button" class="fm-btn" onclick="exPrintDialog()">🖨️ ${escapeHtml(fmL('Drucken', 'Print'))}</button>`,
-          `<button type="button" class="fm-btn" onclick="exExportXlsx()">📊 Excel</button>`,
-          `<button type="button" class="fm-btn" onclick="exShiftMenu()">⋯</button>`);
+          `<button type="button" class="fm-btn" onclick="exExportXlsx()">📊 Excel</button>`);
       }
       ex.m.setToolbar(`<div class="ex-bar">${bar.join('')}</div>`);
       ex.m.setFoot('');
 
       if (!s) {
-        ex.m.setBody(`<div class="ex-empty"><p>${escapeHtml(fmL('Noch keine Schicht angelegt.', 'No shift created yet.'))}</p>
-          <button type="button" class="ui-btn-primary" onclick="exNewShift()">➕ ${escapeHtml(fmL('Erste Schicht anlegen', 'Create first shift'))}</button></div>`);
+        ex.m.setBody(`<div class="ex-empty"><p>${escapeHtml(fmL('Die Bar hat noch keine Exklusiv-Schicht angelegt (letzte 30 Tage bis in 90 Tage).', 'The bar has not created an exclusive shift yet (last 30 days to 90 days ahead).'))}</p></div>`);
         return;
       }
       const ro = exReadOnly();
@@ -312,7 +332,7 @@ thead { display: table-header-group; } tr { page-break-inside: avoid; }
       const empty = rows.length ? '' : `<tr><td colspan="${3 + s.dishes.length + (ro ? 0 : 1)}" class="ex-none">${escapeHtml(fmL('Keine Tische. Mit „Tisch hinzufügen“ einen anlegen.', 'No tables. Add one with “Add table”.'))}</td></tr>`;
       const foot = `<tr class="ex-tot"><td class="ex-s1" id="exTotSoll"></td><td class="ex-s2" id="exTotIst"></td><td class="ex-s3">Σ</td>${s.dishes.map(d =>
         `<td id="exTot_${d.id}"></td>`).join('')}${ro ? '' : '<td class="ex-x"></td>'}</tr>`;
-      ex.m.setBody(`${ro ? `<p class="fm-hint">🔒 ${escapeHtml(fmL('Diese Schicht ist abgeschlossen (nur lesen). Über „⋯“ kannst du sie wieder öffnen.', 'This shift is closed (read only). Reopen it via “⋯”.'))}</p>` : ''}
+      ex.m.setBody(`<p class="fm-hint">🔒 ${escapeHtml(fmL('Nur ansehen: Die Daten werden in der Bar-App eingetragen.', 'View only: the data is entered in the bar app.'))}${s.status === 'closed' ? ' ' + escapeHtml(fmL('Diese Schicht ist dort abgeschlossen.', 'This shift is closed there.')) : ''}</p>
         <div class="ex-wrap"><table class="ex-table" id="exTable"><thead>${head}</thead><tbody>${bodyRows}${empty}</tbody><tfoot>${foot}</tfoot></table></div>`);
       exUpdateTotals();
       exBindKeys();

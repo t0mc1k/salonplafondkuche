@@ -23,7 +23,7 @@
       if (!el || Date.now() - rsvHeroAt < 60000) return;
       rsvHeroAt = Date.now();
       try {
-        const { data: row, error } = await _supabase.from('gastronaut_sync').select('data').eq('id', 1).single();
+        const { data: row, error } = await _barSupabase.from('gastronaut_sync').select('data').eq('id', 1).single();
         if (error || !row || !row.data) { el.classList.add('hidden'); return; }
         const f = rsvShiftStats(row.data.fruhschicht).persons, a = rsvShiftStats(row.data.abendschicht).persons;
         el.textContent = '📒 ' + fmL('Gesamt', 'Total') + ': ' + (f + a) + ' · ' + fmL('Früh', 'Early') + ': ' + f + ' · ' + fmL('Abend', 'Evening') + ': ' + a;
@@ -40,7 +40,7 @@
       m.setBody('<p class="staff-empty">' + escapeHtml(fmL('Lade ...', 'Loading ...')) + '</p>');
       m.setFoot('<button type="button" class="ui-btn-primary" onclick="fmClose(\'rsvModal\')">' + escapeHtml(fmL('Fertig', 'Done')) + '</button>');
 
-      const { data: row, error } = await _supabase.from('gastronaut_sync').select('data, updated_at').eq('id', 1).single();
+      const { data: row, error } = await _barSupabase.from('gastronaut_sync').select('data, updated_at').eq('id', 1).single();
       if (error) { m.setBody(fmErrorHtml(error)); return; }
       const d = (row && row.data) || {};
       const f = rsvShiftStats(d.fruhschicht), a = rsvShiftStats(d.abendschicht);

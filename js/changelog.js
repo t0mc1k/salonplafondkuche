@@ -12,6 +12,14 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.09', range: '', date: 'November 2026', title: 'Bar-Module laufen in der Küchen-Datenbank, Zugang zur Bar (nur lesen)',
+    changes: [
+      ['new', 'Reservierungen (Gastronaut) kommen jetzt direkt aus der Bar-Datenbank. Nur lesen.'],
+      ['new', 'Exklusiv-Schicht: Manager, Developer und Köche sehen die von der Bar eingetragenen Tische, Soll/Ist und Gerichte (ansehen, drucken, Excel). Angelegt und geändert wird sie nur in der Bar-App. Der Zugang läuft über einen gemeinsamen Schlüssel, der nicht im Code steht (docs/BAR-BRIDGE.md).'],
+      ['fixed', 'Team-Chat, Tickets, Störungen, Verluste & Bruch, Checklisten, Speisekarte & Allergene, Schichttausch, Stunden, Urlaub/Krank, Online-Status und Mitteilungen haben jetzt ihre Tabellen in der Küchen-Datenbank und funktionieren wieder. Fundsachen bleibt entfernt.'],
+      ['improved', 'Meldung „Neuer Dienstplan“ erscheint erst, wenn eine Woche veröffentlicht wird (nicht bei Entwürfen).'],
+      ['info', 'Einrichtung: sql/1.0.06 bis 1.0.09 ausführen (Reihenfolge in docs/SQL-REIHENFOLGE.md). Für die Bar-Verbindung zusätzlich docs/BAR-BRIDGE.md.']
+    ] },
   { version: '1.0.08', range: '', date: 'November 2026', title: 'Neu: Abwasher',
     changes: [
       ['new', 'Neuer Bereich „🧽 Abwasher“: Orte/Aufgaben mit Foto und Rhythmus (täglich, wöchentlich, monatlich). Der Abwasher drückt „✓ Erledigt“, Name und Datum/Uhrzeit werden automatisch gespeichert.'],

@@ -44,6 +44,12 @@
       }
     });
 
+    // Bar-Datenbank: NUR LESEN (Reservierungen aus Gastronaut, Exklusiv-Schichten). Eigener Client, ohne Login der Küche.
+    // Der Zugang zu den Exklusiv-Schichten läuft über einen gemeinsamen Schlüssel (docs/BAR-BRIDGE.md), nicht über diese Datei.
+    const BAR_SUPABASE_URL = "https://asrrkjcxqqvxzlikdkaq.supabase.co";
+    const BAR_SUPABASE_KEY = "sb_publishable_2tw50zmlzxDClPx7zwnT3g_k2WiaUuL";
+    const _barSupabase = supabase.createClient(BAR_SUPABASE_URL, BAR_SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+
     let pendingAuthCallback = null;
     let currentPhotoPreviewUrl = null;
     let currentLoggedInUserEmail = "";
