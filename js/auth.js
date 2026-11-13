@@ -38,9 +38,18 @@
       return `
         <button type="button" onclick="selectWaiterForLogin(${jsArg(staff.name)})" class="login-tile" title="${escapeHtml(staff.name)}">
           ${loginAvatarHtml(staff)}
-          <span class="login-name">${escapeHtml(staff.name)}</span>
-          ${role ? `<span class="login-role">${escapeHtml(role)}</span>` : ''}
+          <span class="login-text">
+            <span class="login-name">${escapeHtml(staff.name)}</span>
+            ${role ? `<span class="login-role">${escapeHtml(role)}</span>` : ''}
+          </span>
         </button>`;
+    }
+
+    // Gruppen für die Anmeldung: Team (AM-Team, PM-Team, Lehrling, Reinigung), Leitung, sonst Küche
+    const LOGIN_GROUP_ORDER = ['Leitung', 'AM-Team', 'PM-Team', 'Lehrling', 'Reinigung', 'Küche'];
+    function loginGroupOf(s) {
+      if (s.team) return s.team;
+      return (s.role === 'manager' || s.role === 'developer') ? 'Leitung' : (s.role === 'dishwasher' ? 'Reinigung' : 'Küche');
     }
 
     function sortedStaff(list) {
@@ -73,9 +82,15 @@
       }
 
       const list = sortedStaff(data.filter(s => !q || String(s.name).toLowerCase().indexOf(q) !== -1));
-      container.innerHTML = list.length
-        ? `<div class="login-grid">${list.map(loginTileHtml).join('')}</div>`
-        : `<p class="login-empty">${escapeHtml(t('login.noName'))}</p>`;
+      if (!list.length) { container.innerHTML = `<p class="login-empty">${escapeHtml(t('login.noName'))}</p>`; return; }
+      // nach Gruppen ordnen, innerhalb A–Z; Gruppen ohne Treffer werden nicht angezeigt
+      const groups = new Map();
+      list.forEach(s => { const g = loginGroupOf(s); if (!groups.has(g)) groups.set(g, []); groups.get(g).push(s); });
+      const names = Array.from(groups.keys()).sort((a, b) => {
+        const ia = LOGIN_GROUP_ORDER.indexOf(a), ib = LOGIN_GROUP_ORDER.indexOf(b);
+        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b, 'de');
+      });
+      container.innerHTML = names.map(g => `<section class="login-group"><h4 class="login-group-title">${escapeHtml(g)} <small>${groups.get(g).length}</small></h4><div class="login-grid">${groups.get(g).map(loginTileHtml).join('')}</div></section>`).join('');
     }
 
     function loginPickFirstMatch() {

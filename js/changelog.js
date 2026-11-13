@@ -12,6 +12,10 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.13', range: '', date: 'November 2026', title: 'Übersichtlichere Anmeldung',
+    changes: [
+      ['improved', 'Anmeldung: Die Namen stehen nach Teams geordnet (Leitung, AM-Team, PM-Team, Lehrling, Reinigung) und werden vollständig angezeigt, nichts wird mehr abgeschnitten. Auf dem Handy in zwei Spalten.']
+    ] },
   { version: '1.0.12', range: '', date: 'November 2026', title: 'Tagesangebot kommt aus der Bar',
     changes: [
       ['new', 'Das Tagesangebot (Tageskuchen und Tagessuppe mit Allergenen) wird aus der Bar-App gelesen. In der Küche nur ansehen (Heute, Kommend, 🔄 Neu laden). Eintragen und Foto-Scan gibt es nur in der Bar-App.'],
