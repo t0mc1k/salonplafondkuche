@@ -12,6 +12,10 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.03', range: '', date: 'November 2026', title: 'Dienstplan-Import: Blatt-Auswahl',
+    changes: [
+      ['improved', 'Import: Bei Excel-Dateien mit vielen Blättern wird das Blatt mit der passenden KW automatisch gewählt. Gibt es keins oder mehrere, erscheint eine nummerierte Liste zur Auswahl. Das gewählte Blatt steht in der Bestätigung.']
+    ] },
   { version: '1.0.02', range: '', date: 'November 2026', title: 'Dienstplan: 24-Stunden-Zeit und Excel-Import',
     changes: [
       ['fixed', 'Uhrzeiten im Dienstplan werden im 24-Stunden-Format eingegeben (z. B. 14:30), nicht mehr mit AM/PM. Eingabe auch nur mit Ziffern: 1430 wird 14:30.'],

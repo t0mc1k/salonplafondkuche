@@ -398,7 +398,18 @@
         const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
         const kw = tpIsoKw(tpWeekStart);
         // Blatt mit passender KW im Namen (z. B. „KW46 1211-1811“), sonst das erste Blatt
-        const sheetName = wb.SheetNames.find(n => { const m = /^KW\s*0*(\d+)/i.exec(n.trim()); return m && Number(m[1]) === kw; }) || wb.SheetNames[0];
+        // 1) Blatt mit der KW der angezeigten Woche im Namen (z. B. „KW46 1211-1811“) wird automatisch gewählt.
+        // 2) Gibt es keins (oder mehrere), fragen wir mit einer nummerierten Liste nach.
+        const kwSheets = wb.SheetNames.filter(n => { const m = /^KW\s*0*(\d+)/i.exec(n.trim()); return m && Number(m[1]) === kw; });
+        let sheetName = kwSheets.length === 1 ? kwSheets[0] : '';
+        if (!sheetName) {
+          const list = kwSheets.length ? kwSheets : wb.SheetNames;
+          const pick = prompt((kwSheets.length ? 'Mehrere Blätter für KW ' + kw + ' gefunden.' : 'Kein Blatt für KW ' + kw + ' gefunden.') + '\nBitte Nummer wählen:\n\n'
+            + list.map((n, i) => (i + 1) + ' = ' + n.trim()).join('\n'), '1');
+          const idx = parseInt(pick, 10) - 1;
+          if (!(idx >= 0 && idx < list.length)) return;
+          sheetName = list[idx];
+        }
         const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, raw: true, defval: '' });
         const dayNames = ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag'];
         let headRow = -1, cols = [];
