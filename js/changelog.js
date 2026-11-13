@@ -12,6 +12,10 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.19', range: '', date: 'November 2026', title: 'Mitteilungen im Stil „NeXuS Glass“ lesbar',
+    changes: [
+      ['fixed', 'Im dunklen Stil „NeXuS Glass“ war der blinkende Mitteilungs-Chip unter der Begrüßung (🔔 neu / 🚀 Neu in v…) dunkel auf dunkel und der Text nicht zu sehen. Jetzt steht er in hellem Gold.']
+    ] },
   { version: '1.0.18', range: '', date: 'November 2026', title: 'Exklusiv-Schicht: Vollbild passt die ganze Tabelle an',
     changes: [
       ['improved', 'Vollbild: Die Tabelle wird automatisch so skaliert, dass sie komplett auf den Bildschirm passt, ohne Scrollen (auch nach dem Drehen des Handys). Der Kopf mit Titel ist im Vollbild ausgeblendet, damit mehr Platz bleibt.']
