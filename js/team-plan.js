@@ -349,6 +349,97 @@
       await loadTeamPlan();
     }
 
+    // ---------- 24-Stunden-Zeit (HH:MM) ----------
+    // Eingabe nur mit Ziffern: aus "1430" wird "14:30". Leer = '' ; ungültig = null.
+    function tpTimeMask(el) {
+      const d = el.value.replace(/\D/g, '').slice(0, 4);
+      el.value = d.length > 2 ? d.slice(0, 2) + ':' + d.slice(2) : d;
+    }
+    function tpNormTime(s) {
+      s = String(s || '').trim();
+      if (!s) return '';
+      const m = /^(\d{1,2})[:.](\d{2})$/.exec(s) || /^(\d{1,2})(\d{2})$/.exec(s);
+      if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return null;
+      return String(m[1]).padStart(2, '0') + ':' + m[2];
+    }
+
+    // ---------- Import eines fertigen Dienstplans (Excel) ----------
+    // Format wie „Dienstplan KW 46.xlsx“: Kopfzeile mit Montag … Sonntag, links der Name, Zellen wie
+    // „14:30 - 23:00/GM“, „10:00-14:00/17:00-22:00“, OFF, K, ZA, U. Importiert in die ANGEZEIGTE Woche.
+    function tpParseCell(raw) {
+      if (raw === null || raw === undefined) return null;
+      const txt = String(raw).trim();
+      if (!txt) return null;
+      const up = txt.toUpperCase();
+      if (up === 'F' || up === 'X' || up === 'OFF' || up === 'FREI') return { code: 'OFF' };
+      if (/^(K|ZA|U)$/.test(up)) return { code: up };
+      const ranges = [];
+      const rx = /(\d{1,2})[:.](\d{2})\s*-\s*(\d{1,2})[:.](\d{2})/g;
+      let m, last = 0;
+      while ((m = rx.exec(txt)) !== null) {
+        const a = tpNormTime(m[1] + ':' + m[2]), b = tpNormTime(m[3] + ':' + m[4]);
+        if (a && b) ranges.push([a, b]);
+        last = rx.lastIndex;
+      }
+      if (ranges.length) {
+        const st = /\/\s*([A-Za-zÄÖÜäöü.]{1,12})\s*$/.exec(txt.slice(last));
+        return { s1: ranges[0], s2: ranges[1] || null, station: st ? st[1] : null };
+      }
+      if (up.length <= 4) return { code: up };   // andere Kurzcodes übernehmen
+      return null;                                // freie Notizen ignorieren
+    }
+
+    async function teamPlanImportFile(input) {
+      const file = input.files && input.files[0];
+      input.value = '';
+      if (!file || !userIsAdmin) return;
+      if (typeof XLSX === 'undefined') return alert('Excel-Bibliothek nicht geladen.');
+      try {
+        const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+        const kw = tpIsoKw(tpWeekStart);
+        // Blatt mit passender KW im Namen (z. B. „KW46 1211-1811“), sonst das erste Blatt
+        const sheetName = wb.SheetNames.find(n => { const m = /^KW\s*0*(\d+)/i.exec(n.trim()); return m && Number(m[1]) === kw; }) || wb.SheetNames[0];
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, raw: true, defval: '' });
+        const dayNames = ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag'];
+        let headRow = -1, cols = [];
+        for (let i = 0; i < rows.length && headRow < 0; i++) {
+          const idx = dayNames.map(n => rows[i].findIndex(c => String(c).trim().toLowerCase() === n));
+          if (idx.every(x => x >= 0)) { headRow = i; cols = idx; }
+        }
+        if (headRow < 0) return alert('Kopfzeile mit Montag … Sonntag nicht gefunden. Bitte eine Datei im Dienstplan-Format wählen.');
+        const nameCol = Math.max(0, rows[headRow].findIndex(c => String(c).trim().toLowerCase() === 'name'));
+        const known = new Map((staffDatabaseRecords || []).map(s => [String(s.name).toLowerCase(), s.name]));
+        const out = [], unknown = new Set();
+        for (let r = headRow + 1; r < rows.length; r++) {
+          const name = String(rows[r][nameCol] || '').trim();
+          if (!name) continue;
+          const cells = cols.map(c => tpParseCell(rows[r][c]));
+          if (!cells.some(Boolean)) continue;   // Gruppen-Überschrift (AM-TEAM …) oder leere Zeile
+          const person = known.get(name.toLowerCase()) || name;
+          if (!known.has(name.toLowerCase())) unknown.add(name);
+          cells.forEach((c, i) => {
+            if (!c) return;
+            const d = tpAddDays(tpWeekStart, i);
+            const base = { employee_name: person, year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() };
+            if (c.code) out.push(Object.assign(base, { station: null, shift_1_start: c.code, shift_1_end: null, shift_2_start: null, shift_2_end: null }));
+            else out.push(Object.assign(base, { station: c.station || null, shift_1_start: c.s1[0], shift_1_end: c.s1[1], shift_2_start: c.s2 ? c.s2[0] : null, shift_2_end: c.s2 ? c.s2[1] : null }));
+          });
+        }
+        if (!out.length) return alert('In der Datei wurden keine Schichten gefunden.');
+        const msg = `Blatt „${sheetName}“ in KW ${kw} (${tpWeekRange(tpWeekStart)}) importieren?\n${out.length} Einträge.`
+          + (unknown.size ? `\n\nNamen, die nicht im Personal stehen (werden trotzdem importiert):\n${Array.from(unknown).join(', ')}` : '')
+          + '\n\nVorhandene Einträge dieser Woche für diese Personen werden überschrieben.';
+        if (!confirm(msg)) return;
+        if (!await tpEnsureWeekRow()) return;
+        const res = await _supabase.from('work_schedules').upsert(out, { onConflict: 'employee_name,year,month,day' });
+        if (res.error) return alert('Import fehlgeschlagen: ' + res.error.message);
+        await loadTeamPlan();
+        showAppToast({ initial: '📥', title: 'Dienstplan importiert', text: `KW ${kw}: ${out.length} Einträge (Entwurf, noch nicht veröffentlicht)` });
+      } catch (e) {
+        alert('Datei konnte nicht gelesen werden: ' + (e && e.message ? e.message : e));
+      }
+    }
+
     // ---------- Schicht bearbeiten ----------
     function openTeamPlanCell(employee, iso) {
       if (!userIsAdmin) return;
@@ -367,7 +458,7 @@
       document.getElementById('tpStation').value = (row && row.station) || '';
 
       document.getElementById('tpCellDeleteBtn').classList.toggle('hidden', !row);
-      ['tpS1Start', 'tpS1End', 'tpS2Start', 'tpS2End'].forEach(id => { document.getElementById(id).oninput = tpUpdateCellHours; });
+      ['tpS1Start', 'tpS1End', 'tpS2Start', 'tpS2End'].forEach(id => { document.getElementById(id).oninput = function () { tpTimeMask(this); tpUpdateCellHours(); }; });
       tpUpdateCellHours();
 
       const modal = document.getElementById('tpCellModal');
@@ -406,8 +497,9 @@
       if (!tpEditing) return;
       const v = id => document.getElementById(id).value.trim();
       const code = document.getElementById('tpCellPresetCode').value;
-      const s1a = v('tpS1Start'), s1b = v('tpS1End'), s2a = v('tpS2Start'), s2b = v('tpS2End');
+      const s1a = tpNormTime(v('tpS1Start')), s1b = tpNormTime(v('tpS1End')), s2a = tpNormTime(v('tpS2Start')), s2b = tpNormTime(v('tpS2End'));
       if (!code) {
+        if ([s1a, s1b, s2a, s2b].some(x => x === null)) return alert('Bitte die Uhrzeit im 24-Stunden-Format eintragen, z. B. 08:30 oder 14:30.');
         if ((s1a && !s1b) || (!s1a && s1b)) return alert('Schicht 1: bitte Beginn und Ende angeben.');
         if ((s2a && !s2b) || (!s2a && s2b)) return alert('Schicht 2: bitte Beginn und Ende angeben.');
         if (!s1a && s2a) return alert('Bitte zuerst Schicht 1 ausfüllen.');

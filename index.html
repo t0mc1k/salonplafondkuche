@@ -712,7 +712,8 @@
           <button type="button" id="tpCopyBtn" onclick="teamPlanCopyPrevWeek()" class="hidden ui-btn-ghost" title="Plan der Vorwoche in diese Woche kopieren">📋 Vorwoche kopieren</button>
           <button type="button" id="tpPublishBtn" onclick="teamPlanTogglePublish()" class="hidden ui-btn-primary">📢 Veröffentlichen</button>
           <button type="button" onclick="exportTeamPlanExcel()" class="ui-btn-ghost">📗 Excel</button>
-          <button type="button" id="tpImportBtn" onclick="closeTeamPlanModal(); openImportExportModal(); switchImportTab('schedule');" class="ui-btn-ghost">📥 Plan importieren</button>
+          <button type="button" id="tpImportBtn" onclick="document.getElementById('tpImportFile').click()" class="hidden ui-btn-ghost" title="Fertigen Dienstplan (Excel) in die angezeigte Woche importieren">📥 Plan importieren</button>
+          <input type="file" id="tpImportFile" accept=".xlsx,.xls" class="hidden" onchange="teamPlanImportFile(this)">
         </div>
         <div id="tpWeekChips" class="flex gap-1.5 flex-wrap mt-1.5"></div>
         <div id="tpSummary" class="tp-summary"></div>
@@ -749,15 +750,15 @@
         <div class="form-section">
           <div class="form-section-title">Schicht 1</div>
           <div class="grid grid-cols-2 gap-3">
-            <div><label class="form-label" for="tpS1Start">Beginn</label><input type="time" id="tpS1Start" class="ui-field"></div>
-            <div><label class="form-label" for="tpS1End">Ende</label><input type="time" id="tpS1End" class="ui-field"></div>
+            <div><label class="form-label" for="tpS1Start">Beginn</label><input type="text" id="tpS1Start" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="HH:MM (24 h)" class="ui-field"></div>
+            <div><label class="form-label" for="tpS1End">Ende</label><input type="text" id="tpS1End" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="HH:MM (24 h)" class="ui-field"></div>
           </div>
         </div>
         <div class="form-section">
           <div class="form-section-title">Schicht 2 (optional, geteilter Dienst)</div>
           <div class="grid grid-cols-2 gap-3">
-            <div><label class="form-label" for="tpS2Start">Beginn</label><input type="time" id="tpS2Start" class="ui-field"></div>
-            <div><label class="form-label" for="tpS2End">Ende</label><input type="time" id="tpS2End" class="ui-field"></div>
+            <div><label class="form-label" for="tpS2Start">Beginn</label><input type="text" id="tpS2Start" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="HH:MM (24 h)" class="ui-field"></div>
+            <div><label class="form-label" for="tpS2End">Ende</label><input type="text" id="tpS2End" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="HH:MM (24 h)" class="ui-field"></div>
           </div>
         </div>
         <div>

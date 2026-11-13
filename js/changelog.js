@@ -12,6 +12,11 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.02', range: '', date: 'November 2026', title: 'Dienstplan: 24-Stunden-Zeit und Excel-Import',
+    changes: [
+      ['fixed', 'Uhrzeiten im Dienstplan werden im 24-Stunden-Format eingegeben (z. B. 14:30), nicht mehr mit AM/PM. Eingabe auch nur mit Ziffern: 1430 wird 14:30.'],
+      ['new', '„📥 Plan importieren“: fertigen Dienstplan als Excel (wie „Dienstplan KW 46.xlsx“) in die angezeigte Woche laden. Erkannt werden Zeiten wie 14:30 - 23:00/GM, geteilte Dienste (10:00-14:00/17:00-22:00) und OFF, K, ZA, U. Die Woche bleibt ein Entwurf, bis du sie veröffentlichst.']
+    ] },
   { version: '1.0.01', range: '', date: 'November 2026', title: 'Salonplafond Küche: Rezepte, Dienstplan nach KW, Rollen',
     changes: [
       ['new', 'Neue Rollen: Koch, Abwasher, Manager, Developer. Zusatzrollen sind möglich (z. B. Developer, der auch Abwasher ist).'],
