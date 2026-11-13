@@ -12,6 +12,14 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.11', range: '', date: 'November 2026', title: 'TomiAI und Push für die Küche',
+    changes: [
+      ['new', 'TomiAI kennt jetzt die Rezepte der Küche (Zutaten, Portionen, Garmethode, Zeit, Allergene), die Speisekarte, das Tagesangebot, Checklisten und den Dienstplan. Er antwortet als Assistent der Küche, nicht mehr der Bar.'],
+      ['new', 'Push-Meldungen: neuer Dienstplan (erst wenn die Woche veröffentlicht ist), Chat und @Erwähnungen, Urlaub/Krank, Schichttausch, Störungen und Tickets. Einstellbar pro Person unter Hinweise.'],
+      ['improved', 'TomiAI-Vorschläge für den Dienstplan kennen jetzt OFF, U, K und ZA.'],
+      ['fixed', 'Der Push-Schlüssel der Bar steckte noch als Reserve im Code. Er ist entfernt: Ohne eigene Einrichtung zeigt die App „nicht eingerichtet“.'],
+      ['info', 'Einrichtung: docs/SETUP-4.1.00.md (Secrets, Edge Functions send-push, tomi-ai, scan-special, Schlüssel in push_config).']
+    ] },
   { version: '1.0.10', range: '', date: 'November 2026', title: 'Eigener PIN, Küchen-Texte überall, Rezepte-Import',
     changes: [
       ['new', 'Eigener PIN: Wer mit dem Start-PIN anmeldet, muss sofort einen eigenen PIN festlegen. Zu einfache PINs (1234, 1111 …) sind nicht erlaubt. Der eigene PIN ist für niemanden lesbar.'],

@@ -9,7 +9,9 @@
 
     // Der öffentliche Schlüssel steht in der Datenbank (Tabelle push_config, SQL 4.1.02) und wird beim Start geladen.
     // Hier nur eintragen, falls er NICHT in der Datenbank steht (Notlösung).
-    let PUSH_VAPID_PUBLIC_KEY = 'BHRZZSHbxLAwuc51N64hccSgCKhEBPKNO8-rrqEN5Q7-udhoCr43LP-geiSkvqwS3stmNqm6uWuixw1ZFwphSPU';
+    // Der öffentliche VAPID-Schlüssel kommt aus der Datenbank (push_config.vapid_public_key, siehe docs/SETUP-4.1.00.md).
+    // Bewusst leer: Ohne Eintrag zeigt die App „nicht eingerichtet“ statt den Schlüssel einer anderen App zu benutzen.
+    let PUSH_VAPID_PUBLIC_KEY = '';
     let pushKeyLoaded = false;
 
     const PUSH_CATS = [
