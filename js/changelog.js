@@ -12,6 +12,13 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.15', range: '', date: 'November 2026', title: 'Dienstplan per Foto einlesen',
+    changes: [
+      ['new', 'Im Dienstplan: „📷 Foto scannen“ (Manager/Developer). Den ausgedruckten Plan mit der Handykamera fotografieren oder ein Foto aus der Galerie wählen. Die KI liest die Tabelle (Zeiten, Stationen, OFF, K, U, ZA, geteilte Dienste, Exklusiv-Tage).'],
+      ['new', 'Vor dem Foto steht ein deutlicher Hinweis zur Qualität (gutes Handy, hohe Auflösung, ganze Seite, gerade von oben, gutes Licht, keine WhatsApp-Bilder). Kleine oder stark komprimierte Fotos werden erkannt und gemeldet.'],
+      ['new', 'Kontrolle vor dem Speichern: Jede Zelle ist bearbeitbar. Orange = unsicher gelesen, rot = ungültig, blau unterstrichen = anders als im gespeicherten Plan (so fällt auf, wenn jemand am Aushang seine Schicht geändert hat). Gespeichert wird erst nach deiner Bestätigung, als Entwurf der geöffneten Woche. Das Foto wird nicht gespeichert.'],
+      ['info', 'Einrichtung: Edge Function scan-roster bereitstellen (Verify JWT aus), siehe docs/SETUP-4.1.00.md. Nutzt denselben GEMINI_API_KEY wie TomiAI.']
+    ] },
   { version: '1.0.14', range: '', date: 'November 2026', title: 'Abwasher mit Leitungsrolle: „Meine Arbeit“',
     changes: [
       ['improved', 'Wer Leitung ist und selbst abwäscht (z. B. Developer mit Zusatzrolle Abwasher), sieht auf dem Dashboard ganz oben die Gruppe „🧽 Meine Arbeit“ mit der Kachel Abwasher.'],

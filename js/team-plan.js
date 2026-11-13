@@ -108,7 +108,7 @@
       tpQuery = '';
       const s = document.getElementById('tpSearch');
       if (s) s.value = '';
-      ['tpPublishBtn', 'tpCopyBtn', 'tpImportBtn'].forEach(id => {
+      ['tpPublishBtn', 'tpCopyBtn', 'tpImportBtn', 'tpScanBtn'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.toggle('hidden', !userIsAdmin);
       });

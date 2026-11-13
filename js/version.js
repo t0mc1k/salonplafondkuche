@@ -10,7 +10,7 @@
 
    Diese Datei wird in index.html OHNE „?v=“ geladen (damit sie immer frisch ist).
    ============================================================ */
-    const APP_VERSION = '1.0.14';
+    const APP_VERSION = '1.0.15';
 
     // Dateinamen mit Versionsnummer (Cache-Busting), z. B. appAsset('js/ui.js') -> 'js/ui.js?v=4.1.05'
     function appAsset(path) { return path + '?v=' + encodeURIComponent(APP_VERSION); }
@@ -19,7 +19,7 @@
     const APP_SCRIPTS = [
       'js/config.js', 'js/i18n.js', 'js/i18n-ui.js', 'js/ui.js', 'js/settings.js', 'js/dialogs.js', 'js/pwa.js', 'js/auth.js',
       'js/profile.js', 'js/staff-admin.js', 'js/chat.js', 'js/tickets.js', 'js/changelog.js', 'js/schedule.js',
-      'js/team-plan.js', 'js/feature-ui.js', 'js/checklists.js', 'js/shift-swap.js', 'js/absence.js', 'js/payroll.js',
+      'js/team-plan.js', 'js/roster-scan.js', 'js/feature-ui.js', 'js/checklists.js', 'js/shift-swap.js', 'js/absence.js', 'js/payroll.js',
       'js/menu-allergens.js', 'js/specials.js', 'js/exclusive.js', 'js/reservations.js', 'js/inbox.js', 'js/reports.js', 'js/help.js', 'js/push.js', 'js/presence.js', 'js/login-log.js',
       'js/intro.js', 'js/tomi.js', 'js/seasons.js', 'js/drinks.js', 'js/drink-admin.js', 'js/tray.js',
       'js/shopping.js', 'js/import-export.js', 'js/fridge-temps.js', 'js/dishwash.js', 'js/dashboard.js', 'js/app.js'
