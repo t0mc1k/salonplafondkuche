@@ -12,6 +12,25 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.08', range: '', date: 'November 2026', title: 'Neu: Abwasher',
+    changes: [
+      ['new', 'Neuer Bereich „🧽 Abwasher“: Orte/Aufgaben mit Foto und Rhythmus (täglich, wöchentlich, monatlich). Der Abwasher drückt „✓ Erledigt“, Name und Datum/Uhrzeit werden automatisch gespeichert.'],
+      ['new', 'Extra-Einträge: Der Abwasher kann zusätzlich etwas eintragen, das er über die Liste hinaus geputzt hat. Extras zählen in der Wertung mit.'],
+      ['new', 'Manager/Developer: Orte anlegen, ändern, ausblenden und mit Foto versehen; Übersicht aller Einträge pro Monat (Excel); Rangliste der Abwasher mit „Bester im Monat“; Monate werden nach Monatsende automatisch gespeichert („🗂️ Monate“).'],
+      ['info', 'Rechte: Abwasher (Hauptrolle oder Zusatzrolle) sehen nur ihren Bereich. Köche haben keinen Zugriff. Die Rangliste sehen nur Manager/Developer.'],
+      ['info', 'Einrichtung: sql/1.0.05_dishwash.sql im Supabase SQL Editor ausführen.']
+    ] },
+  { version: '1.0.07', range: '', date: 'November 2026', title: 'Mein Arbeitsplan ohne Pausen',
+    changes: [
+      ['improved', 'Mein Arbeitsplan: Die Pausen-Eingabe wurde entfernt. Angezeigt werden Schichten, Station und die geplanten Stunden. Frei (OFF), Urlaub, Krank und Zeitausgleich (ZA) werden richtig benannt.']
+    ] },
+  { version: '1.0.06', range: '', date: 'November 2026', title: 'Neu: Kühlschrank-Temperaturen',
+    changes: [
+      ['new', 'Neue Kachel „🌡️ Kühlschrank-Temperaturen“ (nur Manager/Developer): Monatstabelle mit allen Kühlgeräten aus der Vorlage Temperaturlisten.xlsx, einmal täglich eintragen.'],
+      ['new', 'Jedes Gerät hat einen Soll-Bereich (z. B. Fleisch KH 1–3 °C, TK max. -18 °C). Werte außerhalb werden rot und zählen in der Zusammenfassung. Wer eingetragen hat und wann, wird automatisch gespeichert.'],
+      ['new', 'Kühlgeräte und Soll-Bereiche lassen sich unter „⚙️ Kühlgeräte“ ändern, ausblenden oder neu anlegen. Export als Excel.'],
+      ['info', 'Einrichtung: sql/1.0.04_fridge_temps.sql im Supabase SQL Editor ausführen.']
+    ] },
   { version: '1.0.05', range: '', date: 'November 2026', title: 'Dienstplan-Import: jede Farbe markiert Exklusiv-Tage',
     changes: [
       ['improved', 'Als Exklusiv-Tag gilt jetzt jede Hintergrundfarbe im Datum oder Tagesnamen (nicht nur Orange). Weiß, Grau und „ohne Füllung“ zählen nicht.']

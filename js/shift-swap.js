@@ -1,10 +1,10 @@
 /* ============================================================
    js/shift-swap.js  (v3.2.03)
-   1) Mein Plan: eigener Monatskalender mit Pausen-Eingabe und „Tausch“-Knopf
+   1) Mein Plan: eigener Monatskalender mit „Tausch“-Knopf (Pausen werden nicht mehr erfasst)
    2) Schichttausch: direkte Anfrage an einen Kollegen ODER Börse für alle.
       In beiden Fällen entscheidet am Ende der Manager; erst dann wird der
       Arbeitsplan umgeschrieben (SQL-Funktion decide_shift_swap).
-   Tabellen: shift_swaps, time_entries (siehe sql/3.2.03_betrieb.sql)
+   Tabelle: shift_swaps
    Nutzt Hilfsfunktionen aus team-plan.js (tpHasShift, tpCellMinutes, ...).
    ============================================================ */
 
@@ -20,7 +20,7 @@
     // ---------------------------------------------------------------
     // MEIN PLAN
     // ---------------------------------------------------------------
-    let mp = { m: null, year: 0, month: 0, rows: [], entries: {}, swaps: {} };
+    let mp = { m: null, year: 0, month: 0, rows: [], swaps: {} };
 
     function mpIso(day) {
       return mp.year + '-' + String(mp.month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
@@ -31,7 +31,7 @@
       const now = new Date();
       mp.year = now.getFullYear();
       mp.month = now.getMonth() + 1;
-      mp.m = fmOpen('mpModal', { title: '🗓️ Mein Arbeitsplan', sub: 'Deine Schichten, Pausen und Tausch-Anfragen.' });
+      mp.m = fmOpen('mpModal', { title: '🗓️ Mein Arbeitsplan', sub: 'Deine Schichten und Tausch-Anfragen.' });
       mpLoad();
     }
 
@@ -46,29 +46,26 @@
       mp.m.setBody('<p class="staff-empty">Lade ...</p>');
       const first = mpIso(1);
       const last = mpIso(new Date(mp.year, mp.month, 0).getDate());
-      const [sch, te, sw] = await Promise.all([
+      const [sch, sw] = await Promise.all([
         _supabase.from('work_schedules').select('*').eq('year', mp.year).eq('month', mp.month).ilike('employee_name', '%' + currentWaiterName + '%').order('day', { ascending: true }),
-        _supabase.from('time_entries').select('*').gte('work_date', first).lte('work_date', last),
         _supabase.from('shift_swaps').select('*').gte('work_date', first).lte('work_date', last).order('created_at', { ascending: false })
       ]);
       if (sch.error) { mp.m.setBody(fmErrorHtml(sch.error)); return; }
       mp.rows = (sch.data || []).filter(r => fmIsMe(r.employee_name));
-      mp.entries = {};
-      // time_entries / shift_swaps können vor dem SQL fehlen: dann einfach ohne Pausen/Tausch anzeigen
-      if (!te.error) (te.data || []).forEach(e => { if (String(e.employee_name).toLowerCase() === String(currentWaiterName).toLowerCase()) mp.entries[e.work_date] = e; });
+      // shift_swaps kann vor dem SQL fehlen: dann einfach ohne Tausch anzeigen
       mp.swaps = {};
       if (!sw.error) (sw.data || []).forEach(s => {
         if (String(s.requester).toLowerCase() !== String(currentWaiterName).toLowerCase()) return;
         if (s.status === 'cancelled') return;
         if (!mp.swaps[s.work_date]) mp.swaps[s.work_date] = s;
       });
-      mp.noSql = !!(te.error || sw.error);
+      mp.noSql = !!sw.error;
       mpRender();
     }
 
     function mpShiftText(r) {
       const code = tpSpecialCode(r);
-      if (code) return code === 'X' ? 'Frei' : (code === 'U' ? 'Urlaub' : (code === 'K' ? 'Krank' : code));
+      if (code) return (code === 'X' || code === 'OFF') ? 'Frei' : (code === 'U' ? 'Urlaub' : (code === 'K' ? 'Krank' : (code === 'ZA' ? 'Zeitausgleich' : code)));
       let t = tpTimeInput(r.shift_1_start) + '–' + tpTimeInput(r.shift_1_end);
       if (tpToMinutes(r.shift_2_start) !== null && tpToMinutes(r.shift_2_end) !== null) t += ' · ' + tpTimeInput(r.shift_2_start) + '–' + tpTimeInput(r.shift_2_end);
       return t;
@@ -76,15 +73,13 @@
 
     function mpRender() {
       const todayIso = fmIso(new Date());
-      let planned = 0, breaks = 0, count = 0;
+      let planned = 0, count = 0;
       const items = mp.rows.map(r => {
         const iso = mpIso(r.day);
         const work = tpHasShift(r);
         const mins = work ? tpCellMinutes(r) : 0;
-        const entry = mp.entries[iso];
-        const br = entry ? entry.break_minutes : 0;
-        if (work) { planned += mins; breaks += br; count++; }
-        return { r, iso, work, mins, br, entry };
+        if (work) { planned += mins; count++; }
+        return { r, iso, work, mins };
       });
 
       mp.m.setToolbar(`
@@ -94,11 +89,11 @@
             <b class="tp-month-label">${FM_MONTHS[mp.month - 1]} ${mp.year}</b>
             <button type="button" onclick="mpShiftMonth(1)" class="ui-btn-ghost" aria-label="Nächster Monat">›</button>
           </div>
-          <div class="tp-summary"><span><b>${count}</b> Schichten</span><span><b>${tpFormatHours(planned - breaks)}</b> Std. netto</span></div>
+          <div class="tp-summary"><span><b>${count}</b> Schichten</span><span><b>${tpFormatHours(planned)}</b> Std.</span></div>
         </div>`);
 
       let html = '';
-      if (mp.noSql) html += `<p class="fm-hint" style="margin-bottom:.6rem">Hinweis: Pausen und Tausch sind erst nach dem Ausführen von sql/3.2.03_betrieb.sql verfügbar.</p>`;
+      if (mp.noSql) html += `<p class="fm-hint" style="margin-bottom:.6rem">Hinweis: Der Schichttausch ist erst verfügbar, wenn die Datenbank dafür eingerichtet ist.</p>`;
       if (!items.length) {
         html += `<p class="staff-empty">Für diesen Monat sind keine Schichten für dich eingetragen.</p>`;
       }
@@ -109,12 +104,6 @@
         const cls = 'mp-day' + (it.iso === todayIso ? ' today' : '') + (past ? ' past' : '');
         let right = '';
         if (it.work) {
-          right += `<div class="fm-row-flex" style="margin-top:.4rem">
-            <label class="fm-hint" for="mpBr${it.r.day}">Pause (Min.)</label>
-            <input type="number" id="mpBr${it.r.day}" class="ui-field mp-break" min="0" max="600" step="5" value="${it.br || ''}" placeholder="0"
-              onchange="mpSaveBreak(${jsArg(it.iso)}, this.value)">
-            <span class="fm-hint">= <b style="color:var(--ui-text)">${tpFormatHours(it.mins - it.br)}</b> Std.</span>
-          </div>`;
           if (swap) {
             const st = SS_STATUS[swap.status] || [swap.status, 'gray'];
             right += `<div style="margin-top:.4rem">${fmStatusChip('Tausch: ' + st[0], st[1])}${swap.taker_name ? ` <span class="fm-hint">→ ${escapeHtml(swap.taker_name)}</span>` : (swap.target_name ? ` <span class="fm-hint">→ ${escapeHtml(swap.target_name)}</span>` : ' <span class="fm-hint">Börse</span>')}</div>`;
@@ -135,14 +124,6 @@
       mp.m.setBody(html);
       mp.m.setFoot(`<button type="button" class="ui-btn-ghost" onclick="openSwapModal()">🔄 Schichttausch-Zentrale</button>
         <button type="button" class="ui-btn-primary" onclick="fmClose('mpModal')">Fertig</button>`);
-    }
-
-    async function mpSaveBreak(iso, value) {
-      const minutes = Math.max(0, Math.min(600, parseInt(value, 10) || 0));
-      const { error } = await _supabase.rpc('set_my_break', { p_date: iso, p_minutes: minutes });
-      if (error) return fmToast(fmDbError(error));
-      fmToast('Pause gespeichert');
-      await mpLoad();
     }
 
     // ---------------------------------------------------------------

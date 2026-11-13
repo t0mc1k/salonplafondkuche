@@ -27,6 +27,8 @@
         checklist:{ icon: '✅', title: adm ? t('dash.checklistA') : t('dash.checklistS'), sub: adm ? t('dash.checklistAS') : t('dash.checklistSS'), run: 'openChecklistModal', need: 'all' },
         maint:    { icon: '🛠️', title: adm ? t('dash.maintA') : t('dash.maintS'), sub: adm ? t('dash.maintAS') : t('dash.maintSS'), run: 'openMaintenanceModal', need: 'all', badge: 'dashMaintBadge' },
         loss:     { icon: '🔨', title: adm ? t('dash.lossA') : t('dash.lossS'), sub: adm ? t('dash.lossAS') : t('dash.lossSS'), run: 'openLossModal', need: 'all' },
+        wash:     { icon: '🧽', title: t('dash.wash'), sub: userIsAdmin ? t('dash.washSubA') : t('dash.washSub'), run: 'openDishwashModal', need: 'wash', primary: !userIsAdmin },
+        fridge:   { icon: '🌡️', title: t('dash.fridge'), sub: t('dash.fridgeSub'), run: 'openFridgeTempModal', need: 'admin' },
         teamplan: { icon: '📆', title: t('dash.teamplan'), sub: t('dash.teamplanSub'), run: 'openTeamPlanModal', need: 'all' },
         swaps:    { icon: '🔄', title: t('dash.swaps'), sub: adm ? t('dash.swapsA') : t('dash.swapsS'), run: 'openSwapModal', need: 'all', badge: 'dashSwapBadge' },
         absence:  { icon: '🏖️', title: t('dash.absence'), sub: adm ? t('dash.absenceA') : t('dash.absenceS'), run: 'openAbsenceModal', need: 'all', badge: 'dashAbsBadge' },
@@ -48,7 +50,7 @@
       if (userIsAdmin) {
         return [
           { title: t('dash.g.bar'),  ids: ['drinks', 'allergens', 'specials', 'reserv', 'exclusive', 'season', 'impexp'] },
-          { title: t('dash.g.std'),  ids: ['checklist', 'maint', 'loss'] },
+          { title: t('dash.g.std'),  ids: ['checklist', 'fridge', 'wash', 'maint', 'loss'] },
           { title: t('dash.g.team'), ids: ['teamplan', 'swaps', 'absence', 'payroll', 'staff', 'chat'] },
           { title: t('dash.g.sys'),  ids: ['login', 'settings'] },
           { title: t('dash.g.info'), ids: ['news', 'tomi', 'help', 'support'] }
@@ -56,7 +58,7 @@
       }
       // Abwasher: Rezepte nur ansehen (Abwasher-Aufgaben kommen in einer späteren Version)
       if (currentStaffRole === 'dishwasher') {
-        return [{ title: t('dash.g.shift'), ids: ['myplan', 'teamplan', 'swaps', 'absence', 'chat', 'drinks', 'help', 'news'] }];
+        return [{ title: t('dash.g.shift'), ids: ['wash', 'myplan', 'teamplan', 'swaps', 'absence', 'chat', 'drinks', 'help', 'news'] }];
       }
       // Koch (+ Import, falls Rezepte-Recht)
       const bar = ['drinks', 'allergens', 'specials', 'reserv', 'maint', 'loss', 'tomi', 'help', 'news'];

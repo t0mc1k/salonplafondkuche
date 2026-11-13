@@ -815,6 +815,58 @@ body.on-dashboard { padding-bottom: 5rem; }
 .tp-state-draft { background: rgba(245,158,11,.18); color: #d97706; }
 .tp-group th { text-align: left; padding: .3rem .6rem; font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ui-muted); background: rgba(148,163,184,.14); position: static; }
 .tp-sign-col { min-width: 7rem; border-left: 1px solid var(--ui-border); }
+/* Abwasher (v1.0.08) */
+.dw-group { margin: .9rem 0 .5rem; font-size: .85rem; font-weight: 800; color: var(--ui-text); }
+.dw-group small { font-weight: 500; color: var(--ui-muted); margin-left: .4rem; }
+.dw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: .7rem; }
+.dw-card { border: 1px solid var(--ui-border); border-radius: .9rem; overflow: hidden; background: rgba(148,163,184,.06); display: flex; flex-direction: column; }
+.dw-card-done { border-color: rgba(16,185,129,.5); background: rgba(16,185,129,.08); }
+.dw-photo { width: 100%; height: 9rem; object-fit: cover; cursor: zoom-in; display: block; }
+.dw-nophoto { display: flex; align-items: center; justify-content: center; font-size: 2.2rem; background: rgba(148,163,184,.15); cursor: default; }
+.dw-body { padding: .6rem .7rem .7rem; display: flex; flex-direction: column; gap: .35rem; flex: 1; }
+.dw-name { font-weight: 800; font-size: .9rem; color: var(--ui-text); }
+.dw-desc { font-size: .75rem; color: var(--ui-muted); }
+.dw-btn { margin-top: auto; width: 100%; padding: .6rem; font-size: .9rem; }
+.dw-done { margin-top: auto; font-size: .75rem; font-weight: 700; color: #059669; display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; }
+.dw-open { margin-top: auto; font-size: .75rem; color: #d97706; font-weight: 700; }
+.dw-formphoto { max-width: 9rem; max-height: 7rem; border-radius: .6rem; vertical-align: middle; }
+.dw-inactive { opacity: .55; }
+.dw-best { padding: .6rem .8rem; border-radius: .8rem; background: rgba(245,158,11,.15); color: #d97706; font-size: .85rem; margin-bottom: .7rem; }
+.dw-rank, .dw-arch { display: flex; flex-direction: column; gap: .35rem; }
+.dw-rank-row { display: flex; align-items: center; gap: .6rem; padding: .5rem .7rem; border: 1px solid var(--ui-border); border-radius: .7rem; }
+.dw-rank-first { border-color: rgba(245,158,11,.7); background: rgba(245,158,11,.1); }
+.dw-rank-pos { width: 2rem; text-align: center; font-size: 1.1rem; }
+.dw-rank-name { flex: 1; font-weight: 700; color: var(--ui-text); }
+.dw-rank-meta { font-size: .7rem; color: var(--ui-muted); }
+.dw-rank-total { min-width: 2rem; text-align: right; font-size: 1rem; color: var(--ui-text); }
+.dw-log { display: flex; flex-direction: column; gap: .3rem; }
+.dw-log-row { display: flex; align-items: center; gap: .6rem; padding: .35rem .5rem; border-bottom: 1px solid var(--ui-border); font-size: .78rem; flex-wrap: wrap; }
+.dw-log-time { color: var(--ui-muted); min-width: 6.5rem; }
+.dw-log-who { font-weight: 700; min-width: 7rem; color: var(--ui-text); }
+.dw-log-what { flex: 1; color: var(--ui-text); }
+/* Kühlschrank-Temperaturen (v1.0.06) */
+.ft-wrap { overflow: auto; max-height: 68vh; }
+.ft-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: .8rem; }
+.ft-table th, .ft-table td { border-bottom: 1px solid var(--ui-border); border-right: 1px solid var(--ui-border); padding: 0; text-align: center; }
+.ft-table thead th { position: sticky; top: 0; z-index: 3; background: var(--tp-bg, #1e293b); padding: .4rem .5rem; min-width: 6rem; }
+.ft-head b { display: block; font-size: .78rem; color: var(--ui-text); }
+.ft-head small { display: block; font-size: .6rem; font-weight: 500; color: var(--ui-muted); white-space: nowrap; }
+.ft-day-col { position: sticky; left: 0; z-index: 2; background: var(--tp-bg, #1e293b); min-width: 3.2rem; padding: .25rem .4rem !important; font-weight: 700; color: var(--ui-text); }
+.ft-day-col small { display: block; font-size: .55rem; font-weight: 500; color: var(--ui-muted); }
+thead .ft-day-col { z-index: 4; }
+.ft-by-col { min-width: 4.5rem; padding: 0 .4rem !important; font-size: .7rem; color: var(--ui-muted); }
+.ft-in { width: 100%; min-width: 5rem; padding: .45rem .3rem; text-align: center; background: transparent; border: 0; color: var(--ui-text); font-size: .85rem; font-weight: 600; }
+.ft-in:focus { outline: 2px solid #f59e0b; outline-offset: -2px; background: rgba(245,158,11,.08); }
+.ft-in:disabled { opacity: .35; }
+.ft-in.ft-bad { background: rgba(239,68,68,.22); color: #ef4444; }
+.ft-today th, .ft-today td { background: rgba(245,158,11,.10); }
+.ft-weekend .ft-day-col { color: #f59e0b; }
+.ft-sum-bad b { color: #ef4444; }
+.ft-sum-warn b { color: #d97706; }
+.ft-man-row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.ft-man-name { flex: 2 1 9rem; }
+.ft-man-min, .ft-man-max { flex: 1 1 4.5rem; max-width: 6rem; }
+.ft-man-act { font-size: .72rem; display: inline-flex; align-items: center; gap: .25rem; }
 /* Exklusiv-Schicht: oranger Tageskopf (v1.0.04) */
 .tp-table th.tp-excl { background: #ed7d31 !important; color: #fff !important; }
 .tp-table th.tp-excl .tp-wd, .tp-table th.tp-excl .tp-dn { color: #fff !important; }

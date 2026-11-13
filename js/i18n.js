@@ -718,6 +718,26 @@
   "de": "Woche (KW), Schichten, Veröffentlichung",
   "en": "Week, shifts, publishing"
  },
+ "dash.fridge": {
+  "de": "Kühlschrank-Temperaturen",
+  "en": "Fridge temperatures"
+ },
+ "dash.fridgeSub": {
+  "de": "Temperaturliste, einmal täglich",
+  "en": "Temperature log, once a day"
+ },
+ "dash.wash": {
+  "de": "Abwasher",
+  "en": "Dishwashing"
+ },
+ "dash.washSub": {
+  "de": "Aufgaben abhaken, Extra eintragen",
+  "en": "Tick off tasks, add extras"
+ },
+ "dash.washSubA": {
+  "de": "Aufgaben, Übersicht, Rangliste",
+  "en": "Tasks, overview, ranking"
+ },
  "dash.swaps": {
   "de": "Schichttausch",
   "en": "Shift Swap"
