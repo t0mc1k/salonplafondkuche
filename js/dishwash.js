@@ -4,7 +4,9 @@
    (Name und Zeit setzt die Datenbank), Extra-Einträge, Übersicht und Monats-Rangliste für den Manager.
    Rechte (Datenbank, RLS): Abwasher = Hauptrolle ODER Zusatzrolle dishwasher; Manager/Developer sehen alles
    und pflegen die Orte; Köche haben keinen Zugriff.
-   Tabellen: wash_areas, wash_logs, wash_monthly (sql/1.0.05_dishwash.sql)
+   Zu zweit putzen: Kollegen eintragen (wash_logs.with_names), beide bekommen den Punkt. Rangliste und Monate sehen alle Abwasher.
+   Übersicht (Leitung): Klick auf einen Eintrag zeigt das Foto des Ortes.
+   Tabellen: wash_areas, wash_logs, wash_monthly (sql/1.0.05_dishwash.sql, 1.0.13_wash_helpers.sql)
    ============================================================ */
 
     const DW_FREQ = { daily: ['Täglich', 'Daily'], weekly: ['Wöchentlich', 'Weekly'], monthly: ['Monatlich', 'Monthly'] };
@@ -73,8 +75,8 @@
 
     function dwTabsHtml() {
       const mine = [['tasks', dwCanWash() ? '✅ Meine Aufgaben' : '✅ Aufgaben']];
-      if (dwCanWash()) mine.push(['extra', '➕ Extra']);
-      const lead = userIsAdmin ? [['overview', '📋 Übersicht'], ['rank', '🏆 Rangliste'], ['archive', '🗂️ Monate'], ['areas', '⚙️ Orte']] : [];
+      if (dwCanWash()) mine.push(['extra', '➕ Extra'], ['rank', '🏆 Rangliste'], ['archive', '🗂️ Monate']);   // Rangliste sehen alle Abwasher
+      const lead = userIsAdmin ? [['overview', '📋 Übersicht']].concat(dwCanWash() ? [] : [['rank', '🏆 Rangliste'], ['archive', '🗂️ Monate']], [['areas', '⚙️ Orte']]) : [];
       const btn = t => `<button type="button" class="fm-tab${dw.tab === t[0] ? ' active' : ''}" onclick="dwTab('${t[0]}')">${t[1]}</button>`;
       // Wer abwäscht UND Leitung ist (z. B. Developer + Abwasher): zwei klar getrennte Bereiche
       if (dwCanWash() && lead.length) {
@@ -121,9 +123,13 @@
             const mine = String(last.done_by || '').toLowerCase() === meLower;
             const undo = (mine || userIsAdmin) && (userIsAdmin || (Date.now() - new Date(last.done_at).getTime() < 3600000))
               ? ` <button type="button" class="fm-btn" onclick="dwUndo(${jsArg(last.id)})" title="Eintrag zurücknehmen">↩️</button>` : '';
-            action = `<div class="dw-done">✅ ${escapeHtml(last.done_by)} · ${escapeHtml(fmDateTime(last.done_at))}${undo}</div>`;
+            const team = [last.done_by].concat(last.with_names || []).join(' + ');
+            const canHelp = mine || userIsAdmin;
+            const help = canHelp ? ` <button type="button" class="fm-btn" onclick="dwEditHelpers(${jsArg(last.id)})" title="Kollegen eintragen, die mitgeholfen haben">👥</button>` : '';
+            action = `<div class="dw-done">✅ ${escapeHtml(team)} · ${escapeHtml(fmDateTime(last.done_at))}${help}${undo}</div>`;
           } else if (dwCanWash() || userIsAdmin) {
-            action = `<button type="button" class="ui-btn-primary dw-btn" onclick="dwMark(${jsArg(a.id)}, this)">✓ Erledigt</button>`;
+            action = `<div class="dw-actions"><button type="button" class="ui-btn-primary dw-btn" onclick="dwMark(${jsArg(a.id)}, this)">✓ Erledigt</button>
+              <button type="button" class="ui-btn-ghost dw-btn" onclick="dwMarkWith(${jsArg(a.id)})" title="Zu zweit geputzt: Kollegen eintragen">👥 Zu zweit</button></div>`;
           } else {
             action = '<div class="dw-open">⏳ Offen</div>';
           }
@@ -134,16 +140,54 @@
         }).join('');
         html += '</div>';
       });
-      const mine = dw.logs.filter(l => String(l.done_by || '').toLowerCase() === meLower && dwInMonth(l.done_at, new Date().getFullYear(), new Date().getMonth() + 1)).length;
+      const mine = dw.logs.filter(l => (String(l.done_by || '').toLowerCase() === meLower || (l.with_names || []).some(n => String(n).toLowerCase() === meLower)) && dwInMonth(l.done_at, new Date().getFullYear(), new Date().getMonth() + 1)).length;
       if (dwCanWash()) html = `<div class="tp-summary" style="padding:.4rem 0 .6rem"><span><b>${mine}</b> Einträge von dir in diesem Monat</span></div>` + html;
       dw.m.setBody(html);
     }
 
     function dwInMonth(iso, y, m) { const d = new Date(iso); return d.getFullYear() === y && d.getMonth() + 1 === m; }
 
-    async function dwMark(areaId, btn) {
+    // Zu zweit: erst Kollegen wählen, dann speichern
+    async function dwMarkWith(areaId) {
+      const names = await dwPickHelpers('👥 Wer hat mitgeholfen?', []);
+      if (names === null) return;
+      await dwMark(areaId, null, names);
+    }
+
+    async function dwEditHelpers(logId) {
+      const l = dw.logs.find(x => x.id === logId) || dw.stat.logs.find(x => x.id === logId);
+      if (!l) return;
+      const names = await dwPickHelpers('👥 Kollegen bei „' + (l.area_name || 'Aufgabe') + '“', l.with_names || [], l.done_by);
+      if (names === null) return;
+      const { error } = await _supabase.rpc('wash_set_helpers', { p_log: logId, p_names: names });
+      if (error) return fmToast(/Keine Berechtigung/i.test(error.message) ? 'Nur der Eintragende (bis 24 Std.) oder die Leitung darf das ändern.' : dwErr(error));
+      fmToast('✓ Gespeichert');
+      fmClose('dwLogView');
+      if (dw.tab === 'overview') await dwLoadStat(); else await dwLoad();
+    }
+
+    // Auswahl der Kollegen (Abwasher, ohne sich selbst). Gibt Namen-Liste zurück, null bei Abbruch.
+    function dwPickHelpers(title, selected, owner) {
+      return new Promise(resolve => {
+        const me = String(owner || currentWaiterName || '').toLowerCase();
+        const others = dwWashers().filter(n => n.toLowerCase() !== me);
+        const m = fmOpen('dwHelp', { title, sub: 'Wer hat dieselbe Aufgabe gleichzeitig erledigt? Alle bekommen den Punkt.', layer: 2 });
+        let done = false;
+        const finish = v => { if (done) return; done = true; fmClose('dwHelp'); resolve(v); };
+        window.dwHelpOk = () => finish(Array.from(document.querySelectorAll('#dwHelp input[type=checkbox]:checked')).map(c => c.value));
+        window.dwHelpCancel = () => finish(null);
+        m.setBody(others.length ? '<div class="fm-stack">' + others.map(n => `<label class="switch-row"><span>${escapeHtml(n)}</span><span class="switch"><input type="checkbox" value="${escapeHtml(n)}" ${selected.indexOf(n) !== -1 ? 'checked' : ''}><span class="switch-track"></span></span></label>`).join('') + '</div>'
+          : '<p class="staff-empty">Es gibt keine weiteren Abwasher im Personal.</p>');
+        m.setFoot('<button type="button" class="ui-btn-ghost" onclick="dwHelpCancel()">Abbrechen</button><button type="button" class="ui-btn-primary" onclick="dwHelpOk()">💾 Speichern</button>');
+        m.root.querySelector('[data-fm-close]').onclick = () => finish(null);
+      });
+    }
+
+    async function dwMark(areaId, btn, withNames) {
       if (btn) btn.disabled = true;
-      const { error } = await _supabase.from('wash_logs').insert([{ area_id: areaId }]);
+      const row = { area_id: areaId };
+      if (withNames && withNames.length) row.with_names = withNames;
+      const { error } = await _supabase.from('wash_logs').insert([row]);
       if (error) { if (btn) btn.disabled = false; return fmToast(dwErr(error)); }
       fmToast('✓ Gespeichert');
       await dwLoad();
@@ -218,9 +262,11 @@
       const map = new Map();
       dwWashers().forEach(n => map.set(n, { name: n, tasks: 0, extras: 0 }));
       logs.forEach(l => {
-        if (!map.has(l.done_by)) map.set(l.done_by, { name: l.done_by, tasks: 0, extras: 0 });
-        const s = map.get(l.done_by);
-        if (l.area_id || !l.extra_text) s.tasks++; else s.extras++;
+        [l.done_by].concat(l.with_names || []).forEach(n => {   // wer es gemacht hat + Kollegen, die mitgeholfen haben
+          if (!map.has(n)) map.set(n, { name: n, tasks: 0, extras: 0 });
+          const s = map.get(n);
+          if (l.area_id || !l.extra_text) s.tasks++; else s.extras++;
+        });
       });
       const list = Array.from(map.values()).map(s => Object.assign(s, { total: s.tasks + s.extras }));
       list.sort((a, b) => b.total - a.total || b.tasks - a.tasks || a.name.localeCompare(b.name, 'de'));
@@ -237,12 +283,12 @@
       const isCurrent = dw.stat.year === new Date().getFullYear() && dw.stat.month === new Date().getMonth() + 1;
       let html = dwMonthNavHtml();
       if (best.length) html += `<div class="dw-best">🏆 ${isCurrent ? 'Aktuell vorne' : 'Bester im Monat'}: <b>${best.map(b => escapeHtml(b.name)).join(' & ')}</b> mit ${best[0].total} Einträgen</div>`;
-      html += `<div class="dw-rank">${list.length ? list.map(s => `<div class="dw-rank-row${s.rank === 1 && s.total > 0 ? ' dw-rank-first' : ''}">
+      html += `<div class="dw-rank">${list.length ? list.map(s => `<div class="dw-rank-row${s.rank === 1 && s.total > 0 ? ' dw-rank-first' : ''}${String(s.name).toLowerCase() === String(currentWaiterName || '').toLowerCase() ? ' dw-rank-me' : ''}">
           <span class="dw-rank-pos">${s.total > 0 ? (DW_MEDAL[s.rank] || s.rank + '.') : '–'}</span>
-          <span class="dw-rank-name">${escapeHtml(s.name)}</span>
+          <span class="dw-rank-name">${escapeHtml(s.name)}${String(s.name).toLowerCase() === String(currentWaiterName || '').toLowerCase() ? ' <small>(du)</small>' : ''}</span>
           <span class="dw-rank-meta">${s.tasks} Aufgaben · ${s.extras} Extra</span>
           <b class="dw-rank-total">${s.total}</b></div>`).join('') : '<p class="staff-empty">Keine Abwasher im Personal.</p>'}</div>
-        <p class="fm-hint" style="margin-top:.6rem">${isCurrent ? 'Zwischenstand. Am Monatsende wird die Wertung automatisch gespeichert (siehe „🗂️ Monate“).' : 'Berechnet aus allen Einträgen dieses Monats.'}</p>`;
+        <p class="fm-hint" style="margin-top:.6rem">${isCurrent ? 'Zwischenstand. Am Monatsende wird die Wertung automatisch gespeichert (siehe „🗂️ Monate“).' : 'Berechnet aus allen Einträgen dieses Monats.'} Wer zu zweit putzt, trägt den Kollegen ein: beide bekommen den Punkt.</p>`;
       dw.m.setBody(html);
       dw.m.setFoot('<button type="button" class="ui-btn-primary" onclick="fmClose(\'dwModal\')">Fertig</button>');
     }
@@ -253,14 +299,29 @@
       let html = dwMonthNavHtml() + `<div class="tp-summary" style="padding:0 0 .6rem"><span><b>${logs.length}</b> Einträge</span><span><b>${tasks}</b> Aufgaben</span><span><b>${extras}</b> Extra</span></div>`;
       if (!logs.length) html += '<p class="staff-empty">Keine Einträge in diesem Monat.</p>';
       else {
-        html += '<div class="dw-log">' + logs.map(l => `<div class="dw-log-row">
+        html += '<p class="fm-hint" style="margin-bottom:.4rem">Tippe auf einen Eintrag, um das Foto des Ortes zu sehen.</p><div class="dw-log">' + logs.map(l => `<div class="dw-log-row dw-log-click" onclick="dwShowLog(${jsArg(l.id)})">
           <span class="dw-log-time">${escapeHtml(fmDateTime(l.done_at))}</span>
-          <span class="dw-log-who">${escapeHtml(l.done_by)}</span>
+          <span class="dw-log-who">${escapeHtml([l.done_by].concat(l.with_names || []).join(' + '))}</span>
           <span class="dw-log-what">${l.area_id || !l.extra_text ? escapeHtml(l.area_name || 'Aufgabe') : '➕ ' + escapeHtml(l.extra_text)}</span>
-          <button type="button" class="fm-btn fm-btn-danger" onclick="dwUndoStat(${jsArg(l.id)})" title="Eintrag löschen">🗑</button></div>`).join('') + '</div>';
+          <button type="button" class="fm-btn fm-btn-danger" onclick="event.stopPropagation(); dwUndoStat(${jsArg(l.id)})" title="Eintrag löschen">🗑</button></div>`).join('') + '</div>';
       }
       dw.m.setBody(html);
       dw.m.setFoot('<button type="button" class="ui-btn-ghost" onclick="dwExportExcel()">📗 Excel</button><button type="button" class="ui-btn-primary" onclick="fmClose(\'dwModal\')">Fertig</button>');
+    }
+
+    // Eintrag ansehen: Foto des Ortes, Beschreibung, wer wann (mit Kollegen)
+    function dwShowLog(id) {
+      const l = dw.stat.logs.find(x => x.id === id); if (!l) return;
+      const a = l.area_id ? dw.areas.find(x => x.id === l.area_id) : null;
+      const isExtra = !l.area_id && l.extra_text;
+      const team = [l.done_by].concat(l.with_names || []);
+      const m = fmOpen('dwLogView', { title: isExtra ? '➕ ' + l.extra_text : '🧽 ' + (l.area_name || (a && a.name) || 'Aufgabe'), sub: fmDateTime(l.done_at) + ' · ' + team.join(' + '), layer: 2 });
+      const photo = a && a.photo_url ? `<img class="dw-viewphoto" src="${escapeHtml(a.photo_url)}" alt="${escapeHtml(a.name)}" onclick="openPhotoPreview(${jsArg(a.photo_url)})">`
+        : `<div class="dw-viewphoto dw-nophoto">${isExtra ? '➕' : '🧽'}<small>${isExtra ? 'Extra-Eintrag (kein Ort mit Foto)' : (a ? 'Für diesen Ort gibt es kein Foto' : 'Der Ort wurde inzwischen gelöscht')}</small></div>`;
+      m.setBody(`<div class="fm-stack">${photo}
+        ${a && a.description ? `<p>${escapeHtml(a.description)}</p>` : ''}
+        <div class="tp-summary"><span>👤 <b>${escapeHtml(team.join(' + '))}</b></span><span>🕒 <b>${escapeHtml(fmDateTime(l.done_at))}</b></span>${a ? `<span>${escapeHtml(DW_FREQ[a.frequency][0])}</span>` : ''}</div></div>`);
+      m.setFoot(`<button type="button" class="ui-btn-ghost" onclick="dwEditHelpers(${jsArg(l.id)})">👥 Kollegen</button><button type="button" class="ui-btn-primary" onclick="fmClose('dwLogView')">Schließen</button>`);
     }
 
     async function dwUndoStat(id) {
@@ -277,7 +338,7 @@
       const wb = XLSX.utils.book_new();
       const a1 = [['Rang', 'Name', 'Aufgaben', 'Extra', 'Gesamt']].concat(rank.map(s => [s.rank, s.name, s.tasks, s.extras, s.total]));
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(a1), 'Rangliste');
-      const a2 = [['Zeit', 'Name', 'Aufgabe / Extra']].concat(logs.map(l => [fmDateTime(l.done_at), l.done_by, l.area_id || !l.extra_text ? (l.area_name || 'Aufgabe') : 'Extra: ' + l.extra_text]));
+      const a2 = [['Zeit', 'Name', 'Aufgabe / Extra']].concat(logs.map(l => [fmDateTime(l.done_at), [l.done_by].concat(l.with_names || []).join(' + '), l.area_id || !l.extra_text ? (l.area_name || 'Aufgabe') : 'Extra: ' + l.extra_text]));
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(a2), 'Einträge');
       XLSX.writeFile(wb, 'Abwasher_' + dw.stat.year + '-' + String(dw.stat.month).padStart(2, '0') + '.xlsx');
     }

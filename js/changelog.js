@@ -12,6 +12,13 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.21', range: '', date: 'November 2026', title: 'Abwasher: Foto in der Übersicht, zu zweit putzen, Rangliste für alle',
+    changes: [
+      ['new', 'Übersicht (Leitung): Ein Tipp auf einen erledigten Eintrag zeigt das Foto des Ortes groß, dazu Beschreibung, wer und wann.'],
+      ['new', 'Zu zweit putzen: Beim Abhaken gibt es „👥 Zu zweit“, nach dem Abhaken „👥“ (Eintragender bis 24 Stunden, Leitung jederzeit). Der Kollege steht beim Eintrag und bekommt ebenfalls den Punkt, auch in der Rangliste und in der gespeicherten Monatswertung.'],
+      ['new', 'Rangliste und Monate sehen jetzt alle Abwasher (eigene Zeile markiert), nicht nur die Leitung.'],
+      ['info', 'Einrichtung: sql/1.0.13_wash_helpers.sql im Supabase SQL Editor der Küche ausführen.']
+    ] },
   { version: '1.0.20', range: '', date: 'November 2026', title: 'Dienstplan: neue Personen, Tippfehler, F/S; Teilen; Pause',
     changes: [
       ['improved', 'Dienstplan-Foto und Excel-Import ordnen Personen nur über den NAMEN zu, nicht mehr über Zeilen oder Reihenfolge. Tippfehler wie „Tomas Kardoszzzzz“ werden automatisch zu „Tomas Kardos“. Die KI wurde für schräge Fotos und leere/Gruppenzeilen angewiesen, Zeile für Zeile am Namen entlangzulesen.'],
