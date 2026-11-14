@@ -12,6 +12,13 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.25', range: '', date: 'November 2026', title: 'Tägliche Bestellliste, Temperaturen teilen & per Foto',
+    changes: [
+      ['new', 'Bestellliste ist jetzt eine tägliche Meldung: pro Tag eine Liste mit Datum (z. B. „Sa 14.11.2026“). Mit ‹ › blätterst du durch die gespeicherten Tage, „Heute“ springt zu heute, 📅 wählt ein Datum, 📜 zeigt alle gespeicherten Tage. Ein neuer Tag beginnt automatisch eine neue Liste. Erledigte Listen lassen sich wieder öffnen.'],
+      ['new', 'Kühlschrank-Temperaturen: „📤 Teilen“ mit Vorschau der Monatstabelle (Rot = außerhalb Soll), WhatsApp (Bild, PDF oder Text mit den Abweichungen), als Bild oder PDF speichern und drucken.'],
+      ['new', 'Kühlschrank-Temperaturen: „📷 Foto einlesen“. Die ausgefüllte Papierliste fotografieren oder ein vorhandenes Foto / eine Datei wählen. Die KI liest die Werte, du kontrollierst und korrigierst jeden Wert (orange = unsicher, rot = außerhalb Soll, blau = neu), erst dann wird gespeichert. Kühlgeräte werden über den Spaltennamen zugeordnet.'],
+      ['info', 'Einrichtung: sql/1.0.14_order_daily.sql ausführen und die Edge Function scan-temps bereitstellen (supabase/functions/scan-temps/index.ts, Verify JWT aus, siehe docs/SETUP-4.1.00.md). Das Teilen-Modul (js/share-doc.js) ist neu, die Bestellliste nutzt es jetzt ebenfalls.']
+    ] },
   { version: '1.0.24', range: '', date: 'November 2026', title: 'Stunden & Lohn: Woche oder Monat',
     changes: [
       ['new', 'Stunden & Lohn hat wieder die Monatsansicht: Umschalter „Woche | Monat“ neben der Zeitraum-Anzeige. Die Woche (KW, Mo–So) bleibt die Standardansicht. Beim Umschalten springt die App zum passenden Monat bzw. zur passenden Woche. Pause (30 Min.), Summen ohne/mit Pause, Detail pro Tag und Excel funktionieren in beiden Ansichten.']

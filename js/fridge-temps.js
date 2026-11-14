@@ -113,7 +113,9 @@
           <button type="button" class="ui-btn-ghost" onclick="ftShiftMonth(1)" aria-label="Nächster Monat">›</button>
           <button type="button" class="ui-btn-ghost" onclick="ftToday()">Heute</button>
         </div>
-        <div class="fm-row-flex" style="gap:.4rem">
+        <div class="fm-row-flex" style="gap:.4rem;flex-wrap:wrap">
+          <button type="button" class="ui-btn-ghost" onclick="ftScanOpen()">📷 Foto einlesen</button>
+          <button type="button" class="ui-btn-ghost" onclick="ftPreview()">📤 Teilen</button>
           <button type="button" class="ui-btn-ghost" onclick="ftExportExcel()">📗 Excel</button>
           <button type="button" class="ui-btn-ghost" onclick="ftManage()">⚙️ Kühlgeräte</button>
         </div></div>`);
@@ -183,6 +185,240 @@
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Temperaturen');
       XLSX.writeFile(wb, 'Temperaturliste_' + ft.year + '-' + String(ft.month).padStart(2, '0') + '.xlsx');
+    }
+
+    // ---------- Teilen: Vorschau, WhatsApp, Bild, PDF, Druck (js/share-doc.js) ----------
+    // Die Monatstabelle wird als A4-Querformat gezeichnet (Rot = außerhalb Soll).
+    function ftRenderCanvas() {
+      const W = 1754, H = 1240, M = 34, n = ftDays();
+      const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      const g = cv.getContext('2d');
+      g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+      g.textBaseline = 'middle'; g.fillStyle = '#000'; g.textAlign = 'left';
+      g.font = 'bold 36px Arial, Helvetica, sans-serif';
+      g.fillText('Temperaturliste – ' + FM_MONTHS[ft.month - 1] + ' ' + ft.year, M, M + 20);
+      const top = M + 56, bottom = H - M - 30, headH = 76;
+      const rowH = Math.max(20, Math.min(38, (bottom - top - headH) / n));
+      const dayW = 96, byW = 100, cols = ft.fridges.length || 1;
+      const cw = (W - 2 * M - dayW - byW) / cols;
+      g.lineWidth = 1.2; g.strokeStyle = '#444';
+      const fit = (txt, maxW, size, bold) => { let s = size; g.font = (bold ? 'bold ' : '') + s + 'px Arial, Helvetica, sans-serif'; while (s > 9 && g.measureText(txt).width > maxW) { s--; g.font = (bold ? 'bold ' : '') + s + 'px Arial, Helvetica, sans-serif'; } };
+      // Kopf
+      g.fillStyle = '#e8e8e8'; g.fillRect(M, top, W - 2 * M, headH); g.fillStyle = '#000';
+      g.strokeRect(M, top, dayW, headH); g.textAlign = 'center'; fit('Tag', dayW - 8, 24, true); g.fillText('Tag', M + dayW / 2, top + headH / 2);
+      ft.fridges.forEach((f, i) => {
+        const x = M + dayW + i * cw; g.strokeRect(x, top, cw, headH);
+        fit(f.name, cw - 10, 24, true); g.fillText(f.name, x + cw / 2, top + 26);
+        fit(ftRange(f), cw - 10, 17, false); g.fillStyle = '#444'; g.fillText(ftRange(f), x + cw / 2, top + 54); g.fillStyle = '#000';
+      });
+      const xb = M + dayW + cols * cw; g.strokeRect(xb, top, byW, headH); fit('Von', byW - 8, 24, true); g.fillText('Von', xb + byW / 2, top + headH / 2);
+      // Zeilen
+      const fs = Math.round(rowH * 0.55);
+      for (let d = 1; d <= n; d++) {
+        const y = top + headH + (d - 1) * rowH, iso = ftIso(d), wd = new Date(ft.year, ft.month - 1, d).getDay();
+        if (wd === 0 || wd === 6) { g.fillStyle = '#f3f3f3'; g.fillRect(M, y, W - 2 * M, rowH); }
+        g.fillStyle = '#000'; g.strokeRect(M, y, dayW, rowH);
+        g.font = 'bold ' + fs + 'px Arial, Helvetica, sans-serif'; g.textAlign = 'center';
+        g.fillText(String(d).padStart(2, '0') + ' ' + FM_DAYS[wd], M + dayW / 2, y + rowH / 2);
+        ft.fridges.forEach((f, i) => {
+          const x = M + dayW + i * cw, r = ft.temps[f.id + '|' + iso];
+          if (r && ftOut(f, Number(r.temp))) { g.fillStyle = '#fcd9d9'; g.fillRect(x + 1, y + 1, cw - 2, rowH - 2); }
+          g.strokeStyle = '#444'; g.strokeRect(x, y, cw, rowH);
+          if (r) { g.fillStyle = ftOut(f, Number(r.temp)) ? '#c00000' : '#000'; g.font = (ftOut(f, Number(r.temp)) ? 'bold ' : '') + fs + 'px Arial, Helvetica, sans-serif'; g.fillText(ftFmt(r.temp), x + cw / 2, y + rowH / 2); }
+        });
+        g.fillStyle = '#000'; g.strokeRect(xb, y, byW, rowH); g.font = fs + 'px Arial, Helvetica, sans-serif'; g.fillText(ftByText(iso), xb + byW / 2, y + rowH / 2);
+      }
+      g.textAlign = 'left'; g.fillStyle = '#333'; g.font = 'italic 20px Arial, Helvetica, sans-serif';
+      g.fillText('Rot = außerhalb des Soll-Bereichs · Von = Kürzel der Person · erstellt am ' + new Date().toLocaleDateString('de-AT') + ' · Salonplafond Küche', M, H - M + 6);
+      return cv;
+    }
+
+    // Kurzer Text für WhatsApp: Zahl der Messwerte und alles außerhalb Soll
+    function ftTextSummary() {
+      const bad = [], today = fmIso(new Date());
+      let filled = 0;
+      for (let d = 1; d <= ftDays(); d++) {
+        const iso = ftIso(d);
+        ft.fridges.forEach(f => {
+          const r = ft.temps[f.id + '|' + iso]; if (!r) return;
+          filled++;
+          if (ftOut(f, Number(r.temp))) bad.push(String(d).padStart(2, '0') + '.' + String(ft.month).padStart(2, '0') + '. ' + f.name + ': ' + ftFmt(r.temp) + ' °C (Soll ' + ftRange(f) + ')');
+        });
+      }
+      const lines = ['*Temperaturliste ' + FM_MONTHS[ft.month - 1] + ' ' + ft.year + '*', filled + ' Messwerte · ' + bad.length + ' außerhalb Soll'];
+      if (bad.length) { lines.push('', '⚠️ *Außerhalb Soll:*'); bad.slice(0, 25).forEach(b => lines.push('• ' + b)); if (bad.length > 25) lines.push('… und ' + (bad.length - 25) + ' weitere'); }
+      else lines.push('✅ Alle Werte im Soll-Bereich.');
+      if (ft.year + '-' + String(ft.month).padStart(2, '0') === today.slice(0, 7)) {
+        const t = ft.fridges.map(f => { const r = ft.temps[f.id + '|' + today]; return r ? f.name + ' ' + ftFmt(r.temp) : null; }).filter(Boolean);
+        if (t.length) lines.push('', '*Heute:* ' + t.join(' · '));
+      }
+      return lines.join('\n');
+    }
+
+    function ftPreview() {
+      if (!ft.fridges.length) return fmToast('Keine Kühlgeräte angelegt.');
+      shPreview({ title: 'Vorschau Temperaturliste', canvas: ftRenderCanvas(), landscape: true, base: 'Temperaturliste_' + ft.year + '-' + String(ft.month).padStart(2, '0'),
+        text: ftTextSummary(), shareText: 'Temperaturliste ' + FM_MONTHS[ft.month - 1] + ' ' + ft.year });
+    }
+
+    // ---------- Foto / Datei einlesen (KI, Edge Function scan-temps) ----------
+    let ftSc = null;   // { m, cells: { 'fridgeId|day': { v, unsure } }, days: [..], chk }
+
+    function ftScanOpen() {
+      if (!ft.fridges.length) return fmToast('Keine Kühlgeräte angelegt.');
+      const m = fmOpen('ftScan', { title: '📷 Temperaturliste einlesen', sub: FM_MONTHS[ft.month - 1] + ' ' + ft.year + ' · die Werte werden erst nach deiner Kontrolle gespeichert', layer: 2, wide: true });
+      ftSc = { m, cells: {}, days: [], chk: false };
+      ftScanIntro(m);
+    }
+    function ftScanIntro(m, msg) {
+      ftSc.m = m = m || ftSc.m;
+      m.setToolbar('');
+      m.setBody(`<div class="rs-box rs-warn"><h4>📸 Für ein gutes Ergebnis</h4><ul>
+          <li>Die <b>ganze Tabelle</b> aufnehmen (alle Kühlgeräte als Spalten, alle Tage als Zeilen), <b>gerade von oben</b>, scharf und gut beleuchtet.</li>
+          <li>Foto mit der Kamera-App in voller Auflösung, keine Screenshots, nichts über WhatsApp Verschicktes.</li>
+          <li>Du kannst auch ein <b>vorhandenes Foto oder eine Bilddatei</b> auswählen.</li></ul>
+          <p class="rs-small">Die KI kann sich bei Handschrift irren. Deshalb kontrollierst du im nächsten Schritt jeden Wert. Das Foto wird nur zum Lesen an Google Gemini geschickt und nicht gespeichert.</p></div>
+        ${msg ? `<p class="rs-err">⚠️ ${escapeHtml(msg)}</p>` : ''}
+        <input type="file" id="ftScanCam" accept="image/*" capture="environment" class="hidden" onchange="ftScanPicked(this)">
+        <input type="file" id="ftScanGal" accept="image/*" class="hidden" onchange="ftScanPicked(this)">
+        <div class="rs-actions">
+          <button type="button" class="ui-btn-primary rs-big" onclick="document.getElementById('ftScanCam').click()">📷 Foto aufnehmen</button>
+          <button type="button" class="ui-btn-ghost rs-big" onclick="document.getElementById('ftScanGal').click()">🖼️ Aus Galerie / Datei wählen</button></div>`);
+      m.setFoot('<button type="button" class="ui-btn-ghost" onclick="fmClose(\'ftScan\')">Abbrechen</button>');
+    }
+
+    function ftScanErrText(error, data) {
+      const code = data && data.error, status = error && error.context && error.context.status;
+      if (code === 'forbidden' || status === 403) return 'Nur Manager und Developer dürfen die Temperaturliste einlesen.';
+      if (code === 'auth' || status === 401) return 'Anmeldung ungültig. Bitte neu anmelden.';
+      if (code === 'quota' || status === 429) return 'Das Tageslimit für KI-Anfragen ist erreicht. Bitte morgen erneut versuchen oder die Werte von Hand eintragen.';
+      if (code === 'busy' || status === 503) return 'Die KI ist gerade überlastet. Bitte in einer Minute noch einmal versuchen.';
+      if (code === 'too_large' || status === 413) return 'Das Foto ist zu groß. Bitte ein kleineres Foto wählen.';
+      if (code === 'not_configured') return 'Der KI-Schlüssel (GEMINI_API_KEY) fehlt auf dem Server.';
+      if (status === 404 || (error && /Failed to send|NetworkError|Failed to fetch/i.test(String(error.message || '')))) return 'Die Funktion scan-temps ist noch nicht eingerichtet (supabase/functions/scan-temps bereitstellen, siehe docs/SETUP-4.1.00.md).';
+      return 'Das Foto konnte nicht gelesen werden. Bitte erneut versuchen oder besser fotografieren.';
+    }
+
+    async function ftScanPicked(input) {
+      const file = input && input.files && input.files[0];
+      if (!file || !ftSc) return;
+      input.value = '';
+      const m = ftSc.m;
+      if (!/^image\//.test(file.type)) return ftScanIntro(m, 'Bitte ein Bild auswählen (JPEG oder PNG).');
+      if (typeof rsPrepare !== 'function') return ftScanIntro(m, 'Bild-Funktion nicht geladen.');
+      m.setToolbar(''); m.setFoot('');
+      m.setBody('<div class="rs-busy"><div class="rs-spin"></div><p><b>Die KI liest die Temperaturliste …</b></p><p class="rs-small">Das dauert meist 15 bis 40 Sekunden. Bitte das Fenster offen lassen.</p></div>');
+      try {
+        const prep = await rsPrepare(file);
+        const b64 = await rsBlobToBase64(prep.blob);
+        const { data, error } = await _supabase.functions.invoke('scan-temps', {
+          body: { image: b64, mime: 'image/jpeg', year: ft.year, month: ft.month, fridges: ft.fridges.map(f => ({ name: f.name, min: f.temp_min, max: f.temp_max })) },
+          headers: { 'x-staff-token': getStaffToken() }
+        });
+        if (!ftSc) return;
+        if (error || !data || data.error || !Array.isArray(data.days)) return ftScanIntro(m, ftScanErrText(error, data));
+        if (!data.readable || !data.days.length) return ftScanIntro(m, 'Auf dem Foto wurde keine lesbare Temperaturtabelle gefunden.' + (data.note ? ' Hinweis der KI: ' + data.note : ''));
+        ftScanReview(data);
+      } catch (e) {
+        if (ftSc) ftScanIntro(ftSc.m, e && e.code === 'too_large' ? 'Das Foto ist zu groß.' : 'Das Foto konnte nicht verarbeitet oder gesendet werden. Bitte Internet prüfen und noch einmal versuchen.');
+      }
+    }
+
+    // Kontrolle: jeder Wert ist bearbeitbar. Orange = unsicher, rot = außerhalb Soll, blau unterstrichen = anders als bisher gespeichert.
+    function ftScanReview(data) {
+      ftSc.cells = {}; ftSc.days = []; ftSc.chk = false; ftSc.data = data;
+      data.days.forEach(d => {
+        ftSc.days.push(d.day);
+        Object.keys(d.values).forEach(name => {
+          const f = ft.fridges.find(x => x.name === name); if (!f) return;
+          const e = d.values[name];
+          ftSc.cells[f.id + '|' + d.day] = { v: e.v == null ? '' : ftFmt(e.v), unsure: !!e.uncertain };
+        });
+      });
+      ftScanRender();
+    }
+    function ftScanCellClass(f, day) {
+      const c = ftSc.cells[f.id + '|' + day] || { v: '', unsure: false };
+      const n = ftNumOrNull(c.v);
+      let cls = 'ft-sc-in';
+      if (n === undefined || (n !== null && (n < -60 || n > 60))) cls += ' ft-sc-bad';
+      else if (n !== null && ftOut(f, n)) cls += ' ft-sc-out';
+      if (c.unsure && c.v !== '') cls += ' ft-sc-unsure';
+      const old = ft.temps[f.id + '|' + ftIso(day)];
+      if (n !== null && n !== undefined && (!old || Number(old.temp) !== n)) cls += ' ft-sc-chg';
+      return cls;
+    }
+    function ftScanRender() {
+      const m = ftSc.m, data = ftSc.data || {};
+      const warns = [];
+      if ((data.month && data.month !== ft.month) || (data.year && data.year !== ft.year)) warns.push(`Auf dem Foto steht ${data.month ? String(data.month).padStart(2, '0') : '?'}/${data.year || '?'}, geöffnet ist ${String(ft.month).padStart(2, '0')}/${ft.year}. Stimmt der Monat? Sonst Fenster schließen und den richtigen Monat öffnen.`);
+      if (data.unmatched && data.unmatched.length) warns.push('Spalten, die keinem Kühlgerät zugeordnet werden konnten (ignoriert): ' + data.unmatched.join(', '));
+      const head = '<tr><th class="ft-day-col">Tag</th>' + ft.fridges.map(f => `<th class="ft-head"><b>${escapeHtml(f.name)}</b><small>${escapeHtml(ftRange(f))}</small></th>`).join('') + '</tr>';
+      const body = ftSc.days.map(d => `<tr><th class="ft-day-col">${String(d).padStart(2, '0')}</th>${ft.fridges.map(f => {
+        const c = ftSc.cells[f.id + '|' + d] || { v: '' };
+        return `<td class="ft-cell"><input type="text" inputmode="decimal" autocomplete="off" maxlength="6" class="${ftScanCellClass(f, d)}" value="${escapeHtml(c.v)}" data-f="${escapeHtml(f.id)}" data-d="${d}" onfocus="this.select()" oninput="ftScanCell(this)" onchange="ftScanDone(this)"></td>`;
+      }).join('')}</tr>`).join('');
+      m.setToolbar(`<div class="rs-bar"><span id="ftScStats" class="rs-stats"></span></div>`);
+      m.setBody(`${warns.map(w => `<p class="rs-err">⚠️ ${escapeHtml(w)}</p>`).join('')}
+        ${data.note ? `<p class="rs-small">📝 Hinweis der KI: ${escapeHtml(data.note)}</p>` : ''}
+        <div class="rs-legend"><span class="rs-l rs-l-unsure">orange = unsicher gelesen</span><span class="rs-l rs-l-bad">rot = ungültig / außerhalb Soll</span><span class="rs-l rs-l-chg">blau unterstrichen = neu oder anders als gespeichert</span></div>
+        <div class="tp-wrap ft-wrap"><table class="ft-table"><thead>${head}</thead><tbody>${body}</tbody></table></div>
+        <label class="rs-confirm"><input type="checkbox" id="ftScChk" onchange="ftSc.chk = this.checked; ftScanStats()"> Ich habe alle Werte mit dem Foto verglichen.</label>`);
+      m.setFoot(`<button type="button" class="ui-btn-ghost" onclick="ftScanIntro()">↩️ Neues Foto</button><button type="button" class="ui-btn-ghost" onclick="fmClose('ftScan')">Abbrechen</button>
+        <button type="button" class="ui-btn-primary" id="ftScSave" onclick="ftScanSave()">💾 Werte übernehmen</button>`);
+      ftScanStats();
+    }
+    function ftScanStats() {
+      let cells = 0, bad = 0, unsure = 0, chg = 0, out = 0;
+      ft.fridges.forEach(f => ftSc.days.forEach(d => {
+        const c = ftSc.cells[f.id + '|' + d]; if (!c || c.v === '') return;
+        const n = ftNumOrNull(c.v);
+        if (n === undefined || (n !== null && (n < -60 || n > 60))) { bad++; return; }
+        cells++; if (c.unsure) unsure++;
+        if (n !== null && ftOut(f, n)) out++;
+        const old = ft.temps[f.id + '|' + ftIso(d)];
+        if (!old || Number(old.temp) !== n) chg++;
+      }));
+      ftSc.stat = { cells, bad, unsure, chg, out };
+      const el = document.getElementById('ftScStats');
+      if (el) el.innerHTML = `<b>${cells}</b> Werte · <span class="${chg ? 'rs-s-chg' : ''}"><b>${chg}</b> neu/anders</span> · <span class="${unsure ? 'rs-s-unsure' : ''}"><b>${unsure}</b> unsicher</span> · <span class="${out ? 'rs-s-bad' : ''}"><b>${out}</b> außerhalb Soll</span> · <span class="${bad ? 'rs-s-bad' : ''}"><b>${bad}</b> ungültig</span>`;
+      const btn = document.getElementById('ftScSave');
+      if (btn) { btn.disabled = !(ftSc.chk && bad === 0 && cells > 0); btn.title = bad ? 'Zuerst die ungültigen Werte korrigieren' : (ftSc.chk ? '' : 'Bitte zuerst bestätigen, dass du alles verglichen hast'); }
+    }
+    function ftScanCell(el) {
+      const key = el.dataset.f + '|' + el.dataset.d, f = ft.fridges.find(x => x.id === el.dataset.f);
+      ftSc.cells[key] = Object.assign(ftSc.cells[key] || {}, { v: el.value });
+      el.className = ftScanCellClass(f, Number(el.dataset.d));
+      ftScanStats();
+    }
+    function ftScanDone(el) {   // von Hand bestätigt: nicht mehr „unsicher“
+      const key = el.dataset.f + '|' + el.dataset.d, f = ft.fridges.find(x => x.id === el.dataset.f);
+      const c = ftSc.cells[key] = Object.assign(ftSc.cells[key] || {}, { v: el.value, unsure: false });
+      const n = ftNumOrNull(c.v);
+      if (n !== null && n !== undefined) { c.v = ftFmt(Math.round(n * 10) / 10); el.value = c.v; }
+      el.className = ftScanCellClass(f, Number(el.dataset.d));
+      ftScanStats();
+    }
+    async function ftScanSave() {
+      if (!ftSc || !ftSc.chk) return;
+      ftScanStats();
+      if (ftSc.stat.bad) return alert('Bitte zuerst die ungültigen Werte korrigieren oder leeren.');
+      const today = fmIso(new Date()), rows = [];
+      ft.fridges.forEach(f => ftSc.days.forEach(d => {
+        const c = ftSc.cells[f.id + '|' + d]; if (!c || c.v === '') return;
+        const n = ftNumOrNull(c.v); if (n === null || n === undefined) return;
+        const iso = ftIso(d); if (iso > today) return;   // keine Werte für die Zukunft
+        rows.push({ fridge_id: f.id, day: iso, temp: Math.round(n * 10) / 10 });
+      }));
+      if (!rows.length) return alert('Es gibt nichts zu speichern.');
+      const chg = rows.filter(r => { const o = ft.temps[r.fridge_id + '|' + r.day]; return !o || Number(o.temp) !== r.temp; }).length;
+      if (!confirm(`${rows.length} Messwerte für ${FM_MONTHS[ft.month - 1]} ${ft.year} speichern?\n${chg} davon sind neu oder anders als bisher.\n\nVorhandene Werte an diesen Tagen werden überschrieben. Als Person wird dein Name eingetragen.`)) return;
+      const btn = document.getElementById('ftScSave'); if (btn) btn.disabled = true;
+      const res = await _supabase.from('fridge_temps').upsert(rows, { onConflict: 'fridge_id,day' });
+      if (res.error) { if (btn) btn.disabled = false; return alert('Speichern fehlgeschlagen: ' + res.error.message); }
+      fmClose('ftScan'); ftSc = null;
+      await ftLoad();
+      fmToast('✓ ' + rows.length + ' Messwerte aus dem Foto übernommen');
     }
 
     // ---------- Kühlgeräte verwalten ----------

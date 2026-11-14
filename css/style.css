@@ -897,6 +897,22 @@ thead .ft-day-col { z-index: 4; }
 .rs-newp { margin-top: .5rem; padding: .5rem .6rem; border: 1px solid rgba(245,158,11,.5); border-radius: .7rem; display: flex; flex-direction: column; gap: .4rem; }
 .rs-newp-act { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 .rs-newp-act select { flex: 1 1 11rem; min-width: 0; padding: .45rem .5rem; font-size: .85rem; }
+/* Kühlschrank-Temperaturen: Foto einlesen (v1.0.25) */
+.ft-sc-in { width: 100%; min-width: 4.6rem; padding: .45rem .3rem; text-align: center; background: transparent; border: 0; color: var(--ui-text); font-size: .9rem; font-weight: 600; }
+.ft-sc-in:focus { outline: 2px solid #f59e0b; outline-offset: -2px; }
+.ft-sc-in.ft-sc-unsure { background: rgba(245,158,11,.30); }
+.ft-sc-in.ft-sc-out { color: #ef4444; background: rgba(239,68,68,.18); }
+.ft-sc-in.ft-sc-bad { background: rgba(239,68,68,.45); color: #fff; }
+.ft-sc-in.ft-sc-chg { text-decoration: underline; text-decoration-color: #3b82f6; text-underline-offset: 3px; text-decoration-thickness: 2px; }
+/* Bestellliste: Tagesdatum und Blättern (v1.0.25) */
+.ol-datebar { display: flex; align-items: center; gap: .35rem; width: 100%; margin-bottom: .5rem; flex-wrap: wrap; }
+.ol-datebox { flex: 1 1 8rem; text-align: center; display: flex; flex-direction: column; align-items: center; line-height: 1.2; min-width: 0; }
+.ol-datebox b { font-size: 1rem; color: var(--ui-text); }
+.ol-datebox small { font-size: .7rem; color: var(--ui-muted); }
+.ol-chip-today { font-size: .62rem; font-weight: 800; color: #1c1917; background: #f59e0b; border-radius: 999px; padding: 0 .45rem; margin-top: .1rem; }
+.ol-datepick { width: 8.4rem; padding: .35rem; border-radius: .6rem; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-text); font-size: .75rem; }
+.ol-empty { text-align: center; padding: 2rem 1rem; display: flex; flex-direction: column; gap: .8rem; align-items: center; color: var(--ui-text); }
+.ol-banner-warn { background: rgba(245,158,11,.14); border: 1px solid #f59e0b; }
 /* Bestellliste Gemüse / Obst (v1.0.16) */
 .ol-tools { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; width: 100%; }
 .ol-search { flex: 1 1 10rem; min-width: 0; padding: .55rem .7rem; border-radius: .6rem; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-text); font-size: 1rem; }

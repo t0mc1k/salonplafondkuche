@@ -4,16 +4,20 @@
    - Jeder trägt Mengen ein (Handy-tauglich: Rubriken zum Aufklappen, +/−, Suche).
    - Live: Änderungen anderer erscheinen sofort (Broadcast-Kanal + Abfrage alle 6 s als Absicherung).
    - Unter der Liste steht, wer zuletzt etwas geändert hat (setzt die Datenbank, nicht der Browser).
-   - „Ich bin fertig“ schließt die Liste (mit Name und Zeit); danach beginnt eine neue.
+   - Tägliche Meldung: pro Tag eine Liste mit Datum (Tabelle order_lists.order_date). Blättern zwischen den gespeicherten Tagen, Datum wählen.
+   - „Ich bin fertig“ schließt die Liste (mit Name und Zeit); bei Bedarf wieder öffnen.
    - Excel-Export und Druck im Aussehen der Vorlage „Hye Bestelliste.xlsx“ (3 Spalten Produkt | Menge | Einheit).
-   Tabellen: order_items, order_lists, order_lines (sql/1.0.12_order_list.sql)
+   Tabellen: order_items, order_lists, order_lines (sql/1.0.12_order_list.sql, 1.0.14_order_daily.sql)
    ============================================================ */
 
-    let ol = { m: null, items: [], list: null, lines: {}, latest: null, open: {}, q: '', only: false, cat: false, ch: null, timer: null, saving: {}, sig: '' };
+    let ol = { m: null, items: [], list: null, date: '', lines: {}, latest: null, open: {}, q: '', only: false, cat: false, ch: null, timer: null, saving: {}, sig: '' };
     const OL_UNITS = ['kg', 'Stk', 'Bund', 'Pkg', 'Kiste', 'Sackerl', 'Be', 'liter'];
 
     function olErrorHtml(err) {
       const msg = (err && err.message) || String(err);
+      if (/order_date/i.test(msg)) {
+        return '<p class="staff-empty" style="color:#ef4444">' + escapeHtml(fmL('Die Datenbank braucht noch das Update. Bitte sql/1.0.14_order_daily.sql im Supabase SQL Editor ausführen.', 'The database needs the update. Please run sql/1.0.14_order_daily.sql in the Supabase SQL Editor.')) + '</p>';
+      }
       if (/does not exist|schema cache|could not find the table/i.test(msg) || (err && err.code === '42P01')) {
         return '<p class="staff-empty" style="color:#ef4444">' + escapeHtml(fmL('Die Datenbank ist noch nicht eingerichtet. Bitte zuerst sql/1.0.12_order_list.sql im Supabase SQL Editor ausführen.', 'The database is not set up yet. Please run sql/1.0.12_order_list.sql in the Supabase SQL Editor first.')) + '</p>';
       }
@@ -24,6 +28,9 @@
     function olNum(v) { const t = olFmtQty(v).replace(',', '.'); return t !== '' && !isNaN(Number(t)) ? Number(t) : null; }
     function olShowNum(n) { return String(Math.round(n * 100) / 100).replace('.', ','); }
     function olDate(ts) { return ts ? new Date(ts).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''; }
+    const olToday = () => fmIso(new Date());
+    // 'YYYY-MM-DD' -> „Fr 14.11.2026“
+    function olDayLabel(iso) { const d = fmParseIso(iso); return FM_DAYS[d.getDay()] + ' ' + String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear(); }
     function olSorted() {
       return ol.items.slice().sort((a, b) => (a.col - b.col) || (a.pos - b.pos) || (a.kind === 'head' ? -1 : 1) - (b.kind === 'head' ? -1 : 1) || String(a.created_at).localeCompare(String(b.created_at)));
     }
@@ -40,10 +47,10 @@
     // ---------- Öffnen / Laden ----------
     async function openOrderListModal() {
       if (typeof closeSettingsMenu === 'function') closeSettingsMenu();
-      ol.q = ''; ol.only = false; ol.cat = false; ol.open = {}; ol.sig = '';
+      ol.q = ''; ol.only = false; ol.cat = false; ol.open = {}; ol.sig = ''; ol.date = olToday();
       ol.m = fmOpen('olModal', {
         title: '🥬 ' + fmL('Bestellliste Gemüse / Obst', 'Vegetable / fruit order list'),
-        sub: fmL('Alle tragen ein, was bestellt werden muss. Änderungen sieht jeder sofort.', 'Everyone adds what needs ordering. Everybody sees changes instantly.'),
+        sub: fmL('Tägliche Meldung: alle tragen ein, was bestellt werden muss. Änderungen sieht jeder sofort.', 'Daily report: everyone adds what needs ordering. Everybody sees changes instantly.'),
         wide: true,
         onClose: olStopLive
       });
@@ -52,44 +59,57 @@
       if (ok) olStartLive();
     }
 
-    // Lädt Katalog, offene Liste (oder zuletzt erledigte) und Mengen. create = bei leerer Datenbank eine Liste anlegen.
-    async function olLoad(create, listId) {
+    // Lädt Katalog, die Liste des Tages ol.date (bei „heute“ wird sie bei Bedarf angelegt) und die Mengen.
+    async function olLoad(create, dateIso) {
+      if (dateIso) ol.date = dateIso;
       const it = await _supabase.from('order_items').select('*').eq('active', true);
       if (it.error) { ol.m.setBody(olErrorHtml(it.error)); return false; }
       ol.items = it.data || [];
-      let list = null;
-      if (listId) {
-        const r = await _supabase.from('order_lists').select('*').eq('id', listId).maybeSingle();
-        list = r.data || null;
-      } else {
-        const o = await _supabase.from('order_lists').select('*').eq('status', 'open').limit(1);
-        if (o.error) { ol.m.setBody(olErrorHtml(o.error)); return false; }
-        list = (o.data || [])[0] || null;
-        if (!list) {
-          const d = await _supabase.from('order_lists').select('*').eq('status', 'done').order('done_at', { ascending: false }).limit(1);
-          list = (d.data || [])[0] || null;
-          if (!list && create) list = await olCreateList();
-        }
-      }
-      if (!list) { ol.m.setBody(olErrorHtml(new Error(fmL('Keine Liste gefunden.', 'No list found.')))); return false; }
-      const ln = await _supabase.from('order_lines').select('*').eq('list_id', list.id);
-      if (ln.error) { ol.m.setBody(olErrorHtml(ln.error)); return false; }
+      const o = await _supabase.from('order_lists').select('*').eq('order_date', ol.date).limit(1);
+      if (o.error) { ol.m.setBody(olErrorHtml(o.error)); return false; }
+      let list = (o.data || [])[0] || null;
+      if (!list && create && ol.date === olToday()) list = await olCreateList(ol.date);
       ol.list = list;
       ol.lines = {};
-      (ln.data || []).forEach(r => { ol.lines[r.item_id] = r; });
+      if (list) {
+        const ln = await _supabase.from('order_lines').select('*').eq('list_id', list.id);
+        if (ln.error) { ol.m.setBody(olErrorHtml(ln.error)); return false; }
+        (ln.data || []).forEach(r => { ol.lines[r.item_id] = r; });
+      }
       olRender();
       return true;
     }
 
-    async function olCreateList() {
-      const r = await _supabase.from('order_lists').insert({}).select().single();
+    async function olCreateList(date) {
+      const r = await _supabase.from('order_lists').insert({ order_date: date }).select().single();
       if (r.error) {   // gleichzeitig hat jemand anderes eine angelegt
-        const o = await _supabase.from('order_lists').select('*').eq('status', 'open').limit(1);
+        const o = await _supabase.from('order_lists').select('*').eq('order_date', date).limit(1);
         return (o.data || [])[0] || null;
       }
       return r.data;
     }
 
+    // Für den angezeigten Tag eine Liste anlegen (leerer Tag)
+    async function olCreateForDay() {
+      const l = await olCreateList(ol.date);
+      if (!l) { fmToast(fmL('Liste konnte nicht angelegt werden.', 'Could not create the list.')); return; }
+      await olLoad(false); olPing();
+    }
+
+    // ---------- Blättern ----------
+    // ‹ › springen zur vorherigen / nächsten GESPEICHERTEN Bestellung; ist keine spätere da, geht es zu „heute“
+    async function olNav(dir) {
+      let q = _supabase.from('order_lists').select('order_date');
+      q = dir < 0 ? q.lt('order_date', ol.date).order('order_date', { ascending: false }) : q.gt('order_date', ol.date).order('order_date', { ascending: true });
+      const r = await q.limit(1);
+      if (r.error) { fmToast(fmDbError(r.error)); return; }
+      const row = (r.data || [])[0];
+      if (row) return olLoad(false, row.order_date);
+      if (dir > 0 && ol.date < olToday()) return olLoad(true, olToday());
+      fmToast(dir < 0 ? fmL('Keine frühere Bestellung gespeichert.', 'No earlier order saved.') : fmL('Das ist die neueste Bestellung.', 'This is the latest order.'));
+    }
+    function olGoToday() { olLoad(true, olToday()); }
+    function olPickDate(v) { if (/^\d{4}-\d{2}-\d{2}$/.test(v)) olLoad(false, v); }
     // ---------- Live ----------
     function olStartLive() {
       olStopLive();
@@ -110,8 +130,13 @@
 
     // Holt den neuesten Stand und passt nur Geändertes an (Felder, in denen gerade getippt wird, bleiben unberührt)
     async function olRefresh() {
-      if (!ol.m || !document.getElementById('olModal') || !ol.list || ol.viewing) return;
+      if (!ol.m || !document.getElementById('olModal')) return;
       if (Object.keys(ol.saving).length) return;
+      if (!ol.list) {   // leerer Tag: hat inzwischen jemand die Liste angelegt?
+        const c = await _supabase.from('order_lists').select('id').eq('order_date', ol.date).limit(1);
+        if (!c.error && (c.data || []).length) await olLoad(false);
+        return;
+      }
       const [o, ln, it] = await Promise.all([
         _supabase.from('order_lists').select('*').eq('id', ol.list.id).maybeSingle(),
         _supabase.from('order_lines').select('*').eq('list_id', ol.list.id),
@@ -120,12 +145,8 @@
       if (o.error || ln.error || it.error) return;
       const lines = {}; (ln.data || []).forEach(r => { lines[r.item_id] = r; });
       let list = o.data;
-      // Liste wurde von jemandem fertig gemeldet/neu begonnen: aktuellen Stand komplett laden
+      // Liste wurde von jemandem fertig gemeldet / wieder geöffnet / gelöscht: aktuellen Stand komplett laden
       if (!list || list.status !== ol.list.status) { await olLoad(false); return; }
-      if (list.status === 'done') {   // erledigt: prüfen, ob inzwischen eine neue Liste offen ist
-        const nw = await _supabase.from('order_lists').select('id').eq('status', 'open').limit(1);
-        if ((nw.data || []).length) { await olLoad(false); return; }
-      }
       const catChanged = JSON.stringify((it.data || []).map(x => x.id + x.name + x.unit).sort()) !== JSON.stringify(ol.items.map(x => x.id + x.name + x.unit).sort());
       const sig = JSON.stringify(Object.keys(lines).sort().map(k => k + '=' + lines[k].qty));
       const old = JSON.stringify(Object.keys(ol.lines).sort().map(k => k + '=' + ol.lines[k].qty));
@@ -158,12 +179,20 @@
 
     function olRender() {
       const done = olIsDone();
-      ol.m.setToolbar(`<div class="ol-tools">
+      const today = olToday();
+      ol.m.setToolbar(`<div class="ol-datebar">
+        <button type="button" class="ui-btn-ghost" onclick="olNav(-1)" aria-label="${escapeHtml(fmL('Vorherige Bestellung', 'Previous order'))}">‹</button>
+        <div class="ol-datebox"><b>${escapeHtml(olDayLabel(ol.date))}</b>${ol.date === today ? '<span class="ol-chip-today">' + escapeHtml(fmL('Heute', 'Today')) + '</span>' : ''}<small>${ol.list ? (olIsDone() ? '✅ ' + escapeHtml(fmL('erledigt', 'done')) : '✏️ ' + escapeHtml(fmL('offen', 'open'))) : escapeHtml(fmL('keine Bestellung', 'no order'))}</small></div>
+        <button type="button" class="ui-btn-ghost" onclick="olNav(1)" aria-label="${escapeHtml(fmL('Nächste Bestellung', 'Next order'))}">›</button>
+        <button type="button" class="ui-btn-ghost" onclick="olGoToday()">${escapeHtml(fmL('Heute', 'Today'))}</button>
+        <input type="date" class="ol-datepick" value="${escapeHtml(ol.date)}" onchange="olPickDate(this.value)" aria-label="${escapeHtml(fmL('Datum wählen', 'Pick date'))}">
+      </div>
+      <div class="ol-tools">
         <input type="search" class="ol-search" id="olSearch" placeholder="${escapeHtml(fmL('Produkt suchen …', 'Search product …'))}" value="${escapeHtml(ol.q)}" oninput="olSearch(this.value)" autocomplete="off">
         <button type="button" class="ui-btn-ghost ol-chip${ol.only ? ' on' : ''}" id="olOnlyBtn" onclick="olToggleOnly()">${escapeHtml(fmL('Nur Bestellte', 'Ordered only'))}</button>
-        ${done ? '' : `<button type="button" class="ui-btn-ghost" onclick="olAddDialog()">＋ ${escapeHtml(fmL('Produkt', 'Product'))}</button>`}
+        ${done || !ol.list ? '' : `<button type="button" class="ui-btn-ghost" onclick="olAddDialog()">＋ ${escapeHtml(fmL('Produkt', 'Product'))}</button>`}
         <button type="button" class="ui-btn-ghost" onclick="olHistory()">📜</button>
-        ${userIsAdmin && !done ? `<button type="button" class="ui-btn-ghost ol-chip${ol.cat ? ' on' : ''}" onclick="olToggleCat()">✏️ ${escapeHtml(fmL('Katalog', 'Catalog'))}</button>` : ''}
+        ${userIsAdmin && !done && ol.list ? `<button type="button" class="ui-btn-ghost ol-chip${ol.cat ? ' on' : ''}" onclick="olToggleCat()">✏️ ${escapeHtml(fmL('Katalog', 'Catalog'))}</button>` : ''}
       </div>`);
       olRenderList();
       olRenderInfo();
@@ -172,10 +201,18 @@
     function olRenderList() {
       const q = ol.q.trim().toLowerCase();
       let html = '';
+      if (!ol.list) {
+        ol.m.setBody(`<div class="ol-empty"><p>${escapeHtml(fmL('Für diesen Tag gibt es keine Bestellung.', 'There is no order for this day.'))}</p>
+          <button type="button" class="ui-btn-primary" onclick="olCreateForDay()">🆕 ${escapeHtml(fmL('Bestellung für diesen Tag anlegen', 'Create an order for this day'))}</button>
+          <p class="fm-hint">${escapeHtml(fmL('Mit ‹ › blätterst du durch die gespeicherten Tage, 📜 zeigt die Liste aller Tage.', 'Use ‹ › to browse the saved days, 📜 lists all days.'))}</p></div>`);
+        return;
+      }
       if (olIsDone()) {
+        const canReopen = userIsAdmin || ol.date === olToday();
         html += `<div class="ol-banner ol-banner-done">✅ ${escapeHtml(fmL('Erledigt von', 'Completed by'))} <b>${escapeHtml(ol.list.done_by || '?')}</b> · ${escapeHtml(olDate(ol.list.done_at) + ' ' + fmTime(ol.list.done_at))}
-          <div class="ol-banner-act"><button type="button" class="ui-btn-primary" onclick="olPreview()">📤 ${escapeHtml(fmL('Vorschau & Teilen (WhatsApp, Bild, PDF)', 'Preview & share (WhatsApp, image, PDF)'))}</button> ${ol.viewing ? `<button type="button" class="ui-btn-ghost" onclick="olBackToCurrent()">← ${escapeHtml(fmL('Zurück zur aktuellen Liste', 'Back to current list'))}</button>`
-          : `<button type="button" class="ui-btn-primary" onclick="olStartNew()">🆕 ${escapeHtml(fmL('Neue Bestellung starten', 'Start new order'))}</button>`}</div></div>`;
+          <div class="ol-banner-act"><button type="button" class="ui-btn-primary" onclick="olPreview()">📤 ${escapeHtml(fmL('Vorschau & Teilen (WhatsApp, Bild, PDF)', 'Preview & share (WhatsApp, image, PDF)'))}</button>${canReopen ? ` <button type="button" class="ui-btn-ghost" onclick="olReopen()">↩️ ${escapeHtml(fmL('Wieder öffnen', 'Reopen'))}</button>` : ''}</div></div>`;
+      } else if (ol.date < olToday()) {
+        html += `<div class="ol-banner ol-banner-warn">⚠️ ${escapeHtml(fmL('Diese Bestellung von früher wurde nie als fertig gemeldet.', 'This earlier order was never marked as done.'))}</div>`;
       }
       olSections().forEach((s, si) => {
         const items = s.items.filter(it => (!q || it.name.toLowerCase().indexOf(q) !== -1) && (!ol.only || olQtyOf(it.id)));
@@ -191,7 +228,7 @@
     }
 
     function olRenderInfo() {
-      const l = ol.list; if (!l) return;
+      const l = ol.list; if (!l) { ol.m.setFoot(''); return; }
       const total = Object.keys(ol.lines).filter(k => olQtyOf(k)).length;
       const last = l.updated_by ? `${escapeHtml(fmL('Zuletzt bearbeitet von', 'Last edited by'))} <b>${escapeHtml(l.updated_by)}</b> · ${escapeHtml(olDate(l.updated_at) + ' ' + fmTime(l.updated_at))}`
         : escapeHtml(fmL('Noch nichts eingetragen', 'Nothing entered yet'));
@@ -279,39 +316,38 @@
       if (!ol.list || olIsDone()) return;
       const n = Object.keys(ol.lines).filter(k => olQtyOf(k)).length;
       if (!n && !confirm(fmL('Die Liste ist leer. Trotzdem als fertig melden?', 'The list is empty. Mark as done anyway?'))) return;
-      if (n && !confirm(fmL('Liste mit ' + n + ' Produkten als fertig melden? Danach kann nichts mehr geändert werden.', 'Mark the list with ' + n + ' products as done? It cannot be changed afterwards.'))) return;
+      if (n && !confirm(fmL('Liste mit ' + n + ' Produkten als fertig melden? Danach ist sie gesperrt (kann wieder geöffnet werden).', 'Mark the list with ' + n + ' products as done? It is then locked (it can be reopened).'))) return;
       const r = await _supabase.from('order_lists').update({ status: 'done' }).eq('id', ol.list.id).eq('status', 'open').select().single();
       if (r.error) { fmToast(fmDbError(r.error)); return; }
-      ol.list = r.data; ol.viewing = false;
+      ol.list = r.data;
       fmToast(fmL('Bestellliste ist fertig ✅', 'Order list completed ✅'));
       olRender(); olPing();
     }
 
-    async function olStartNew() {
-      const l = await olCreateList();
-      if (!l) { fmToast(fmL('Neue Liste konnte nicht angelegt werden.', 'Could not create a new list.')); return; }
-      ol.viewing = false;
-      await olLoad(false);
-      olPing();
+    async function olReopen() {
+      if (!ol.list || !olIsDone()) return;
+      const r = await _supabase.from('order_lists').update({ status: 'open' }).eq('id', ol.list.id).eq('status', 'done').select().single();
+      if (r.error) { fmToast(fmDbError(r.error)); return; }
+      ol.list = r.data;
+      fmToast(fmL('Bestellung wieder geöffnet', 'Order reopened'));
+      olRender(); olPing();
     }
-    async function olBackToCurrent() { ol.viewing = false; await olLoad(false); }
 
     // ---------- Verlauf ----------
     async function olHistory() {
-      const m = fmOpen('olHist', { title: '📜 ' + fmL('Frühere Bestellungen', 'Previous orders'), layer: 2 });
+      const m = fmOpen('olHist', { title: '📜 ' + fmL('Gespeicherte Bestellungen', 'Saved orders'), sub: fmL('Tippe auf einen Tag, um ihn zu öffnen.', 'Tap a day to open it.'), layer: 2 });
       m.setBody('<p class="staff-empty">' + escapeHtml(fmL('Lade ...', 'Loading ...')) + '</p>');
-      const r = await _supabase.from('order_lists').select('*').eq('status', 'done').order('done_at', { ascending: false }).limit(30);
+      const r = await _supabase.from('order_lists').select('*').order('order_date', { ascending: false }).limit(90);
       if (r.error) { m.setBody(olErrorHtml(r.error)); return; }
       const rows = r.data || [];
-      m.setBody(rows.length ? '<div class="fm-stack">' + rows.map(x => `<button type="button" class="ui-btn-ghost ol-hist" onclick="olViewList('${x.id}')">
-        <b>${escapeHtml(olDate(x.done_at) + ' ' + fmTime(x.done_at))}</b><small>${escapeHtml(fmL('Erledigt von ', 'Done by ') + (x.done_by || '?'))}</small></button>`).join('') + '</div>'
-        : '<p class="staff-empty">' + escapeHtml(fmL('Noch keine erledigten Bestellungen.', 'No completed orders yet.')) + '</p>');
+      m.setBody(rows.length ? '<div class="fm-stack">' + rows.map(x => `<button type="button" class="ui-btn-ghost ol-hist" onclick="olViewDay('${x.order_date}')">
+        <b>${escapeHtml(olDayLabel(x.order_date))}</b><small>${x.status === 'done' ? '✅ ' + escapeHtml((x.done_by || '?') + ' · ' + fmTime(x.done_at)) : '✏️ ' + escapeHtml(fmL('offen', 'open') + (x.updated_by ? ' · ' + x.updated_by : ''))}</small></button>`).join('') + '</div>'
+        : '<p class="staff-empty">' + escapeHtml(fmL('Noch keine Bestellungen gespeichert.', 'No orders saved yet.')) + '</p>');
       m.setFoot(`<button type="button" class="ui-btn-ghost" onclick="fmClose('olHist')">${escapeHtml(fmL('Schließen', 'Close'))}</button>`);
     }
-    async function olViewList(id) {
+    async function olViewDay(iso) {
       fmClose('olHist');
-      ol.viewing = true;
-      await olLoad(false, id);
+      await olLoad(false, iso);
     }
 
     // ---------- Produkt hinzufügen / Katalog ----------
@@ -369,7 +405,7 @@
       const b = l.status === 'done' ? fmL('Erledigt von ', 'Completed by ') + (l.done_by || '?') + ' · ' + olDate(l.done_at) + ' ' + fmTime(l.done_at) : '';
       return [a, b].filter(Boolean);
     }
-    function olDateText() { return olDate(ol.list && ol.list.status === 'done' ? ol.list.done_at : ol.list && ol.list.created_at || new Date()); }
+    function olDateText() { const iso = (ol.list && ol.list.order_date) || ol.date || olToday(); return olDayLabel(iso); }
 
     function olBuildXlsx() {
       const cols = olGrid(), nrows = Math.max(cols[0].length, cols[1].length, cols[2].length);
@@ -425,7 +461,7 @@
         const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'Bestellliste_' + fmIso(new Date(ol.list.status === 'done' && ol.list.done_at ? ol.list.done_at : ol.list.created_at || Date.now())) + '.xlsx';
+        a.download = 'Bestellliste_' + ((ol.list && ol.list.order_date) || olToday()) + '.xlsx';
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(a.href), 10000);
         fmToast(fmL('Excel-Datei erstellt', 'Excel file created'));
@@ -516,32 +552,7 @@ td.sp, th.sp { width: 1.5mm; border: 0; padding: 0; } td.e { border: 0; }
       return cv;
     }
 
-    function olToBlob(cv, type, q) { return new Promise(res => cv.toBlob(res, type, q)); }
-
-    // Einseitiges A4-PDF mit dem Bild (JPEG) – ohne Bibliothek
-    async function olBuildPdf(cv) {
-      const jpg = new Uint8Array(await (await olToBlob(cv, 'image/jpeg', 0.92)).arrayBuffer());
-      const enc = new TextEncoder(), parts = [], offs = [];
-      let len = 0;
-      const push = b => { const u = typeof b === 'string' ? enc.encode(b) : b; parts.push(u); len += u.length; };
-      const obj = (n, body) => { offs[n] = len; push(n + ' 0 obj\n'); push(body); push('\nendobj\n'); };
-      push('%PDF-1.4\n');
-      obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
-      obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
-      obj(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>');
-      const cs = 'q 595.28 0 0 841.89 0 0 cm /Im0 Do Q';
-      obj(4, '<< /Length ' + cs.length + ' >>\nstream\n' + cs + '\nendstream');
-      offs[5] = len; push('5 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + cv.width + ' /Height ' + cv.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jpg.length + ' >>\nstream\n');
-      push(jpg); push('\nendstream\nendobj\n');
-      const xref = len;
-      let x = 'xref\n0 6\n0000000000 65535 f \n';
-      for (let i = 1; i <= 5; i++) x += String(offs[i]).padStart(10, '0') + ' 00000 n \n';
-      push(x + 'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF');
-      const out = new Uint8Array(len); let p = 0; parts.forEach(a => { out.set(a, p); p += a.length; });
-      return new Blob([out], { type: 'application/pdf' });
-    }
-
-    function olFileBase() { return 'Bestellliste_' + fmIso(new Date(ol.list && ol.list.status === 'done' && ol.list.done_at ? ol.list.done_at : (ol.list && ol.list.created_at) || Date.now())); }
+    function olFileBase() { return 'Bestellliste_' + ((ol.list && ol.list.order_date) || olToday()); }
 
     // Text für WhatsApp: nur die bestellten Produkte, nach Rubrik
     function olTextSummary() {
@@ -557,52 +568,10 @@ td.sp, th.sp { width: 1.5mm; border: 0; padding: 0; } td.e { border: 0; }
       return lines.join('\n').trim();
     }
 
-    async function olPreview() {
+    // Vorschau, Teilen (WhatsApp), Bild, PDF: gemeinsames Modul js/share-doc.js
+    function olPreview() {
       if (!ol.list) return;
-      const m = fmOpen('olPrev', { title: '👁 ' + fmL('Vorschau', 'Preview'), sub: fmL('So sieht das Dokument aus. Teilen, als Bild oder PDF speichern oder drucken.', 'This is the document. Share it, save as image or PDF, or print.'), layer: 2, wide: true, onClose: () => { if (ol.pv) { try { URL.revokeObjectURL(ol.pv.url); } catch (e) {} ol.pv = null; } } });
-      m.setBody('<p class="staff-empty">' + escapeHtml(fmL('Erstelle Vorschau ...', 'Creating preview ...')) + '</p>');
-      const cv = olRenderCanvas();
-      const png = await olToBlob(cv, 'image/png');
-      const pdf = await olBuildPdf(cv);
-      ol.pv = { png, pdf, url: URL.createObjectURL(png), base: olFileBase(), text: olTextSummary() };
-      m.setBody(`<div class="ol-prev-wrap"><img class="ol-prev-img" src="${ol.pv.url}" alt="${escapeHtml(fmL('Bestellliste', 'Order list'))}"></div>`);
-      m.setFoot(`<div class="ol-prev-btns">
-        <button type="button" class="ui-btn-primary" onclick="olShare('png')">💬 ${escapeHtml(fmL('WhatsApp / Teilen (Bild)', 'WhatsApp / Share (image)'))}</button>
-        <button type="button" class="ui-btn-ghost" onclick="olShare('pdf')">📄 ${escapeHtml(fmL('Teilen als PDF', 'Share as PDF'))}</button>
-        <button type="button" class="ui-btn-ghost" onclick="olWhatsText()">💬 ${escapeHtml(fmL('Als Text', 'As text'))}</button>
-        <button type="button" class="ui-btn-ghost" onclick="olSaveFile('png')">🖼️ ${escapeHtml(fmL('Bild speichern', 'Save image'))}</button>
-        <button type="button" class="ui-btn-ghost" onclick="olSaveFile('pdf')">📄 ${escapeHtml(fmL('PDF speichern', 'Save PDF'))}</button>
-        <button type="button" class="ui-btn-ghost" onclick="olPrint()">🖨️ ${escapeHtml(fmL('Drucken', 'Print'))}</button></div>`);
-    }
-
-    function olSaveFile(kind) {
-      if (!ol.pv) return;
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(kind === 'pdf' ? ol.pv.pdf : ol.pv.png);
-      a.download = ol.pv.base + (kind === 'pdf' ? '.pdf' : '.png');
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
-      fmToast(kind === 'pdf' ? fmL('PDF gespeichert', 'PDF saved') : fmL('Bild gespeichert', 'Image saved'));
-    }
-
-    // Teilen über das Menü des Geräts (dort „WhatsApp“ wählen). Ohne Unterstützung: Datei speichern.
-    async function olShare(kind) {
-      if (!ol.pv) return;
-      const blob = kind === 'pdf' ? ol.pv.pdf : ol.pv.png;
-      const file = new File([blob], ol.pv.base + (kind === 'pdf' ? '.pdf' : '.png'), { type: blob.type });
-      try {
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: 'Bestellung Gemüse / Obst', text: 'Bestellung Gemüse / Obst – ' + olDateText() });
-          return;
-        }
-      } catch (e) { if (e && e.name === 'AbortError') return; }
-      olSaveFile(kind);
-      fmToast(fmL('Teilen von Dateien wird hier nicht unterstützt. Datei wurde gespeichert, bitte in WhatsApp anhängen.', 'Sharing files is not supported here. The file was saved, please attach it in WhatsApp.'));
-    }
-
-    function olWhatsText() {
-      if (!ol.pv) return;
-      window.open('https://wa.me/?text=' + encodeURIComponent(ol.pv.text), '_blank', 'noopener');
+      shPreview({ title: fmL('Vorschau Bestellliste', 'Order list preview'), canvas: olRenderCanvas(), base: olFileBase(), text: olTextSummary(), shareText: 'Bestellung Gemüse / Obst – ' + olDateText(), onPrint: olPrint });
     }
 
     function olPrint() {
