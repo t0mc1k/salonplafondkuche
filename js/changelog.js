@@ -12,6 +12,11 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.23', range: '', date: 'November 2026', title: 'Stunden & Lohn pro Woche',
+    changes: [
+      ['improved', 'Stunden & Lohn rechnet jetzt pro Kalenderwoche (Montag bis Sonntag, KW und Datum wie im Dienstplan) statt pro Monat. Wochenwahl mit ‹ ›, „Heute“ springt zur aktuellen Woche. Wochen über einen Monatswechsel werden richtig zusammengezählt.'],
+      ['improved', 'Excel: „Stunden_KW47_….xlsx“ mit der Woche als Blattname. Pause automatisch 30 Min., Summen ohne und mit Pause bleiben.']
+    ] },
   { version: '1.0.22', range: '', date: 'November 2026', title: 'Dienstplan: Person aus einer Woche entfernen',
     changes: [
       ['new', 'Dienstplan (Manager/Developer): Neben dem Namen steht „✕“. Es entfernt die Person aus der angezeigten Woche (alle Einträge dieser 7 Tage), auch aus alten, schon veröffentlichten Wochen. Das Mitarbeiter-Konto und andere Wochen bleiben unverändert.'],

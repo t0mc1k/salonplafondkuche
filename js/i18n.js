@@ -763,8 +763,8 @@
   "en": "Hours & Payroll"
  },
  "dash.payrollSub": {
-  "de": "Monatsstunden, Excel",
-  "en": "Monthly hours, Excel"
+  "de": "Wochenstunden (KW), Excel",
+  "en": "Weekly hours (week), Excel"
  },
  "dash.staff": {
   "de": "Personal & PINs",
