@@ -332,6 +332,9 @@
 
       let employees = tpEmployees();
       if (tpQuery) employees = employees.filter(e => e.name.toLowerCase().indexOf(tpQuery) !== -1);
+      // Mitarbeiter sehen nur Personen, die in dieser Woche im Plan stehen; die Leitung sieht alle (ohne Einträge abgeblendet)
+      const inWeek = e => days.some(d => tpFindRow(e.name, d));
+      if (!userIsAdmin) employees = employees.filter(inWeek);
       if (!employees.length) {
         wrap.innerHTML = '<p class="staff-empty">Kein Mitarbeiter gefunden.</p>';
         document.getElementById('tpSummary').innerHTML = '';
@@ -368,8 +371,10 @@
         });
         totalMin += rowMin; totalShifts += rowShifts;
         const isMe = meKey && emp.name.toLowerCase() === meKey;
-        body += `<tr class="${isMe ? 'tp-me' : ''}">
-          <th class="tp-name-col"><span class="tp-name">${escapeHtml(emp.name)}</span></th>
+        const planned = inWeek(emp);
+        const rm = (userIsAdmin && planned) ? ` <button type="button" class="tp-rm" onclick="tpRemovePerson(${jsArg(emp.name)})" title="Aus dieser Woche entfernen" aria-label="Aus dieser Woche entfernen">✕</button>` : '';
+        body += `<tr class="${isMe ? 'tp-me' : ''}${userIsAdmin && !planned ? ' tp-norow' : ''}">
+          <th class="tp-name-col"><span class="tp-name">${escapeHtml(emp.name)}</span>${rm}${userIsAdmin && !planned ? '<small class="tp-notin">nicht im Plan</small>' : ''}</th>
           <td class="tp-pos-col">${escapeHtml(tpJobTitle(emp.name))}</td>
           ${cells}
           <td class="tp-sum-col"><b>${tpFormatHours(rowMin)}</b><small>${rowShifts} Tage</small></td>
@@ -383,6 +388,21 @@
       wrap.innerHTML = `<table class="tp-table"><thead>${head}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table>`;
       document.getElementById('tpSummary').innerHTML =
         `<span><b>${employees.length}</b> Mitarbeiter</span><span><b>${totalShifts}</b> Schichten</span><span><b>${tpFormatHours(totalMin)}</b> Std. gesamt</span>`;
+    }
+
+    // ---------- Person aus dieser Woche entfernen (nur Manager/Developer) ----------
+    // Löscht alle Einträge der Person in den 7 Tagen der angezeigten Woche. Das Konto und andere Wochen bleiben unberührt.
+    async function tpRemovePerson(name) {
+      if (!userIsAdmin) return;
+      const days = [0, 1, 2, 3, 4, 5, 6].map(i => tpAddDays(tpWeekStart, i));
+      const n = days.filter(d => tpFindRow(name, d)).length;
+      if (!n) return alert(name + ' hat in dieser Woche keine Einträge.');
+      if (!confirm('„' + name + '“ aus KW ' + tpIsoKw(tpWeekStart) + ' (' + tpWeekRange(tpWeekStart) + ') entfernen?\n' + n + ' Einträge werden gelöscht. Das Mitarbeiter-Konto und andere Wochen bleiben unverändert.')) return;
+      const results = await Promise.all(days.map(d => _supabase.from('work_schedules').delete().match({ employee_name: name, year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() })));
+      const err = results.find(r => r.error);
+      if (err) return alert('Löschen fehlgeschlagen: ' + err.error.message);
+      await loadTeamPlan();
+      showAppToast({ initial: '🗑', title: 'Aus dem Plan entfernt', text: name + ' · KW ' + tpIsoKw(tpWeekStart) });
     }
 
     // ---------- Veröffentlichen / Woche kopieren (nur Manager/Developer) ----------

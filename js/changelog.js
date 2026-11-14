@@ -12,6 +12,11 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.22', range: '', date: 'November 2026', title: 'Dienstplan: Person aus einer Woche entfernen',
+    changes: [
+      ['new', 'Dienstplan (Manager/Developer): Neben dem Namen steht „✕“. Es entfernt die Person aus der angezeigten Woche (alle Einträge dieser 7 Tage), auch aus alten, schon veröffentlichten Wochen. Das Mitarbeiter-Konto und andere Wochen bleiben unverändert.'],
+      ['improved', 'Personen ohne Einträge in der Woche sind für die Leitung abgeblendet („nicht im Plan“), Mitarbeiter sehen sie gar nicht mehr.']
+    ] },
   { version: '1.0.21', range: '', date: 'November 2026', title: 'Abwasher: Foto in der Übersicht, zu zweit putzen, Rangliste für alle',
     changes: [
       ['new', 'Übersicht (Leitung): Ein Tipp auf einen erledigten Eintrag zeigt das Foto des Ortes groß, dazu Beschreibung, wer und wann.'],
