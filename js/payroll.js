@@ -1,6 +1,6 @@
 /* ============================================================
    js/payroll.js  (v3.2.03)
-   Stunden & Lohn (Manager/Developer): Wochenübersicht (Mo–So, KW wie im Dienstplan) für die Lohnverrechnung.
+   Stunden & Lohn (Manager/Developer): Wochenübersicht (Mo–So, KW wie im Dienstplan) oder Monatsübersicht für die Lohnverrechnung.
    Gesamt = geplante Arbeitszeit (Arbeitsplan) − Pause + Korrektur des Managers. Zeitraum: eine Kalenderwoche (Mo–So).
    Pause: automatisch 30 Minuten bei Schichten über 6 Stunden, solange der Manager keinen eigenen Wert einträgt.
    Es werden beide Summen gezeigt: ohne Pause (Plan + Korrektur) und mit Pause (netto). Keine Zuschläge.
@@ -9,7 +9,7 @@
 
     const PR_BREAK_MIN = 30, PR_BREAK_AFTER = 360;   // automatische Pause: 30 Min. bei Schichten über 6 Std.
     const prAutoBreak = mins => (mins > PR_BREAK_AFTER ? PR_BREAK_MIN : 0);
-    let pr = { m: null, week: null, rows: [], entries: [], detail: null };   // week = Montag der angezeigten Woche
+    let pr = { m: null, mode: 'week', week: null, year: 0, month: 0, rows: [], entries: [], detail: null };   // week = Montag der angezeigten Woche; im Monatsmodus year/month
 
     const prWeekDays = () => [0, 1, 2, 3, 4, 5, 6].map(i => tpAddDays(pr.week, i));
     const prRowIso = r => r.year + '-' + String(r.month).padStart(2, '0') + '-' + String(r.day).padStart(2, '0');
@@ -17,23 +17,40 @@
     function openPayrollModal() {
       closeSettingsMenu();
       checkManagerAuth(() => {
-        pr.week = tpMondayOf(new Date());
+        const now = new Date();
+        pr.week = tpMondayOf(now); pr.year = now.getFullYear(); pr.month = now.getMonth() + 1;
         pr.detail = null;
-        pr.m = fmOpen('prModal', { title: '💶 Stunden & Lohn', sub: 'Pro Woche (Mo–So) wie im Dienstplan. Pause automatisch 30 Min. (Schichten über 6 Std.). Summe ohne und mit Pause. Ohne Zuschläge.', wide: true });
+        pr.m = fmOpen('prModal', { title: '💶 Stunden & Lohn', sub: 'Woche (Mo–So, wie im Dienstplan) oder Monat. Pause automatisch 30 Min. (Schichten über 6 Std.). Summe ohne und mit Pause. Ohne Zuschläge.', wide: true });
         prLoad();
       });
     }
 
-    function prShiftWeek(delta) {
-      pr.week = tpAddDays(pr.week, 7 * delta);
+    function prShift(delta) {
+      if (pr.mode === 'month') {
+        pr.month += delta;
+        if (pr.month < 1) { pr.month = 12; pr.year--; }
+        if (pr.month > 12) { pr.month = 1; pr.year++; }
+      } else pr.week = tpAddDays(pr.week, 7 * delta);
       pr.detail = null;
       prLoad();
     }
-    function prToday() { pr.week = tpMondayOf(new Date()); pr.detail = null; prLoad(); }
+    function prToday() { const n = new Date(); pr.week = tpMondayOf(n); pr.year = n.getFullYear(); pr.month = n.getMonth() + 1; pr.detail = null; prLoad(); }
+    // Umschalten Woche <-> Monat: der Monat der angezeigten Woche (Donnerstag der Woche) bzw. die Woche des 1. des Monats
+    function prSetMode(mode) {
+      if (mode === pr.mode) return;
+      if (mode === 'month') { const th = tpAddDays(pr.week, 3); pr.year = th.getFullYear(); pr.month = th.getMonth() + 1; }
+      else pr.week = tpMondayOf(new Date(pr.year, pr.month - 1, 1));
+      pr.mode = mode; pr.detail = null;
+      prLoad();
+    }
+    // Zeitraum-Text für Kopf und Dateinamen
+    const prPeriodLabel = () => pr.mode === 'month' ? FM_MONTHS[pr.month - 1] + ' ' + pr.year : 'KW ' + tpIsoKw(pr.week) + ' · ' + tpWeekRange(pr.week);
 
     async function prLoad() {
       pr.m.setBody('<p class="staff-empty">Lade ...</p>');
-      const wd = prWeekDays(), first = tpIso(wd[0]), last = tpIso(wd[6]);
+      let wd = prWeekDays();
+      if (pr.mode === 'month') { const n = new Date(pr.year, pr.month, 0).getDate(); wd = Array.from({ length: n }, (_, i) => new Date(pr.year, pr.month - 1, i + 1)); }
+      const first = tpIso(wd[0]), last = tpIso(wd[wd.length - 1]);
       // Eine Woche kann über einen Monatswechsel gehen: je Monat eine Abfrage
       const ym = {};
       wd.forEach(d => { const k = d.getFullYear() + '-' + (d.getMonth() + 1); (ym[k] = ym[k] || { y: d.getFullYear(), m: d.getMonth() + 1, days: [] }).days.push(d.getDate()); });
@@ -98,10 +115,11 @@
       pr.m.setToolbar(`
         <div class="fm-row-flex" style="justify-content:space-between">
           <div class="tp-monthnav">
-            <button type="button" onclick="prShiftWeek(-1)" class="ui-btn-ghost" aria-label="Vorherige Woche">‹</button>
-            <b class="tp-month-label">KW ${tpIsoKw(pr.week)} · ${escapeHtml(tpWeekRange(pr.week))}</b>
-            <button type="button" onclick="prShiftWeek(1)" class="ui-btn-ghost" aria-label="Nächste Woche">›</button>
+            <button type="button" onclick="prShift(-1)" class="ui-btn-ghost" aria-label="Zurück">‹</button>
+            <b class="tp-month-label">${escapeHtml(prPeriodLabel())}</b>
+            <button type="button" onclick="prShift(1)" class="ui-btn-ghost" aria-label="Weiter">›</button>
             <button type="button" onclick="prToday()" class="ui-btn-ghost">Heute</button>
+            <span class="fm-tabs" style="margin-left:.4rem"><button type="button" class="fm-tab${pr.mode === 'week' ? ' active' : ''}" onclick="prSetMode('week')">Woche</button><button type="button" class="fm-tab${pr.mode === 'month' ? ' active' : ''}" onclick="prSetMode('month')">Monat</button></span>
           </div>
           <button type="button" class="ui-btn-ghost" onclick="prExportExcel()">📗 Excel für die Lohnverrechnung</button>
         </div>`);
@@ -109,7 +127,7 @@
 
       const list = prAggregate();
       if (!list.length) {
-        pr.m.setBody('<p class="staff-empty">Für diese Woche gibt es keinen Arbeitsplan.</p>');
+        pr.m.setBody('<p class="staff-empty">Für diesen Zeitraum gibt es keinen Arbeitsplan.</p>');
         pr.m.setFoot('<button type="button" class="ui-btn-primary" onclick="fmClose(\'prModal\')">Fertig</button>');
         return;
       }
@@ -188,7 +206,7 @@
       const wb = XLSX.utils.book_new();
       const w1 = XLSX.utils.aoa_to_sheet(sum); w1['!cols'] = [{ wch: 20 }, { wch: 12 }, { wch: 10 }, { wch: 14 }, { wch: 12 }, { wch: 15 }, { wch: 22 }, { wch: 20 }];
       const w2 = XLSX.utils.aoa_to_sheet(det); w2['!cols'] = [{ wch: 20 }, { wch: 12 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 15 }, { wch: 16 }, { wch: 16 }, { wch: 30 }];
-      XLSX.utils.book_append_sheet(wb, w1, 'KW ' + tpIsoKw(pr.week));
+      XLSX.utils.book_append_sheet(wb, w1, pr.mode === 'month' ? FM_MONTHS[pr.month - 1] + ' ' + pr.year : 'KW ' + tpIsoKw(pr.week));
       XLSX.utils.book_append_sheet(wb, w2, 'Details');
-      XLSX.writeFile(wb, `Stunden_KW${String(tpIsoKw(pr.week)).padStart(2, '0')}_${tpIso(pr.week)}.xlsx`);
+      XLSX.writeFile(wb, pr.mode === 'month' ? `Stunden_${pr.year}-${String(pr.month).padStart(2, '0')}.xlsx` : `Stunden_KW${String(tpIsoKw(pr.week)).padStart(2, '0')}_${tpIso(pr.week)}.xlsx`);
     }

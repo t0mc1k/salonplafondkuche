@@ -12,6 +12,10 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.24', range: '', date: 'November 2026', title: 'Stunden & Lohn: Woche oder Monat',
+    changes: [
+      ['new', 'Stunden & Lohn hat wieder die Monatsansicht: Umschalter „Woche | Monat“ neben der Zeitraum-Anzeige. Die Woche (KW, Mo–So) bleibt die Standardansicht. Beim Umschalten springt die App zum passenden Monat bzw. zur passenden Woche. Pause (30 Min.), Summen ohne/mit Pause, Detail pro Tag und Excel funktionieren in beiden Ansichten.']
+    ] },
   { version: '1.0.23', range: '', date: 'November 2026', title: 'Stunden & Lohn pro Woche',
     changes: [
       ['improved', 'Stunden & Lohn rechnet jetzt pro Kalenderwoche (Montag bis Sonntag, KW und Datum wie im Dienstplan) statt pro Monat. Wochenwahl mit ‹ ›, „Heute“ springt zur aktuellen Woche. Wochen über einen Monatswechsel werden richtig zusammengezählt.'],
