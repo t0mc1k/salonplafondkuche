@@ -114,7 +114,8 @@
           <button type="button" class="ui-btn-ghost" onclick="ftToday()">Heute</button>
         </div>
         <div class="fm-row-flex" style="gap:.4rem;flex-wrap:wrap">
-          <button type="button" class="ui-btn-ghost" onclick="ftScanOpen()">📷 Foto einlesen</button>
+          <button type="button" class="ui-btn-ghost" onclick="ftDisplayOpen()" title="Digitale Anzeige am Kühlgerät fotografieren">📟 Display</button>
+          <button type="button" class="ui-btn-ghost" onclick="ftScanOpen()">📷 Liste einlesen</button>
           <button type="button" class="ui-btn-ghost" onclick="ftPreview()">📤 Teilen</button>
           <button type="button" class="ui-btn-ghost" onclick="ftExportExcel()">📗 Excel</button>
           <button type="button" class="ui-btn-ghost" onclick="ftManage()">⚙️ Kühlgeräte</button>
@@ -419,6 +420,100 @@
       fmClose('ftScan'); ftSc = null;
       await ftLoad();
       fmToast('✓ ' + rows.length + ' Messwerte aus dem Foto übernommen');
+    }
+
+    // ---------- Display ablesen (rote LED-Anzeige am Kühlgerät) ----------
+    // Gerät und Datum wählen, Display fotografieren, die KI liest die Zahl, du bestätigst, danach gleich das nächste Gerät.
+    let ftDp = null;   // { m, fridgeId, day, temp, unsure, url, saved: [] }
+
+    function ftDisplayOpen() {
+      if (!ft.fridges.length) return fmToast('Keine Kühlgeräte angelegt.');
+      const m = fmOpen('ftDisp', { title: '📟 Display ablesen', sub: 'Foto der digitalen Anzeige am Kühlgerät. Die Zahl wird erst nach deiner Bestätigung gespeichert.', layer: 2 });
+      ftDp = { m, fridgeId: ft.fridges[0].id, day: fmIso(new Date()), temp: '', unsure: false, url: '', saved: [], busy: false, msg: '' };
+      ftDispRender();
+    }
+    const ftDispFridge = () => ft.fridges.find(f => f.id === ftDp.fridgeId) || ft.fridges[0];
+    function ftDispRender() {
+      const d = ftDp, f = ftDispFridge(), today = fmIso(new Date());
+      const hasVal = d.temp !== '';
+      const n = ftNumOrNull(d.temp);
+      const valid = hasVal && n !== undefined && n !== null && n >= -60 && n <= 60;
+      const out = valid && ftOut(f, n);
+      const freezerHint = valid && f.temp_max != null && f.temp_max <= -10 && n > 0;
+      d.m.setBody(`<div class="fm-stack">
+        <label class="fm-lbl">Kühlgerät<select id="ftDpFridge" class="ui-input" onchange="ftDispPick(this.value)">${ft.fridges.map(x => `<option value="${escapeHtml(x.id)}"${x.id === f.id ? ' selected' : ''}>${escapeHtml(x.name)} (${escapeHtml(ftRange(x))})</option>`).join('')}</select></label>
+        <label class="fm-lbl">Datum<input type="date" id="ftDpDay" class="ui-input" max="${today}" value="${escapeHtml(d.day)}" onchange="ftDp.day = this.value || ftDp.day"></label>
+        <input type="file" id="ftDpCam" accept="image/*" capture="environment" class="hidden" onchange="ftDispPicked(this)">
+        <input type="file" id="ftDpGal" accept="image/*" class="hidden" onchange="ftDispPicked(this)">
+        <div class="rs-actions"><button type="button" class="ui-btn-primary rs-big" onclick="document.getElementById('ftDpCam').click()">📷 Display fotografieren</button>
+          <button type="button" class="ui-btn-ghost rs-big" onclick="document.getElementById('ftDpGal').click()">🖼️ Aus Galerie / Datei wählen</button></div>
+        <p class="fm-hint">Tipp: nah ran, die roten Ziffern mittig und scharf, möglichst ohne Spiegelung (Blitz aus, leicht schräg gegen Reflexe). Die Minuszeichen vor der Zahl müssen sichtbar sein.</p>
+        ${d.busy ? '<div class="rs-busy"><div class="rs-spin"></div><p><b>Die KI liest das Display …</b></p></div>' : ''}
+        ${d.msg ? `<p class="rs-err">⚠️ ${escapeHtml(d.msg)}</p>` : ''}
+        ${d.url || hasVal ? `<div class="ft-dp-res">${d.url ? `<img class="ft-dp-img" src="${escapeHtml(d.url)}" alt="Display" onclick="openPhotoPreview(${jsArg(d.url)})">` : ''}
+          <div class="ft-dp-val"><label class="fm-lbl">Gelesene Temperatur (°C)<div class="ft-dp-row"><input type="text" id="ftDpTemp" inputmode="decimal" class="ft-dp-in${d.unsure ? ' ft-sc-unsure' : ''}${out ? ' ft-sc-out' : ''}" value="${escapeHtml(d.temp)}" oninput="ftDispEdit(this.value)" onfocus="this.select()"><button type="button" class="ui-btn-ghost" onclick="ftDispSign()" title="Vorzeichen umdrehen">±</button></div></label>
+            <div class="ft-dp-state ${out ? 'bad' : (valid ? 'ok' : '')}">${valid ? (out ? '⚠️ außerhalb Soll (' + escapeHtml(ftRange(f)) + ')' : '✅ im Soll-Bereich') : ''}</div>
+            ${d.unsure ? '<div class="ft-dp-state bad">Die KI ist unsicher. Bitte mit dem Foto vergleichen.</div>' : ''}
+            ${freezerHint ? '<div class="ft-dp-state bad">Tiefkühler: fehlt das Minuszeichen? Mit „±“ umdrehen.</div>' : ''}</div></div>` : ''}
+        ${d.saved.length ? `<p class="fm-hint">✓ Gespeichert: ${escapeHtml(d.saved.join(' · '))}</p>` : ''}</div>`);
+      d.m.setFoot(`<button type="button" class="ui-btn-ghost" onclick="fmClose('ftDisp')">Fertig</button>
+        <button type="button" class="ui-btn-primary" id="ftDpSave" ${valid ? '' : 'disabled'} onclick="ftDispSave()">💾 Speichern & nächstes Gerät</button>`);
+    }
+    function ftDispPick(id) { ftDp.fridgeId = id; ftDp.temp = ''; ftDp.unsure = false; ftDp.url = ''; ftDp.msg = ''; ftDispRender(); }
+    function ftDispEdit(v) {
+      ftDp.temp = v; ftDp.unsure = false;
+      const n = ftNumOrNull(v), f = ftDispFridge();
+      const valid = v !== '' && n !== undefined && n !== null && n >= -60 && n <= 60;
+      const b = document.getElementById('ftDpSave'); if (b) b.disabled = !valid;
+      const inp = document.getElementById('ftDpTemp'); if (inp) { inp.classList.remove('ft-sc-unsure'); inp.classList.toggle('ft-sc-out', valid && ftOut(f, n)); }
+    }
+    function ftDispSign() { const n = ftNumOrNull(ftDp.temp); if (n === null || n === undefined) return; ftDp.temp = ftFmt(-n); ftDp.unsure = false; ftDispRender(); }
+
+    async function ftDispPicked(input) {
+      const file = input && input.files && input.files[0];
+      if (!file || !ftDp) return;
+      input.value = '';
+      ftDp.msg = '';
+      if (!/^image\//.test(file.type)) { ftDp.msg = 'Bitte ein Bild auswählen.'; return ftDispRender(); }
+      if (typeof rsPrepare !== 'function') { ftDp.msg = 'Bild-Funktion nicht geladen.'; return ftDispRender(); }
+      ftDp.busy = true; ftDp.temp = ''; ftDp.url = ''; ftDispRender();
+      const f = ftDispFridge();
+      try {
+        const prep = await rsPrepare(file);
+        const url = URL.createObjectURL(prep.blob);
+        const b64 = await rsBlobToBase64(prep.blob);
+        const { data, error } = await _supabase.functions.invoke('scan-temps', {
+          body: { mode: 'display', image: b64, mime: 'image/jpeg', fridges: [{ name: f.name, min: f.temp_min, max: f.temp_max }] },
+          headers: { 'x-staff-token': getStaffToken() }
+        });
+        if (!ftDp) return;
+        ftDp.busy = false; ftDp.url = url;
+        if (error || !data || data.error) { ftDp.msg = ftScanErrText(error, data); return ftDispRender(); }
+        if (!data.readable || data.temp == null) { ftDp.msg = 'Auf dem Foto konnte keine Temperatur gelesen werden.' + (data.note ? ' Hinweis der KI: ' + data.note : '') + ' Du kannst den Wert auch selbst eintragen.'; return ftDispRender(); }
+        ftDp.temp = ftFmt(data.temp); ftDp.unsure = !!data.uncertain;
+        if (data.note) ftDp.msg = '';
+        ftDispRender();
+      } catch (e) {
+        if (ftDp) { ftDp.busy = false; ftDp.msg = 'Das Foto konnte nicht verarbeitet oder gesendet werden. Bitte Internet prüfen und noch einmal versuchen.'; ftDispRender(); }
+      }
+    }
+
+    async function ftDispSave() {
+      const d = ftDp; if (!d) return;
+      const f = ftDispFridge(), n = ftNumOrNull(d.temp);
+      if (n === null || n === undefined || n < -60 || n > 60) return fmToast('Bitte eine Temperatur wie 3 oder -18 eintragen.');
+      if (d.day > fmIso(new Date())) return fmToast('Das Datum liegt in der Zukunft.');
+      const temp = Math.round(n * 10) / 10;
+      const r = await _supabase.from('fridge_temps').upsert({ fridge_id: f.id, day: d.day, temp }, { onConflict: 'fridge_id,day' }).select();
+      if (r.error || !r.data || !r.data.length) return fmToast(r.error ? r.error.message : 'Nicht gespeichert (keine Berechtigung).');
+      if (ftOut(f, temp)) fmToast('⚠️ ' + f.name + ': ' + ftFmt(temp) + ' °C liegt außerhalb (' + ftRange(f) + ').');
+      d.saved.push(f.name + ' ' + ftFmt(temp));
+      // nächstes Gerät vorwählen
+      const i = ft.fridges.findIndex(x => x.id === f.id);
+      d.fridgeId = ft.fridges[(i + 1) % ft.fridges.length].id;
+      d.temp = ''; d.unsure = false; d.url = ''; d.msg = '';
+      ftDispRender();
+      ftLoad();
     }
 
     // ---------- Kühlgeräte verwalten ----------

@@ -112,31 +112,33 @@
         const list = areas.filter(a => a.frequency === freq);
         if (!list.length) return;
         const doneCount = list.filter(a => dwLastDone(a)).length;
-        html += `<h4 class="dw-group">${DW_FREQ[freq][0]} <small>${doneCount} / ${list.length} erledigt ${dwPeriodText(freq)}</small></h4><div class="dw-grid">`;
-        html += list.map(a => {
+        html += `<h4 class="dw-group">${DW_FREQ[freq][0]} <small>${doneCount} / ${list.length} erledigt ${dwPeriodText(freq)}</small></h4><div class="dw-list">`;
+        // Offene Aufgaben zuerst (auf dem Handy sofort sichtbar), erledigte darunter
+        const sorted = list.slice().sort((x, y) => (dwLastDone(x) ? 1 : 0) - (dwLastDone(y) ? 1 : 0));
+        html += sorted.map(a => {
           const last = dwLastDone(a);
-          const photo = a.photo_url
-            ? `<img class="dw-photo" src="${escapeHtml(a.photo_url)}" alt="${escapeHtml(a.name)}" loading="lazy" onclick="openPhotoPreview(${jsArg(a.photo_url)})">`
-            : '<div class="dw-photo dw-nophoto">🧽</div>';
-          let action;
+          const thumb = a.photo_url
+            ? `<img class="dw-thumb" src="${escapeHtml(a.photo_url)}" alt="${escapeHtml(a.name)}" loading="lazy" onclick="openPhotoPreview(${jsArg(a.photo_url)})" title="Foto vergrößern">`
+            : '<div class="dw-thumb dw-nophoto">🧽</div>';
+          let info = '', action = '';
           if (last) {
             const mine = String(last.done_by || '').toLowerCase() === meLower;
             const undo = (mine || userIsAdmin) && (userIsAdmin || (Date.now() - new Date(last.done_at).getTime() < 3600000))
-              ? ` <button type="button" class="fm-btn" onclick="dwUndo(${jsArg(last.id)})" title="Eintrag zurücknehmen">↩️</button>` : '';
+              ? `<button type="button" class="fm-btn dw-ico" onclick="dwUndo(${jsArg(last.id)})" title="Eintrag zurücknehmen" aria-label="Zurücknehmen">↩️</button>` : '';
             const team = [last.done_by].concat(last.with_names || []).join(' + ');
-            const canHelp = mine || userIsAdmin;
-            const help = canHelp ? ` <button type="button" class="fm-btn" onclick="dwEditHelpers(${jsArg(last.id)})" title="Kollegen eintragen, die mitgeholfen haben">👥</button>` : '';
-            action = `<div class="dw-done">✅ ${escapeHtml(team)} · ${escapeHtml(fmDateTime(last.done_at))}${help}${undo}</div>`;
+            const help = (mine || userIsAdmin) ? `<button type="button" class="fm-btn dw-ico" onclick="dwEditHelpers(${jsArg(last.id)})" title="Kollegen eintragen, die mitgeholfen haben" aria-label="Kollegen">👥</button>` : '';
+            info = `<div class="dw-done">✅ ${escapeHtml(team)} · ${escapeHtml(fmDateTime(last.done_at))}</div>`;
+            action = help + undo;
           } else if (dwCanWash() || userIsAdmin) {
-            action = `<div class="dw-actions"><button type="button" class="ui-btn-primary dw-btn" onclick="dwMark(${jsArg(a.id)}, this)">✓ Erledigt</button>
-              <button type="button" class="ui-btn-ghost dw-btn" onclick="dwMarkWith(${jsArg(a.id)})" title="Zu zweit geputzt: Kollegen eintragen">👥 Zu zweit</button></div>`;
+            action = `<button type="button" class="ui-btn-primary dw-ok" onclick="dwMark(${jsArg(a.id)}, this)">✓ Erledigt</button>
+              <button type="button" class="fm-btn dw-ico" onclick="dwMarkWith(${jsArg(a.id)})" title="Zu zweit geputzt: Kollegen eintragen" aria-label="Zu zweit">👥</button>`;
           } else {
-            action = '<div class="dw-open">⏳ Offen</div>';
+            info = '<div class="dw-open">⏳ Offen</div>';
           }
-          return `<div class="dw-card${last ? ' dw-card-done' : ''}">${photo}<div class="dw-body">
+          return `<div class="dw-row${last ? ' dw-row-done' : ''}">${thumb}<div class="dw-rowmain">
               <div class="dw-name">${escapeHtml(a.name)}</div>
-              ${a.description ? `<div class="dw-desc">${escapeHtml(a.description)}</div>` : ''}
-              ${action}</div></div>`;
+              ${a.description ? `<div class="dw-desc">${escapeHtml(a.description)}</div>` : ''}${info}</div>
+            <div class="dw-rowact">${action}</div></div>`;
         }).join('');
         html += '</div>';
       });

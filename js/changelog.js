@@ -12,6 +12,12 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.26', range: '', date: 'November 2026', title: 'Display am Kühlgerät ablesen, Abwasher-Aufgaben als Liste',
+    changes: [
+      ['new', 'Kühlschrank-Temperaturen: „📟 Display“. Die rote digitale Anzeige am Kühlgerät fotografieren (oder ein Foto wählen), die KI liest die Temperatur. Du siehst die Zahl groß, vergleichst mit dem Foto, korrigierst bei Bedarf (± dreht das Vorzeichen, z. B. wenn bei einem Tiefkühler das Minus fehlt) und speicherst. Danach ist gleich das nächste Gerät vorgewählt. Datum frei wählbar (nicht in der Zukunft).'],
+      ['improved', 'Abwasher → Meine Aufgaben: kompakte Liste statt großer Karten. Links ein kleines Vorschaubild (Tippen = groß), in der Mitte Name, Beschreibung und wer es erledigt hat, rechts „✓ Erledigt“ und 👥. Offene Aufgaben stehen oben, erledigte darunter.'],
+      ['info', 'Einrichtung: Edge Function scan-temps erneut bereitstellen (dieselbe Datei supabase/functions/scan-temps/index.ts, sie kennt jetzt auch das Display). SQL ist nicht nötig.']
+    ] },
   { version: '1.0.25', range: '', date: 'November 2026', title: 'Tägliche Bestellliste, Temperaturen teilen & per Foto',
     changes: [
       ['new', 'Bestellliste ist jetzt eine tägliche Meldung: pro Tag eine Liste mit Datum (z. B. „Sa 14.11.2026“). Mit ‹ › blätterst du durch die gespeicherten Tage, „Heute“ springt zu heute, 📅 wählt ein Datum, 📜 zeigt alle gespeicherten Tage. Ein neuer Tag beginnt automatisch eine neue Liste. Erledigte Listen lassen sich wieder öffnen.'],
