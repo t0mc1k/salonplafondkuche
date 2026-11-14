@@ -16,7 +16,7 @@
       if (!s) return 'empty';
       const p = tpParseCell(s);
       if (!p) return 'bad';
-      if (p.code && ['OFF', 'K', 'U', 'ZA'].indexOf(p.code) === -1) return 'bad';   // z. B. „1“ oder „??“ sind keine Schicht
+      if (p.code && ['OFF', 'K', 'U', 'ZA', 'S'].indexOf(p.code) === -1) return 'bad';   // z. B. „1“ oder „??“ sind keine Schicht
       return 'ok';
     }
 
@@ -25,7 +25,7 @@
       const s = String(text == null ? '' : text).trim();
       if (!s || rsCellStatus(s) !== 'ok') return s;
       const p = tpParseCell(s);
-      if (p.code) return p.code;
+      if (p.code) return p.code === 'OFF' ? 'F' : p.code;   // Frei wird als „F“ geschrieben
       if (p.s2) return p.s1[0] + '-' + p.s1[1] + '/' + p.s2[0] + '-' + p.s2[1];
       return p.s1[0] + ' - ' + p.s1[1] + (p.station ? '/' + p.station : '');
     }
@@ -35,7 +35,7 @@
       const row = tpFindRow(name, tpAddDays(rs.week, dayIdx));
       if (!row) return '';
       const code = tpSpecialCode(row);
-      if (code) return code === 'X' ? 'OFF' : code;
+      if (code) return (code === 'X' || code === 'OFF') ? 'F' : code;
       if (tpCellMinutes(row) === 0) return '';
       let t = tpTimeInput(row.shift_1_start) + ' - ' + tpTimeInput(row.shift_1_end);
       if (tpToMinutes(row.shift_2_start) !== null) t = tpTimeInput(row.shift_1_start) + '-' + tpTimeInput(row.shift_1_end) + '/' + tpTimeInput(row.shift_2_start) + '-' + tpTimeInput(row.shift_2_end);
@@ -189,7 +189,10 @@
       rs.kw = data.kw || null; rs.note = data.note || ''; rs.dateFrom = data.date_from || null;
       rs.exclusive = new Set((data.exclusive_days || []).filter(n => n >= 0 && n <= 6));
       rs.exclTouched = false; rs.chk = false;
-      rs.rows = data.rows.map(r => ({ name: r.name, matched: !!r.matched, group: r.group || '', cells: (r.cells || []).slice(0, 7).map(c => rsFormatCell(c)), flags: (r.uncertain || []).slice(0, 7).map(Boolean), keep: true }));
+      rs.rows = data.rows.map(r => { const mt = tpMatchName(r.printed || r.name); return ({ name: mt.matched ? mt.name : (r.matched ? r.name : (r.printed || r.name)), printed: r.printed || r.name, matched: mt.matched || !!r.matched, planOnly: false, suggest: mt.suggest || '', position: r.position || '', group: r.group || '', cells: (r.cells || []).slice(0, 7).map(c => rsFormatCell(c)), flags: (r.uncertain || []).slice(0, 7).map(Boolean), keep: true }); });
+      // dieselbe Person in zwei Zeilen = Zuordnung prüfen (nie auf Zeilenzahl/Reihenfolge verlassen)
+      const seenN = {}; rs.dupes = [];
+      rs.rows.forEach(r => { const k = tpPlainName(r.name); if (!k) return; if (seenN[k]) rs.dupes.push(r.name); seenN[k] = true; });
       rs.rows.forEach(r => { while (r.cells.length < 7) r.cells.push(''); while (r.flags.length < 7) r.flags.push(false); });
       rsRenderReview();
     }
@@ -208,7 +211,7 @@
       let bad = 0, unsure = 0, chg = 0, cells = 0, unknown = 0;
       rs.rows.forEach(r => {
         if (!r.keep) return;
-        if (!r.matched) unknown++;
+        if (!r.matched && !r.planOnly && String(r.name).trim()) unknown++;
         r.cells.forEach((c, j) => {
           const st = rsCellStatus(c);
           if (st === 'empty') return;
@@ -231,12 +234,17 @@
       const head = `<tr><th class="rs-name-col">Name</th>${days.map((d, i) => `<th class="rs-dayhead${rs.exclusive.has(i) ? ' rs-excl' : ''}" onclick="rsToggleExcl(${i})" title="Klick: Exklusiv-Schicht ein/aus">${RS_DAYS[i]}<small>${tpDm(d)}</small>${rs.exclusive.has(i) ? '<small>⭐</small>' : ''}</th>`).join('')}<th></th></tr>`;
       const body = rs.rows.map((r, i) => {
         return `<tr data-i="${i}" class="${r.keep ? '' : 'rs-off'}">
-          <th class="rs-name-col"><input type="text" class="rs-name${r.matched ? '' : ' rs-unknown'}" list="rsNames" value="${escapeHtml(r.name)}" onchange="rsName(${i}, this)" title="${r.matched ? 'Im Personal gefunden' : 'Nicht im Personal: wird trotzdem eingetragen'}">
-            ${r.matched ? '' : '<small class="rs-nm">⚠️ nicht im Personal</small>'}</th>
+          <th class="rs-name-col"><input type="text" class="rs-name${(r.matched || r.planOnly) ? '' : ' rs-unknown'}" list="rsNames" value="${escapeHtml(r.name)}" onchange="rsName(${i}, this)" title="${r.matched ? (r.printed && r.printed !== r.name ? 'Auf dem Foto gelesen: ' + r.printed : 'Im Personal gefunden') : 'Nicht im Personal'}">
+            ${r.matched ? '' : '<small class="rs-nm">' + (r.planOnly ? '📄 nur im Dienstplan' : '⚠️ neu / unklar') + '</small>'}</th>
           ${r.cells.map((c, j) => `<td><input type="text" class="${rsCellClass(r, j)}" value="${escapeHtml(c)}" data-i="${i}" data-j="${j}" title="${escapeHtml(rsTitle(r, j))}" onfocus="this.select()" oninput="rsCell(${i}, ${j}, this)" onchange="rsCellDone(${i}, ${j}, this)"></td>`).join('')}
           <td><button type="button" class="rs-del" onclick="rsDelRow(${i})" title="Zeile entfernen">🗑</button></td></tr>`;
       }).join('');
-      rs.m.setBody(`${warnings.map(w => `<p class="rs-err">⚠️ ${w}</p>`).join('')}
+      if (rs.dupes && rs.dupes.length) warnings.push(`Dieselbe Person steht in mehreren Zeilen: <b>${escapeHtml(rs.dupes.join(', '))}</b>. Bitte Namen prüfen, sonst gewinnt die letzte Zeile.`);
+      const present = new Set(rs.rows.filter(r => r.keep).map(r => tpPlainName(r.name)));
+      const absent = tpEmployees().map(e => e.name).filter(n => !present.has(tpPlainName(n)) && tpRows.some(x => String(x.employee_name).toLowerCase() === n.toLowerCase()));
+      if (absent.length) warnings.push(`Im gespeicherten Plan, aber nicht auf dem Foto gefunden: <b>${escapeHtml(absent.join(', '))}</b>. Ihre Einträge bleiben unverändert.`);
+      const newPanel = rsNewPeopleHtml();
+      rs.m.setBody(`${warnings.map(w => `<p class="rs-err">⚠️ ${w}</p>`).join('')}${newPanel}
         ${rs.note ? `<p class="rs-small">📝 Hinweis der KI: ${escapeHtml(rs.note)}</p>` : ''}
         <div class="rs-legend"><span class="rs-l rs-l-unsure">orange = unsicher gelesen</span><span class="rs-l rs-l-bad">rot = ungültig, bitte korrigieren</span><span class="rs-l rs-l-chg">blau unterstrichen = anders als im gespeicherten Plan</span></div>
         <div class="rs-wrap"><table class="rs-table"><thead>${head}</thead><tbody>${body}</tbody></table></div>
@@ -257,9 +265,9 @@
     function rsUpdateStats() {
       const s = rsStats();
       const el = document.getElementById('rsStats');
-      if (el) el.innerHTML = `<b>${s.rows}</b> Personen · <b>${s.cells}</b> Einträge · <span class="${s.chg ? 'rs-s-chg' : ''}"><b>${s.chg}</b> anders als bisher</span> · <span class="${s.unsure ? 'rs-s-unsure' : ''}"><b>${s.unsure}</b> unsicher</span> · <span class="${s.bad ? 'rs-s-bad' : ''}"><b>${s.bad}</b> ungültig</span>`;
+      if (el) el.innerHTML = `<b>${s.rows}</b> Personen · <b>${s.cells}</b> Einträge · <span class="${s.chg ? 'rs-s-chg' : ''}"><b>${s.chg}</b> anders als bisher</span> · <span class="${s.unsure ? 'rs-s-unsure' : ''}"><b>${s.unsure}</b> unsicher</span> · <span class="${s.bad ? 'rs-s-bad' : ''}"><b>${s.bad}</b> ungültig</span>` + (s.unknown ? ` · <span class="rs-s-bad"><b>${s.unknown}</b> neu/unklar</span>` : '');
       const btn = document.getElementById('rsSaveBtn');
-      if (btn) { btn.disabled = !(rs.chk && s.bad === 0 && s.cells > 0); btn.title = s.bad ? 'Zuerst die roten Zellen korrigieren' : (rs.chk ? '' : 'Bitte zuerst bestätigen, dass du alles verglichen hast'); }
+      if (btn) { btn.disabled = !(rs.chk && s.bad === 0 && s.unknown === 0 && s.cells > 0); btn.title = s.bad ? 'Zuerst die roten Zellen korrigieren' : (s.unknown ? 'Zuerst neue Personen klären (zuordnen, Konto anlegen oder nur im Dienstplan)' : (rs.chk ? '' : 'Bitte zuerst bestätigen, dass du alles verglichen hast')); }
     }
 
     function rsCell(i, j, el) {
@@ -277,14 +285,46 @@
     }
     function rsName(i, el) {
       const r = rs.rows[i]; r.name = el.value.trim();
-      const known = (staffDatabaseRecords || []).some(s => String(s.name).toLowerCase() === r.name.toLowerCase());
-      r.matched = known;
-      if (known) r.name = (staffDatabaseRecords.find(s => String(s.name).toLowerCase() === r.name.toLowerCase()) || {}).name || r.name;
+      const mt = tpMatchName(r.name);
+      r.matched = mt.matched; r.planOnly = false; r.suggest = mt.suggest || '';
+      if (mt.matched) r.name = mt.name;
       rsRenderReview();
     }
     function rsDelRow(i) { rs.rows[i].keep = false; rsRenderReview(); }
-    function rsAddRow() { rs.rows.push({ name: '', matched: false, group: '', cells: ['', '', '', '', '', '', ''], flags: [false, false, false, false, false, false, false], keep: true }); rsRenderReview(); const el = document.querySelector('#rsModal tr:last-child .rs-name'); if (el) el.focus(); }
+    function rsAddRow() { rs.rows.push({ name: '', printed: '', matched: false, planOnly: false, suggest: '', position: '', group: '', cells: ['', '', '', '', '', '', ''], flags: [false, false, false, false, false, false, false], keep: true }); rsRenderReview(); const el = document.querySelector('#rsModal tr:last-child .rs-name'); if (el) el.focus(); }
     function rsToggleExcl(i) { if (rs.exclusive.has(i)) rs.exclusive.delete(i); else rs.exclusive.add(i); rs.exclTouched = true; rsRenderReview(); }
+
+    // ---------- Neue / unklare Personen ----------
+    function rsNewPeopleHtml() {
+      const list = rs.rows.map((r, i) => ({ r, i })).filter(x => x.r.keep && !x.r.matched && !x.r.planOnly && String(x.r.name).trim());
+      if (!list.length) return '';
+      const opts = sel => '<option value="">– vorhandene Person wählen –</option>' + (staffDatabaseRecords || []).map(s => `<option value="${escapeHtml(s.name)}"${s.name === sel ? ' selected' : ''}>${escapeHtml(s.name)}</option>`).join('');
+      return `<div class="rs-box rs-warn"><h4>🆕 Neue oder unklare Personen</h4>
+        <p class="rs-small">Das System kannte diese Namen nicht sicher. Es verlässt sich nur auf den <b>Namen</b>, nicht auf die Zeilen. Bitte pro Person entscheiden:</p>
+        ${list.map(x => `<div class="rs-newp"><div><b>${escapeHtml(x.r.printed || x.r.name)}</b>${x.r.position ? ' · ' + escapeHtml(x.r.position) : ''}${x.r.group ? ' · ' + escapeHtml(x.r.group) : ''}</div>
+          <div class="rs-newp-act"><select id="rsMap${x.i}" class="ui-field">${opts(x.r.suggest)}</select>
+          <button type="button" class="fm-btn" onclick="rsMapTo(${x.i})">✔ Zuordnen</button></div>
+          <div class="rs-newp-act"><button type="button" class="fm-btn" onclick="rsCreate(${x.i})">👤 Konto anlegen (PIN 1234)</button>
+          <button type="button" class="fm-btn" onclick="rsPlanOnly(${x.i})">📄 Nur im Dienstplan</button></div></div>`).join('')}</div>`;
+    }
+    function rsMapTo(i) {
+      const v = (document.getElementById('rsMap' + i) || {}).value;
+      if (!v) return alert('Bitte zuerst eine vorhandene Person wählen.');
+      const r = rs.rows[i]; r.name = v; r.matched = true; r.planOnly = false;
+      rsRenderReview();
+    }
+    function rsPlanOnly(i) { const r = rs.rows[i]; r.planOnly = true; rsRenderReview(); }
+    async function rsCreate(i) {
+      const r = rs.rows[i];
+      const name = String(r.name || r.printed).trim();
+      if (!name) return;
+      if (!confirm('Konto für „' + name + '“ anlegen?\nStart-PIN 1234 (muss beim ersten Login geändert werden).' + (r.position ? '\nPosition: ' + r.position : ''))) return;
+      const res = await tpCreateAccounts([{ name, job: r.position, team: r.group }]);
+      if (res.errs.length) return alert('Nicht angelegt: ' + res.errs.join('\n'));
+      r.name = name; r.matched = true; r.planOnly = false;
+      showAppToast({ initial: '👤', title: 'Konto angelegt', text: name + ' · Start-PIN 1234' });
+      rsRenderReview();
+    }
 
     // ---------- Speichern ----------
     function rsBuildRows() {
@@ -309,10 +349,11 @@
       if (rs.rows.some(r => r.keep && !String(r.name).trim() && r.cells.some(c => rsCellStatus(c) === 'ok'))) return alert('Eine Zeile mit Schichten hat keinen Namen. Bitte Namen eintragen oder die Zeile entfernen.');
       const out = rsBuildRows();
       if (!out.length) return alert('Es gibt nichts zu speichern.');
-      const unknown = rs.rows.filter(r => r.keep && !r.matched && String(r.name).trim()).map(r => r.name);
+      if (s.unknown) return alert('Bitte zuerst die neuen Personen klären (zuordnen, Konto anlegen oder nur im Dienstplan).');
+      const unknown = rs.rows.filter(r => r.keep && !r.matched && r.planOnly && String(r.name).trim()).map(r => r.name);
       const exList = Array.from(rs.exclusive).sort().map(i => RS_DAYS[i]).join(', ');
       const msg = `KW ${tpIsoKw(rs.week)} (${tpWeekRange(rs.week)}): ${out.length} Einträge von ${s.rows} Personen in den Entwurf übernehmen?\n${s.chg} davon sind anders als bisher im Plan.`
-        + (unknown.length ? `\n\nNicht im Personal (werden trotzdem eingetragen): ${unknown.join(', ')}` : '')
+        + (unknown.length ? `\n\nNur im Dienstplan (ohne Konto): ${unknown.join(', ')}` : '')
         + (rs.exclusive.size ? `\nExklusiv-Tage: ${exList}` : '')
         + '\n\nVorhandene Einträge dieser Personen an diesen Tagen werden überschrieben. Leere Felder ändern nichts.';
       if (!confirm(msg)) return;

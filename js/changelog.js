@@ -12,6 +12,17 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.20', range: '', date: 'November 2026', title: 'Dienstplan: neue Personen, Tippfehler, F/S; Teilen; Pause',
+    changes: [
+      ['improved', 'Dienstplan-Foto und Excel-Import ordnen Personen nur über den NAMEN zu, nicht mehr über Zeilen oder Reihenfolge. Tippfehler wie „Tomas Kardoszzzzz“ werden automatisch zu „Tomas Kardos“. Die KI wurde für schräge Fotos und leere/Gruppenzeilen angewiesen, Zeile für Zeile am Namen entlangzulesen.'],
+      ['new', 'Neue Person im Plan (z. B. neuer Lehrling): Du wählst pro Person „👤 Konto anlegen (PIN 1234)“, „✔ Zuordnen“ zu einer vorhandenen Person oder „📄 Nur im Dienstplan“ (ohne Konto). Position und Team aus dem Plan werden übernommen. Gespeichert wird erst, wenn alle geklärt sind. Gleiche Personen in zwei Zeilen und Personen, die auf dem Foto fehlen, werden gemeldet.'],
+      ['improved', 'Frei heißt jetzt „F“ (nicht mehr OFF). F, FF, OFF, X und „frei“ werden alle als Frei erkannt. Neu: „S“ = Schule (Lehrlinge). Im Zellen-Dialog gibt es „Frei (F)“ und „Schule (S)“.'],
+      ['improved', 'Dienstplan-Tabelle wie der echte Aushang: Spalte „Position“, ohne „Unterschrift“. Auch im Excel-Export.'],
+      ['new', 'Orte (Abwasher) und Störung melden: Foto jetzt wahlweise „📷 aufnehmen“ oder „🖼️ Datei / Galerie wählen“ (vorher startete immer die Kamera).'],
+      ['new', 'Bestellliste: „📤 Teilen“ mit Vorschau des Dokuments, Teilen über WhatsApp (Bild oder PDF, über das Teilen-Menü des Handys), als Text in WhatsApp, als Bild (PNG) oder PDF speichern, drucken. Nach „Ich bin fertig“ steht der Knopf ganz oben.'],
+      ['new', 'Stunden & Lohn: bei jeder Schicht über 6 Stunden werden automatisch 30 Minuten Pause abgezogen (im Tag änderbar). Es gibt zwei Summen: ohne Pause und mit Pause, in der Übersicht, im Detail und im Excel.'],
+      ['info', 'Einrichtung: Edge Function scan-roster neu bereitstellen (Datei supabase/functions/scan-roster/index.ts), sonst bleibt die alte KI-Anweisung aktiv. Alles andere gilt sofort nach dem Hochladen.']
+    ] },
   { version: '1.0.19', range: '', date: 'November 2026', title: 'Mitteilungen im Stil „NeXuS Glass“ lesbar',
     changes: [
       ['fixed', 'Im dunklen Stil „NeXuS Glass“ war der blinkende Mitteilungs-Chip unter der Begrüßung (🔔 neu / 🚀 Neu in v…) dunkel auf dunkel und der Text nicht zu sehen. Jetzt steht er in hellem Gold.']

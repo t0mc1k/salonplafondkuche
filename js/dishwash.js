@@ -333,7 +333,12 @@
           <p class="fm-hint">Wöchentlich = einmal pro Woche (Mo–So), monatlich = einmal pro Kalendermonat.</p></div>
         <div class="fm-field"><label class="form-label">Foto des Ortes</label>
           <div id="dwfPhotoBox">${dwPhotoBoxHtml()}</div>
-          <input type="file" id="dwfPhoto" accept="image/*" capture="environment" onchange="dwPhotoPicked(this)" class="ui-field">
+          <input type="file" id="dwfPhotoCam" accept="image/*" capture="environment" onchange="dwPhotoPicked(this)" class="hidden">
+          <input type="file" id="dwfPhotoGal" accept="image/*" onchange="dwPhotoPicked(this)" class="hidden">
+          <div class="fm-row-flex" style="gap:.4rem;flex-wrap:wrap">
+            <button type="button" class="ui-btn-ghost" onclick="document.getElementById('dwfPhotoCam').click()">📷 Foto aufnehmen</button>
+            <button type="button" class="ui-btn-ghost" onclick="document.getElementById('dwfPhotoGal').click()">🖼️ Datei / Galerie wählen</button>
+          </div>
           <div id="dwfPhotoStatus" class="fm-hint"></div></div>
         <label class="switch-row"><span>Aktiv (sichtbar für Abwasher)</span><span class="switch"><input type="checkbox" id="dwfActive" ${dw.edit.active ? 'checked' : ''}><span class="switch-track"></span></span></label>
       </div>`);

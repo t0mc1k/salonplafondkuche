@@ -96,7 +96,12 @@
           <div class="fm-tabs" id="mtUrg">${Object.keys(MAINT_URGENCY).map(k => `<button type="button" class="fm-tab${k === 'normal' ? ' active' : ''}" data-u="${k}" onclick="mtPickUrgency('${k}')">${MAINT_URGENCY[k][0]}</button>`).join('')}</div>
           <p class="fm-hint">Notfall = Gefahr oder Betrieb geht nicht weiter (z. B. Wasser läuft aus).</p></div>
         <div class="fm-field"><label class="form-label">Foto (optional)</label>
-          <input type="file" id="mtPhoto" accept="image/*" capture="environment" onchange="mtPhotoPicked(this)" class="ui-field">
+          <input type="file" id="mtPhotoCam" accept="image/*" capture="environment" onchange="mtPhotoPicked(this)" class="hidden">
+          <input type="file" id="mtPhoto" accept="image/*" onchange="mtPhotoPicked(this)" class="hidden">
+          <div class="fm-row-flex" style="gap:.4rem;flex-wrap:wrap">
+            <button type="button" class="ui-btn-ghost" onclick="document.getElementById('mtPhotoCam').click()">📷 Foto aufnehmen</button>
+            <button type="button" class="ui-btn-ghost" onclick="document.getElementById('mtPhoto').click()">🖼️ Datei / Galerie wählen</button>
+          </div>
           <div id="mtPhotoStatus" class="fm-hint"></div></div>
         <input type="hidden" id="mtUrgency" value="normal">
       </div>`);

@@ -92,7 +92,79 @@
     }
     function tpWeekRange(ws) { return tpDmy(ws) + ' – ' + tpDmy(tpAddDays(ws, 6)); }   // z. B. 02.11.26 – 08.11.26
 
-    const TP_GROUP_ORDER = ['Leitung', 'AM-Team', 'Lehrling', 'PM-Team', 'Reinigung', 'Küche'];
+    // ---------- Namen zuordnen (Tippfehler wie „Tomas Kardoszzzzz“ erkennen) ----------
+    // Nicht auf Zeilenzahl oder Reihenfolge verlassen: nur der Name zählt.
+    function tpPlainName(s) {
+      return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss')
+        .replace(/[^a-z0-9 ]+/g, ' ').replace(/(.)\1{2,}/g, '$1').replace(/\s+/g, ' ').trim();   // 3+ gleiche Buchstaben in Folge -> einer
+    }
+    function tpDist(a, b) {
+      if (a === b) return 0;
+      const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+      let prev = Array.from({ length: n + 1 }, (_, j) => j);
+      for (let i = 1; i <= m; i++) {
+        const cur = [i];
+        for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        prev = cur;
+      }
+      return prev[n];
+    }
+    function tpTokTol(len) { return len <= 3 ? 0 : (len <= 6 ? 1 : 2); }
+    // Liefert { name, matched, suggest } – matched nur bei eindeutigem Treffer; suggest = ähnlichster Name (auch bei Unsicherheit)
+    function tpMatchName(printed, list) {
+      const names = (list || (staffDatabaseRecords || []).map(s => s.name)).filter(Boolean);
+      const p = tpPlainName(printed);
+      if (!p) return { name: '', matched: false, suggest: '' };
+      const items = names.map(n => ({ n, p: tpPlainName(n) }));
+      const exact = items.filter(x => x.p === p);
+      if (exact.length === 1) return { name: exact[0].n, matched: true, suggest: exact[0].n };
+      const pt = p.split(' ').filter(Boolean);
+      const scored = items.map(x => {
+        const kt = x.p.split(' ').filter(Boolean);
+        // jeder gedruckte Namensteil muss einem Teil des Personal-Namens ähneln (Tippfehler erlaubt)
+        let total = 0, ok = pt.length > 0;
+        pt.forEach(t => {
+          let best = 99;
+          kt.forEach(k => { const d = tpDist(t, k); if (d < best) best = d; });
+          if (best > tpTokTol(Math.max(t.length, 3))) ok = false;
+          total += best;
+        });
+        // Nur ein Teil (z. B. „Tomas“): nur ok, wenn er zum Vor- ODER Nachnamen passt; ganze Namen bevorzugen
+        const full = pt.length >= 2 && ok;
+        return { n: x.n, ok, total, full, any: kt.length };
+      });
+      const good = scored.filter(s => s.ok).sort((a, b) => a.total - b.total);
+      if (good.length === 1 || (good.length > 1 && good[0].total < good[1].total)) return { name: good[0].n, matched: true, suggest: good[0].n };
+      if (good.length > 1) return { name: String(printed).replace(/\s+/g, ' ').trim().slice(0, 60), matched: false, suggest: good[0].n };   // mehrdeutig: nicht raten
+      // ähnlichster Name als Vorschlag (ohne automatisch zuzuordnen)
+      let sug = '', bd = 99;
+      items.forEach(x => { const d = tpDist(p, x.p); if (d < bd) { bd = d; sug = x.n; } });
+      return { name: String(printed).replace(/\s+/g, ' ').trim().slice(0, 60), matched: false, suggest: bd <= Math.max(3, Math.floor(p.length / 3)) ? sug : '' };
+    }
+
+    // Neue Personen als Konto anlegen (Start-PIN 1234, muss beim ersten Login geändert werden)
+    // people: [{ name, job, team }] -> Anzahl angelegter Konten
+    async function tpCreateAccounts(people) {
+      let ok = 0; const errs = [];
+      for (const p of people) {
+        const job = String(p.job || '').trim();
+        const dish = /dish|cleaning|reinig|porter|abwasch/i.test(job + ' ' + (p.team || ''));
+        const team = ({ 'am-team': 'AM-Team', 'pm-team': 'PM-Team', lehrling: 'Lehrling', reinigung: 'Reinigung' })[String(p.team || '').toLowerCase()] || (dish ? 'Reinigung' : null);
+        const { error } = await _supabase.rpc('admin_save_staff', {
+          p_original: '', p_name: p.name, p_pin: '1234', p_role: dish ? 'dishwasher' : 'kitchen', p_avatar: '', p_can_edit: false,
+          p_extra_roles: [], p_team: team, p_job_title: job || null
+        });
+        if (error) errs.push(p.name + ': ' + error.message); else ok++;
+      }
+      if (ok) { try { const r = await _supabase.rpc('list_staff'); if (!r.error && Array.isArray(r.data)) staffDatabaseRecords = r.data; } catch (e) {} }
+      return { ok, errs };
+    }
+
+    const TP_GROUP_ORDER =['Leitung', 'AM-Team', 'Lehrling', 'PM-Team', 'Reinigung', 'Küche'];
+    function tpJobTitle(name) {
+      const s = (staffDatabaseRecords || []).find(x => String(x.name).toLowerCase() === String(name).toLowerCase());
+      return (s && s.job_title) || '';
+    }
     function tpStaffGroup(name) {
       const s = (staffDatabaseRecords || []).find(x => String(x.name).toLowerCase() === String(name).toLowerCase());
       if (!s) return 'Küche';
@@ -229,7 +301,7 @@
       let cls = 'tp-cell', inner = '';
       const code = tpSpecialCode(row);
       if (code) {
-        if (code === 'X' || code === 'OFF') { cls += ' tp-free'; inner = '<span class="tp-x">OFF</span>'; }
+        if (code === 'X' || code === 'OFF') { cls += ' tp-free'; inner = '<span class="tp-x">F</span>'; }
         else { cls += ' tp-special'; inner = `<span class="tp-code">${escapeHtml(code)}</span>`; }
       } else if (row && tpCellMinutes(row) > 0) {
         cls += ' tp-work';
@@ -267,14 +339,14 @@
       }
 
       const excl = (meta && Array.isArray(meta.exclusive_days)) ? meta.exclusive_days : [];   // 0 = Montag … 6 = Sonntag
-      let head = '<tr><th class="tp-name-col tp-corner">Name</th>';
+      let head = '<tr><th class="tp-name-col tp-corner">Name</th><th class="tp-pos-col">Position</th>';
       days.forEach((d, i) => {
         const isEx = excl.indexOf(i) !== -1;
         const cls = 'tp-day' + (i >= 5 ? ' tp-weekend' : '') + (tpIso(d) === today ? ' tp-today' : '') + (isEx ? ' tp-excl' : '');
         const tog = userIsAdmin ? ` onclick="tpToggleExclusive(${i})" style="cursor:pointer" title="${isEx ? 'Exklusiv-Schicht entfernen' : 'Als Exklusiv-Schicht markieren'}"` : (isEx ? ' title="Exklusiv-Schicht"' : '');
         head += `<th class="${cls}"${tog}><span class="tp-wd">${TP_WEEKDAYS[d.getDay()]}</span><span class="tp-dn">${tpDm(d)}</span>${isEx ? '<span class="tp-ex-tag">⭐ Exklusiv</span>' : ''}</th>`;
       });
-      head += '<th class="tp-sum-col">Gesamt</th><th class="tp-sign-col">Unterschrift</th></tr>';
+      head += '<th class="tp-sum-col">Gesamt</th></tr>';
 
       let totalMin = 0, totalShifts = 0, lastGroup = null;
       const perDay = [0, 0, 0, 0, 0, 0, 0];
@@ -298,15 +370,15 @@
         const isMe = meKey && emp.name.toLowerCase() === meKey;
         body += `<tr class="${isMe ? 'tp-me' : ''}">
           <th class="tp-name-col"><span class="tp-name">${escapeHtml(emp.name)}</span></th>
+          <td class="tp-pos-col">${escapeHtml(tpJobTitle(emp.name))}</td>
           ${cells}
           <td class="tp-sum-col"><b>${tpFormatHours(rowMin)}</b><small>${rowShifts} Tage</small></td>
-          <td class="tp-sign-col"></td>
         </tr>`;
       });
 
-      let foot = '<tr><th class="tp-name-col tp-foot-label">Besetzung</th>';
+      let foot = '<tr><th class="tp-name-col tp-foot-label">Besetzung</th><td class="tp-pos-col"></td>';
       days.forEach((d, i) => { foot += `<td class="tp-foot${tpIso(d) === today ? ' tp-col-today' : ''}">${perDay[i] || ''}</td>`; });
-      foot += `<td class="tp-sum-col"><b>${tpFormatHours(totalMin)}</b></td><td class="tp-sign-col"></td></tr>`;
+      foot += `<td class="tp-sum-col"><b>${tpFormatHours(totalMin)}</b></td></tr>`;
 
       wrap.innerHTML = `<table class="tp-table"><thead>${head}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table>`;
       document.getElementById('tpSummary').innerHTML =
@@ -388,10 +460,12 @@
       const txt = String(raw).trim();
       if (!txt) return null;
       const up = txt.toUpperCase();
-      if (up === 'F' || up === 'X' || up === 'OFF' || up === 'FREI') return { code: 'OFF' };
-      if (/^(K|ZA|U)$/.test(up)) return { code: up };
+      const upc = up.replace(/[.\s]/g, '');
+      if (['F', 'FF', 'X', 'OFF', 'FREI'].indexOf(upc) !== -1) return { code: 'OFF' };   // Frei (gespeichert als OFF, angezeigt als „F“)
+      if (upc === 'S' || upc === 'SCHULE') return { code: 'S' };                         // Berufsschule (Lehrling)
+      if (/^(K|ZA|U)$/.test(upc)) return { code: upc };
       const ranges = [];
-      const rx = /(\d{1,2})[:.](\d{2})\s*-\s*(\d{1,2})[:.](\d{2})/g;
+      const rx = /(\d{1,2})[:.](\d{2})\s*[-–—]\s*(\d{1,2})[:.](\d{2})/g;
       let m, last = 0;
       while ((m = rx.exec(txt)) !== null) {
         const a = tpNormTime(m[1] + ':' + m[2]), b = tpNormTime(m[3] + ':' + m[4]);
@@ -480,15 +554,19 @@
         }
         if (headRow < 0) return alert('Kopfzeile mit Montag … Sonntag nicht gefunden. Bitte eine Datei im Dienstplan-Format wählen.');
         const nameCol = Math.max(0, rows[headRow].findIndex(c => String(c).trim().toLowerCase() === 'name'));
-        const known = new Map((staffDatabaseRecords || []).map(s => [String(s.name).toLowerCase(), s.name]));
-        const out = [], unknown = new Set();
+        const posCol = rows[headRow].findIndex(c => /^position$/i.test(String(c).trim()));
+        const out = [], unknown = new Map(), fixed = [];   // unknown: Name -> { name, job, team }
+        let group = '';
         for (let r = headRow + 1; r < rows.length; r++) {
           const name = String(rows[r][nameCol] || '').trim();
           if (!name) continue;
           const cells = cols.map(c => tpParseCell(rows[r][c]));
-          if (!cells.some(Boolean)) continue;   // Gruppen-Überschrift (AM-TEAM …) oder leere Zeile
-          const person = known.get(name.toLowerCase()) || name;
-          if (!known.has(name.toLowerCase())) unknown.add(name);
+          if (!cells.some(Boolean)) { if (/team|lehrling|reinigung|tournant/i.test(name)) group = name; continue; }   // Gruppen-Überschrift (AM-TEAM …) oder leere Zeile
+          // Zuordnung nur über den Namen (nicht über Zeilennummer): auch bei Tippfehlern („Kardoszzzzz“)
+          const mt = tpMatchName(name);
+          const person = mt.matched ? mt.name : name;
+          if (mt.matched && mt.name.toLowerCase() !== name.toLowerCase()) fixed.push(name + ' → ' + mt.name);
+          if (!mt.matched && !unknown.has(name)) unknown.set(name, { name, job: posCol >= 0 ? String(rows[r][posCol] || '').trim() : '', team: group });
           cells.forEach((c, i) => {
             if (!c) return;
             const d = tpAddDays(tpWeekStart, i);
@@ -507,16 +585,25 @@
         const dayShort = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
         const msg = `Blatt „${sheetName}“ in KW ${kw} (${tpWeekRange(tpWeekStart)}) importieren?\n${out.length} Einträge.`
           + `\nExklusiv-Tage (farbig markiert): ${exclusive.length ? exclusive.map(i => dayShort[i]).join(', ') : 'keine'}`
-          + (unknown.size ? `\n\nNamen, die nicht im Personal stehen (werden trotzdem importiert):\n${Array.from(unknown).join(', ')}` : '')
+          + (fixed.length ? `\n\nNamen automatisch zugeordnet (Tippfehler):\n${fixed.join('\n')}` : '')
+          + (unknown.size ? `\n\nNeu (nicht im Personal): ${Array.from(unknown.keys()).join(', ')}` : '')
           + '\n\nVorhandene Einträge dieser Woche für diese Personen werden überschrieben.';
         if (!confirm(msg)) return;
+        let accNote = '';
+        if (unknown.size) {
+          if (confirm(`Neue Personen: ${Array.from(unknown.keys()).join(', ')}\n\nOK = als Mitarbeiter-Konto anlegen (Start-PIN 1234, muss beim ersten Login geändert werden).\nAbbrechen = nur im Dienstplan eintragen, ohne Konto.`)) {
+            const r = await tpCreateAccounts(Array.from(unknown.values()));
+            accNote = ` · ${r.ok} Konto/Konten angelegt`;
+            if (r.errs.length) alert('Nicht angelegt:\n' + r.errs.join('\n'));
+          }
+        }
         if (!await tpEnsureWeekRow()) return;
         const res = await _supabase.from('work_schedules').upsert(out, { onConflict: 'employee_name,year,month,day' });
         if (res.error) return alert('Import fehlgeschlagen: ' + res.error.message);
         const ex = await _supabase.from('plan_weeks').update({ exclusive_days: exclusive }).eq('week_start', tpIso(tpWeekStart));
         const exNote = ex.error ? ' (Exklusiv-Tage nicht gespeichert: SQL 1.0.03 ausführen)' : '';
         await loadTeamPlan();
-        showAppToast({ initial: '📥', title: 'Dienstplan importiert', text: `KW ${kw}: ${out.length} Einträge, ${exclusive.length} Exklusiv-Tage${exNote}` });
+        showAppToast({ initial: '📥', title: 'Dienstplan importiert', text: `KW ${kw}: ${out.length} Einträge, ${exclusive.length} Exklusiv-Tage${accNote}${exNote}` });
       } catch (e) {
         alert('Datei konnte nicht gelesen werden: ' + (e && e.message ? e.message : e));
       }
@@ -567,7 +654,7 @@
       const el = document.getElementById('tpCellHours');
       if (!el) return;
       if (code) {
-        el.textContent = ({ X: 'Frei (OFF): keine Arbeitszeit.', OFF: 'Frei (OFF): keine Arbeitszeit.', U: 'Urlaub (U)', K: 'Krank (K)', ZA: 'Zeitausgleich (ZA)' })[code] || 'Eintrag: ' + code;
+        el.textContent = ({ X: 'Frei (F): keine Arbeitszeit.', OFF: 'Frei (F): keine Arbeitszeit.', S: 'Schule (S)', U: 'Urlaub (U)', K: 'Krank (K)', ZA: 'Zeitausgleich (ZA)' })[code] || 'Eintrag: ' + code;
         return;
       }
       const v = id => document.getElementById(id).value;
@@ -628,17 +715,17 @@
       const names = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
       const exDays = (tpWeeks[tpIso(tpWeekStart)] || {}).exclusive_days || [];
       const aoa = [[tpWeekRange(tpWeekStart), 'KW ' + tpIsoKw(tpWeekStart)],
-        [''].concat(days.map((d, i) => tpDm(d) + (exDays.indexOf(i) !== -1 ? ' ⭐ Exklusiv' : ''))),
-        ['NAME'].concat(names, ['Gesamt', 'Unterschrift'])];
+        ['', ''].concat(days.map((d, i) => tpDm(d) + (exDays.indexOf(i) !== -1 ? ' ⭐ Exklusiv' : ''))),
+        ['NAME', 'POSITION'].concat(names, ['Gesamt'])];
       let lastGroup = null;
       employees.forEach(emp => {
         if (emp.group !== lastGroup) { aoa.push([emp.group]); lastGroup = emp.group; }
-        const line = [emp.name];
+        const line = [emp.name, tpJobTitle(emp.name)];
         let min = 0;
         days.forEach(d => {
           const row = tpFindRow(emp.name, d);
           const code = tpSpecialCode(row);
-          if (code) { line.push(code === 'X' ? 'OFF' : code); return; }
+          if (code) { line.push(code === 'X' || code === 'OFF' ? 'F' : code); return; }
           if (!row || tpCellMinutes(row) === 0) { line.push(''); return; }
           min += tpCellMinutes(row);
           let t = tpTimeInput(row.shift_1_start) + ' - ' + tpTimeInput(row.shift_1_end);
@@ -646,11 +733,11 @@
           if (row.station) t += '/' + row.station;
           line.push(t);
         });
-        line.push(Math.round(min / 6) / 10, '');
+        line.push(Math.round(min / 6) / 10);
         aoa.push(line);
       });
       const ws = XLSX.utils.aoa_to_sheet(aoa);
-      ws['!cols'] = [{ wch: 22 }].concat(new Array(7).fill({ wch: 20 })).concat([{ wch: 9 }, { wch: 18 }]);
+      ws['!cols'] = [{ wch: 22 }, { wch: 16 }].concat(new Array(7).fill({ wch: 20 })).concat([{ wch: 9 }]);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'KW ' + tpIsoKw(tpWeekStart));
       XLSX.writeFile(wb, `Dienstplan_KW${String(tpIsoKw(tpWeekStart)).padStart(2, '0')}_${tpIso(tpWeekStart)}.xlsx`);

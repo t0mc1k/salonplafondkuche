@@ -174,7 +174,7 @@
       let html = '';
       if (olIsDone()) {
         html += `<div class="ol-banner ol-banner-done">✅ ${escapeHtml(fmL('Erledigt von', 'Completed by'))} <b>${escapeHtml(ol.list.done_by || '?')}</b> · ${escapeHtml(olDate(ol.list.done_at) + ' ' + fmTime(ol.list.done_at))}
-          <div class="ol-banner-act">${ol.viewing ? `<button type="button" class="ui-btn-ghost" onclick="olBackToCurrent()">← ${escapeHtml(fmL('Zurück zur aktuellen Liste', 'Back to current list'))}</button>`
+          <div class="ol-banner-act"><button type="button" class="ui-btn-primary" onclick="olPreview()">📤 ${escapeHtml(fmL('Vorschau & Teilen (WhatsApp, Bild, PDF)', 'Preview & share (WhatsApp, image, PDF)'))}</button> ${ol.viewing ? `<button type="button" class="ui-btn-ghost" onclick="olBackToCurrent()">← ${escapeHtml(fmL('Zurück zur aktuellen Liste', 'Back to current list'))}</button>`
           : `<button type="button" class="ui-btn-primary" onclick="olStartNew()">🆕 ${escapeHtml(fmL('Neue Bestellung starten', 'Start new order'))}</button>`}</div></div>`;
       }
       olSections().forEach((s, si) => {
@@ -198,8 +198,9 @@
       const live = olIsDone() ? '' : `<span class="ol-live" title="${escapeHtml(fmL('Live', 'Live'))}"></span>`;
       ol.m.setFoot(`<div class="ol-foot"><div class="ol-last">${live}<span>${last}</span><span class="ol-total">${total} ${escapeHtml(fmL('Produkte', 'products'))}</span></div>
         <div class="ol-foot-btns">
-          <button type="button" class="ui-btn-ghost" onclick="olPrint()">🖨️ ${escapeHtml(fmL('Drucken', 'Print'))}</button>
-          <button type="button" class="ui-btn-ghost" onclick="olExportExcel()">📗 Excel</button>
+          <button type="button" class="ui-btn-ghost" onclick="olPrint()" title="${escapeHtml(fmL('Drucken', 'Print'))}" aria-label="${escapeHtml(fmL('Drucken', 'Print'))}">🖨️</button>
+          <button type="button" class="ui-btn-ghost" onclick="olExportExcel()" title="Excel" aria-label="Excel">📗</button>
+          <button type="button" class="ui-btn-ghost" onclick="olPreview()">📤 ${escapeHtml(fmL('Teilen', 'Share'))}</button>
           ${olIsDone() ? '' : `<button type="button" class="ui-btn-primary" onclick="olFinish()">✅ ${escapeHtml(fmL('Ich bin fertig', 'I’m done'))}</button>`}
         </div></div>`);
     }
@@ -463,6 +464,145 @@ td.sp, th.sp { width: 1.5mm; border: 0; padding: 0; } td.e { border: 0; }
 <table><colgroup><col style="width:25%"><col style="width:7%"><col style="width:11%"><col style="width:1.5mm"><col style="width:25%"><col style="width:7%"><col style="width:11%"><col style="width:1.5mm"><col style="width:25%"><col style="width:7%"><col style="width:11%"></colgroup>
 <thead><tr>${th}<th class="sp"></th>${th}<th class="sp"></th>${th}</tr></thead><tbody>${body}</tbody></table>
 <div class="foot">${olStampText().map(exHtml).join('<br>')}</div></body></html>`;
+    }
+
+    // ---------- Vorschau, Bild, PDF, WhatsApp ----------
+    // Die Seite wird selbst gezeichnet (A4, 150 dpi): keine Zusatzbibliothek, funktioniert auch offline.
+    function olRenderCanvas() {
+      const W = 1240, H = 1754, M = 34;
+      const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      const g = cv.getContext('2d');
+      g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+      g.fillStyle = '#000'; g.textBaseline = 'middle';
+      const cols = olGrid(), nrows = Math.max(cols[0].length, cols[1].length, cols[2].length);
+      const foot = olStampText();
+      g.font = 'bold 36px Arial, Helvetica, sans-serif'; g.textAlign = 'left';
+      g.fillText('Bestellung Gemüse / Obst – Salonplafond', M, M + 22);
+      g.font = 'bold 30px Arial, Helvetica, sans-serif'; g.textAlign = 'right';
+      g.fillText('Datum: ' + olDateText(), W - M, M + 22);
+      const top = M + 62, bottom = H - M - (foot.length ? 34 * foot.length + 10 : 0);
+      const rowH = Math.max(24, Math.min(44, (bottom - top) / (nrows + 1)));
+      const gap = 16, bw = (W - 2 * M - 2 * gap) / 3;
+      const cw = [bw * 0.56, bw * 0.17, bw * 0.27];
+      const fs = Math.round(rowH * 0.5);
+      const fit = (txt, maxW, bold) => {   // Text bei Bedarf verkleinern, damit er in die Zelle passt
+        let size = fs; g.font = (bold ? 'bold ' : '') + size + 'px Arial, Helvetica, sans-serif';
+        while (size > 10 && g.measureText(txt).width > maxW) { size--; g.font = (bold ? 'bold ' : '') + size + 'px Arial, Helvetica, sans-serif'; }
+      };
+      g.lineWidth = 1.5; g.strokeStyle = '#000';
+      cols.forEach((col, ci) => {
+        const x0 = M + ci * (bw + gap);
+        ['Produkt', 'Menge', 'Einheit'].forEach((h, k) => {
+          const x = x0 + cw.slice(0, k).reduce((a, b) => a + b, 0);
+          g.strokeRect(x, top, cw[k], rowH);
+          g.textAlign = 'center'; g.fillStyle = '#000'; fit(h, cw[k] - 8, true); g.fillText(h, x + cw[k] / 2, top + rowH / 2);
+        });
+        col.forEach((e, i) => {
+          const y = top + rowH * (i + 1);
+          if (e.head) { g.textAlign = 'left'; fit(e.name, bw - 10, true); g.fillText(e.name, x0 + 6, y + rowH / 2); return; }
+          const vals = [e.name, e.qty, e.unit];
+          vals.forEach((v, k) => {
+            const x = x0 + cw.slice(0, k).reduce((a, b) => a + b, 0);
+            g.strokeRect(x, y, cw[k], rowH);
+            if (!v) return;
+            g.textAlign = k === 1 ? 'center' : 'left';
+            fit(String(v), cw[k] - 10, k === 1);
+            g.fillText(String(v), k === 1 ? x + cw[k] / 2 : x + 6, y + rowH / 2);
+          });
+        });
+      });
+      g.textAlign = 'left'; g.fillStyle = '#222'; g.font = 'italic 24px Arial, Helvetica, sans-serif';
+      foot.forEach((t, i) => g.fillText(t, M, H - M - 34 * (foot.length - i) + 12));
+      return cv;
+    }
+
+    function olToBlob(cv, type, q) { return new Promise(res => cv.toBlob(res, type, q)); }
+
+    // Einseitiges A4-PDF mit dem Bild (JPEG) – ohne Bibliothek
+    async function olBuildPdf(cv) {
+      const jpg = new Uint8Array(await (await olToBlob(cv, 'image/jpeg', 0.92)).arrayBuffer());
+      const enc = new TextEncoder(), parts = [], offs = [];
+      let len = 0;
+      const push = b => { const u = typeof b === 'string' ? enc.encode(b) : b; parts.push(u); len += u.length; };
+      const obj = (n, body) => { offs[n] = len; push(n + ' 0 obj\n'); push(body); push('\nendobj\n'); };
+      push('%PDF-1.4\n');
+      obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+      obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+      obj(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>');
+      const cs = 'q 595.28 0 0 841.89 0 0 cm /Im0 Do Q';
+      obj(4, '<< /Length ' + cs.length + ' >>\nstream\n' + cs + '\nendstream');
+      offs[5] = len; push('5 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + cv.width + ' /Height ' + cv.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jpg.length + ' >>\nstream\n');
+      push(jpg); push('\nendstream\nendobj\n');
+      const xref = len;
+      let x = 'xref\n0 6\n0000000000 65535 f \n';
+      for (let i = 1; i <= 5; i++) x += String(offs[i]).padStart(10, '0') + ' 00000 n \n';
+      push(x + 'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF');
+      const out = new Uint8Array(len); let p = 0; parts.forEach(a => { out.set(a, p); p += a.length; });
+      return new Blob([out], { type: 'application/pdf' });
+    }
+
+    function olFileBase() { return 'Bestellliste_' + fmIso(new Date(ol.list && ol.list.status === 'done' && ol.list.done_at ? ol.list.done_at : (ol.list && ol.list.created_at) || Date.now())); }
+
+    // Text für WhatsApp: nur die bestellten Produkte, nach Rubrik
+    function olTextSummary() {
+      const lines = ['*Bestellung Gemüse / Obst – Salonplafond*', 'Datum: ' + olDateText(), ''];
+      olSections().forEach(s => {
+        const got = s.items.filter(it => olQtyOf(it.id));
+        if (!got.length) return;
+        if (s.head.name) lines.push('*' + s.head.name + '*');
+        got.forEach(it => lines.push('• ' + it.name + ': ' + olQtyOf(it.id) + ' ' + it.unit));
+        lines.push('');
+      });
+      const st = olStampText(); if (st.length) lines.push('_' + st.join(' · ') + '_');
+      return lines.join('\n').trim();
+    }
+
+    async function olPreview() {
+      if (!ol.list) return;
+      const m = fmOpen('olPrev', { title: '👁 ' + fmL('Vorschau', 'Preview'), sub: fmL('So sieht das Dokument aus. Teilen, als Bild oder PDF speichern oder drucken.', 'This is the document. Share it, save as image or PDF, or print.'), layer: 2, wide: true, onClose: () => { if (ol.pv) { try { URL.revokeObjectURL(ol.pv.url); } catch (e) {} ol.pv = null; } } });
+      m.setBody('<p class="staff-empty">' + escapeHtml(fmL('Erstelle Vorschau ...', 'Creating preview ...')) + '</p>');
+      const cv = olRenderCanvas();
+      const png = await olToBlob(cv, 'image/png');
+      const pdf = await olBuildPdf(cv);
+      ol.pv = { png, pdf, url: URL.createObjectURL(png), base: olFileBase(), text: olTextSummary() };
+      m.setBody(`<div class="ol-prev-wrap"><img class="ol-prev-img" src="${ol.pv.url}" alt="${escapeHtml(fmL('Bestellliste', 'Order list'))}"></div>`);
+      m.setFoot(`<div class="ol-prev-btns">
+        <button type="button" class="ui-btn-primary" onclick="olShare('png')">💬 ${escapeHtml(fmL('WhatsApp / Teilen (Bild)', 'WhatsApp / Share (image)'))}</button>
+        <button type="button" class="ui-btn-ghost" onclick="olShare('pdf')">📄 ${escapeHtml(fmL('Teilen als PDF', 'Share as PDF'))}</button>
+        <button type="button" class="ui-btn-ghost" onclick="olWhatsText()">💬 ${escapeHtml(fmL('Als Text', 'As text'))}</button>
+        <button type="button" class="ui-btn-ghost" onclick="olSaveFile('png')">🖼️ ${escapeHtml(fmL('Bild speichern', 'Save image'))}</button>
+        <button type="button" class="ui-btn-ghost" onclick="olSaveFile('pdf')">📄 ${escapeHtml(fmL('PDF speichern', 'Save PDF'))}</button>
+        <button type="button" class="ui-btn-ghost" onclick="olPrint()">🖨️ ${escapeHtml(fmL('Drucken', 'Print'))}</button></div>`);
+    }
+
+    function olSaveFile(kind) {
+      if (!ol.pv) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(kind === 'pdf' ? ol.pv.pdf : ol.pv.png);
+      a.download = ol.pv.base + (kind === 'pdf' ? '.pdf' : '.png');
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+      fmToast(kind === 'pdf' ? fmL('PDF gespeichert', 'PDF saved') : fmL('Bild gespeichert', 'Image saved'));
+    }
+
+    // Teilen über das Menü des Geräts (dort „WhatsApp“ wählen). Ohne Unterstützung: Datei speichern.
+    async function olShare(kind) {
+      if (!ol.pv) return;
+      const blob = kind === 'pdf' ? ol.pv.pdf : ol.pv.png;
+      const file = new File([blob], ol.pv.base + (kind === 'pdf' ? '.pdf' : '.png'), { type: blob.type });
+      try {
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'Bestellung Gemüse / Obst', text: 'Bestellung Gemüse / Obst – ' + olDateText() });
+          return;
+        }
+      } catch (e) { if (e && e.name === 'AbortError') return; }
+      olSaveFile(kind);
+      fmToast(fmL('Teilen von Dateien wird hier nicht unterstützt. Datei wurde gespeichert, bitte in WhatsApp anhängen.', 'Sharing files is not supported here. The file was saved, please attach it in WhatsApp.'));
+    }
+
+    function olWhatsText() {
+      if (!ol.pv) return;
+      window.open('https://wa.me/?text=' + encodeURIComponent(ol.pv.text), '_blank', 'noopener');
     }
 
     function olPrint() {

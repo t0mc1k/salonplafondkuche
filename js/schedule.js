@@ -99,8 +99,10 @@
               timeStr += s2Start;
             }
 
-            if (!timeStr || timeStr === "X – X" || timeStr.toUpperCase() === "X") {
-              timeStr = "Frei (X)";
+            if (!timeStr || timeStr === "X – X" || ["X", "OFF", "F"].indexOf(timeStr.toUpperCase()) !== -1) {
+              timeStr = "Frei (F)";
+            } else if (timeStr.toUpperCase() === "S") {
+              timeStr = "Schule (S)";
             }
 
             return `
@@ -181,8 +183,10 @@
           timeStr += s2Start;
         }
 
-        if (!timeStr || timeStr === "X – X" || timeStr.toUpperCase() === "X") {
-          timeStr = "Frei (X)";
+        if (!timeStr || timeStr === "X – X" || ["X", "OFF", "F"].indexOf(timeStr.toUpperCase()) !== -1) {
+          timeStr = "Frei (F)";
+        } else if (timeStr.toUpperCase() === "S") {
+          timeStr = "Schule (S)";
         }
 
         return `

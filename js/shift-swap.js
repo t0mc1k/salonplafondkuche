@@ -65,7 +65,7 @@
 
     function mpShiftText(r) {
       const code = tpSpecialCode(r);
-      if (code) return (code === 'X' || code === 'OFF') ? 'Frei' : (code === 'U' ? 'Urlaub' : (code === 'K' ? 'Krank' : (code === 'ZA' ? 'Zeitausgleich' : code)));
+      if (code) return (code === 'X' || code === 'OFF') ? 'Frei' : (code === 'U' ? 'Urlaub' : (code === 'K' ? 'Krank' : (code === 'ZA' ? 'Zeitausgleich' : (code === 'S' ? 'Schule' : code))));
       let t = tpTimeInput(r.shift_1_start) + '–' + tpTimeInput(r.shift_1_end);
       if (tpToMinutes(r.shift_2_start) !== null && tpToMinutes(r.shift_2_end) !== null) t += ' · ' + tpTimeInput(r.shift_2_start) + '–' + tpTimeInput(r.shift_2_end);
       return t;

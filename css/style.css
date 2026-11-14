@@ -820,6 +820,7 @@ body.on-dashboard { padding-bottom: 5rem; }
 .tp-state-draft { background: rgba(245,158,11,.18); color: #d97706; }
 .tp-group th { text-align: left; padding: .3rem .6rem; font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ui-muted); background: rgba(148,163,184,.14); position: static; }
 .tp-sign-col { min-width: 7rem; border-left: 1px solid var(--ui-border); }
+.tp-pos-col { min-width: 5.5rem; max-width: 8rem; padding: 0 .4rem; font-size: .68rem; color: var(--ui-muted); text-align: center; }
 /* Abwasher (v1.0.08): getrennte Bereiche „Meine Arbeit“ / „Leitung“ (v1.0.14) */
 .dw-modes { display: flex; flex-wrap: wrap; gap: .6rem 1.2rem; align-items: flex-start; }
 .dw-mode small { display: block; margin: 0 0 .2rem .15rem; font-size: .6rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ui-muted); }
@@ -875,6 +876,16 @@ thead .ft-day-col { z-index: 4; }
 .ft-man-name { flex: 2 1 9rem; }
 .ft-man-min, .ft-man-max { flex: 1 1 4.5rem; max-width: 6rem; }
 .ft-man-act { font-size: .72rem; display: inline-flex; align-items: center; gap: .25rem; }
+/* Stunden & Lohn: Summen ohne/mit Pause (v1.0.20) */
+.pr-sumbox { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .8rem; }
+.pr-sumbox > div { flex: 1 1 8rem; padding: .6rem .8rem; border: 1px solid var(--ui-border); border-radius: .7rem; display: flex; flex-direction: column; gap: .15rem; }
+.pr-sumbox span { font-size: .72rem; color: var(--ui-muted); }
+.pr-sumbox b { font-size: 1.05rem; color: var(--ui-text); }
+.pr-sumbox > div:last-child { border-color: #16a34a; background: rgba(34,197,94,.10); }
+/* Dienstplan-Foto: neue/unklare Personen (v1.0.20) */
+.rs-newp { margin-top: .5rem; padding: .5rem .6rem; border: 1px solid rgba(245,158,11,.5); border-radius: .7rem; display: flex; flex-direction: column; gap: .4rem; }
+.rs-newp-act { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.rs-newp-act select { flex: 1 1 11rem; min-width: 0; padding: .45rem .5rem; font-size: .85rem; }
 /* Bestellliste Gemüse / Obst (v1.0.16) */
 .ol-tools { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; width: 100%; }
 .ol-search { flex: 1 1 10rem; min-width: 0; padding: .55rem .7rem; border-radius: .6rem; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-text); font-size: 1rem; }
@@ -910,6 +921,10 @@ thead .ft-day-col { z-index: 4; }
 .ol-foot-btns .ui-btn-ghost { padding: .6rem .5rem; font-size: .8rem; white-space: nowrap; }
 .ol-foot-btns .ui-btn-primary { flex: 1 1 auto; padding: .7rem .5rem; font-size: .95rem; white-space: nowrap; }
 .ol-last { gap: .1rem .6rem; }
+.ol-prev-wrap { padding: .5rem; text-align: center; overflow: auto; }
+.ol-prev-img { max-width: 100%; max-height: 62vh; box-shadow: 0 6px 24px rgba(0,0,0,.45); background: #fff; }
+.ol-prev-btns { display: flex; flex-wrap: wrap; gap: .4rem; width: 100%; }
+.ol-prev-btns .ui-btn-primary { flex: 1 1 100%; padding: .8rem; }
 .ol-units { display: flex; flex-wrap: wrap; gap: .3rem; }
 .ol-hist { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: .8rem; }
 .ol-hist small { color: var(--ui-muted); }
