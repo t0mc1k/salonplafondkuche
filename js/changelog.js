@@ -12,6 +12,11 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.29', range: '', date: 'November 2026', title: 'Neues App-Symbol mit Kochmütze',
+    changes: [
+      ['improved', 'Das App-Symbol bleibt (gelb, dunkler Ring), bekommt aber eine weiße Kochmütze oben drauf. So erkennst du auf dem Startbildschirm sofort die Küchen-App. Gilt für Symbol, Browser-Tab und Benachrichtigungen.'],
+      ['info', 'Ein bereits installiertes Symbol aktualisiert sich nicht immer von selbst: Zum Ändern die App vom Startbildschirm entfernen und neu installieren („Zum Home-Bildschirm“). Android aktualisiert es manchmal nach einigen Tagen automatisch.']
+    ] },
   { version: '1.0.28', range: '', date: 'November 2026', title: 'Datenbank-Verwaltung für den Developer',
     changes: [
       ['new', 'Neue Kachel „🗄️ Datenbank-Verwaltung“ (nur Developer, unter „Sicherheit & System“). 📊 Übersicht: Größe der Datenbank und des Foto-Speichers mit Balken (Free / Pro), jede Tabelle mit Zeilenzahl und Größe, Foto-Speicher nach Bereich.'],
