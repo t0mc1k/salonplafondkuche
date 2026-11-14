@@ -12,6 +12,13 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.28', range: '', date: 'November 2026', title: 'Datenbank-Verwaltung für den Developer',
+    changes: [
+      ['new', 'Neue Kachel „🗄️ Datenbank-Verwaltung“ (nur Developer, unter „Sicherheit & System“). 📊 Übersicht: Größe der Datenbank und des Foto-Speichers mit Balken (Free / Pro), jede Tabelle mit Zeilenzahl und Größe, Foto-Speicher nach Bereich.'],
+      ['new', '🖼️ Fotos: alle gespeicherten Fotos als Kacheln mit Größe, Datum und Verwendung (Rezept, Abwasher, Chat …). Nicht verwendete Fotos (Reste von abgebrochenen Uploads) werden erkannt. Fotos einzeln, ausgewählt oder alle nicht verwendeten löschen. Foto und Vorschau werden zusammen entfernt, die App warnt bei noch verwendeten Fotos.'],
+      ['new', '🧹 Aufbewahrung: Regeln „älter als X Tage löschen“ für Chat, Abwasher, Störungen, Verluste, Tickets, Bestelllisten, Protokolle, Push-Warteschlange u. a. (alle zuerst aus, mit Mindestwerten für Temperatur- und Personaldaten). Probelauf, „Jetzt ausführen“ und automatischer Zeitplan (alle 1 bis 30 Tage, Uhrzeit UTC). Foto-Dateien werden dabei wirklich aus dem Speicher gelöscht.'],
+      ['info', 'Einrichtung: sql/1.0.16_db_admin.sql ausführen und die Edge Function db-admin bereitstellen (supabase/functions/db-admin/index.ts, Verify JWT aus). Für den Zeitplan zusätzlich die Erweiterung pg_cron aktivieren. Details in docs/SETUP-4.1.00.md.']
+    ] },
   { version: '1.0.27', range: '', date: 'November 2026', title: 'Abwasher: Fotos der Arbeit (3) und mehr Fotos je Ort (5), Speicher-Übersicht',
     changes: [
       ['new', 'Abwasher: Beim Erledigen gibt es „📷“ (Erledigt mit Foto): bis zu 3 Fotos der Arbeit (z. B. vorher / nachher), aufnehmen oder aus der Galerie. Bei erledigten Aufgaben kannst du Fotos später hinzufügen oder entfernen (Eintragender bis 24 Stunden, Leitung immer). Die Fotos erscheinen als kleine Bilder bei der Aufgabe und im Detail der Übersicht.'],

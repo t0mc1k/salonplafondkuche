@@ -19,7 +19,7 @@
       openMyPlanModal: 'myplan', openSwapModal: 'swaps', openAbsenceModal: 'absence', openSpecialsModal: 'specials', openExclusiveModal: 'exclusive', openReservationsModal: 'reservations', openTeamChatModal: 'chat', openMaintenanceModal: 'faults',
       openLossModal: 'loss', openHelpModal: 'help', openTomiModal: 'tomi', openShoppingModal: 'shopping',
       openUserProfileModal: 'profile', openUnifiedSettingsModal: 'settings', openChangelogModal: 'news', openSupportModal: 'support',
-      openTeamPlanModal: 'teamplan', openFridgeTempModal: 'fridge', openOrderListModal: 'order', openDishwashModal: 'wash', openPayrollModal: 'payroll', openStaffPinModal: 'staff', openLoginLogModal: 'loginlog',
+      openTeamPlanModal: 'teamplan', openFridgeTempModal: 'fridge', openOrderListModal: 'order', openDbAdminModal: 'dbadmin', openDishwashModal: 'wash', openPayrollModal: 'payroll', openStaffPinModal: 'staff', openLoginLogModal: 'loginlog',
       openSeasonModal: 'season', openImportExportModal: 'impexp', openMultiViewModal: 'multiview'
     };
 

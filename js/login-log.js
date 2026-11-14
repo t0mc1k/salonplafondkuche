@@ -7,7 +7,7 @@
 
     const LL_SECTIONS = {
       dashboard: 'Dashboard', drinks: 'Rezepte', allergens: 'Speisekarte & Allergene', checklist: 'Checkliste', myplan: 'Mein Arbeitsplan',
-      swaps: 'Schichttausch', chat: 'Team-Chat', faults: 'Störungen', fridge: 'Kühlschrank-Temperaturen', order: 'Bestellliste', wash: 'Abwasher', loss: 'Verluste & Bruch', help: 'Hilfe', tomi: 'TomiAI',
+      swaps: 'Schichttausch', chat: 'Team-Chat', faults: 'Störungen', fridge: 'Kühlschrank-Temperaturen', order: 'Bestellliste', dbadmin: 'Datenbank-Verwaltung', wash: 'Abwasher', loss: 'Verluste & Bruch', help: 'Hilfe', tomi: 'TomiAI',
       shopping: 'Einkaufsliste', profile: 'Profil', settings: 'Einstellungen', news: 'Was ist neu?', support: 'Support', teamplan: 'Team & Arbeitsplan',
       payroll: 'Stunden & Lohn', staff: 'Personal & PINs', loginlog: 'Login-Protokoll', season: 'Saison', impexp: 'Import & Export', print: 'Karten-Druck', multiview: 'Multi-View'
     };

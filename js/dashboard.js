@@ -38,6 +38,7 @@
         chat:     { icon: '💬', title: t('dash.chat'), sub: t('dash.chatSub'), run: 'openTeamChatModal', need: 'all', badge: 'dashChatBadge' },
         myplan:   { icon: '🗓️', title: t('dash.myplan'), sub: t('dash.myplanSub'), run: 'openMyPlanModal', need: 'all' },
         login:    { icon: '🔐', title: t('dash.login'), sub: t('dash.loginSub'), run: 'openLoginLogModal', need: 'admin' },
+        dbadmin:  { icon: '🗄️', title: t('dash.dbadmin'), sub: t('dash.dbadminSub'), run: 'openDbAdminModal', need: 'dev' },
         settings: { icon: '⚙️', title: t('dash.settings'), sub: t('dash.settingsSub'), run: 'openUnifiedSettingsModal', need: 'admin' },
         news:     { icon: '🚀', title: t('dash.news'), sub: t('dash.newsSub'), run: 'openChangelogModal', need: 'all' },
         tomi:     { icon: '✨', title: t('dash.tomi'), sub: adm ? t('dash.tomiSubA') : t('dash.tomiSubS'), run: 'openTomiModal', need: 'all', ai: true },
@@ -55,7 +56,7 @@
           { title: t('dash.g.bar'),  ids: ['drinks', 'allergens', 'specials', 'reserv', 'exclusive', 'season', 'impexp'] },
           { title: t('dash.g.std'),  ids: alsoWashes ? ['checklist', 'fridge', 'order', 'maint', 'loss'] : ['checklist', 'fridge', 'order', 'wash', 'maint', 'loss'] },
           { title: t('dash.g.team'), ids: ['teamplan', 'swaps', 'absence', 'payroll', 'staff', 'chat'] },
-          { title: t('dash.g.sys'),  ids: ['login', 'settings'] },
+          { title: t('dash.g.sys'),  ids: currentStaffRole === 'developer' ? ['login', 'dbadmin', 'settings'] : ['login', 'settings'] },
           { title: t('dash.g.info'), ids: ['news', 'tomi', 'help', 'support'] }
         ];
         if (alsoWashes) groups.unshift({ title: '🧽 ' + fmL('Meine Arbeit (Abwasher)', 'My work (dishwashing)'), ids: ['wash', 'myplan'] });

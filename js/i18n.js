@@ -734,6 +734,14 @@
   "de": "Alle tragen ein, live, mit Druck & Excel",
   "en": "Everyone adds items, live, with print & Excel"
  },
+ "dash.dbadmin": {
+  "de": "Datenbank-Verwaltung",
+  "en": "Database management"
+ },
+ "dash.dbadminSub": {
+  "de": "Speicher, Fotos, automatisch aufräumen",
+  "en": "Storage, photos, automatic cleanup"
+ },
  "dash.wash": {
   "de": "Abwasher",
   "en": "Dishwashing"
