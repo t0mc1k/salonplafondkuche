@@ -12,6 +12,14 @@
    ============================================================ */
 
     const CHANGELOG = [
+  { version: '1.0.27', range: '', date: 'November 2026', title: 'Abwasher: Fotos der Arbeit (3) und mehr Fotos je Ort (5), Speicher-Übersicht',
+    changes: [
+      ['new', 'Abwasher: Beim Erledigen gibt es „📷“ (Erledigt mit Foto): bis zu 3 Fotos der Arbeit (z. B. vorher / nachher), aufnehmen oder aus der Galerie. Bei erledigten Aufgaben kannst du Fotos später hinzufügen oder entfernen (Eintragender bis 24 Stunden, Leitung immer). Die Fotos erscheinen als kleine Bilder bei der Aufgabe und im Detail der Übersicht.'],
+      ['new', 'Orte (Leitung): bis zu 5 Fotos pro Aufgabe (das erste ist das Hauptfoto, ⭐ ändert es). In der Aufgabenliste zeigt das Vorschaubild „+N“, ein Tipp öffnet die Galerie.'],
+      ['improved', 'Sparsam mit Speicher und Datenvolumen: Fotos der Arbeit werden auf 1280 px, Ort-Fotos auf 1600 px verkleinert, dazu gibt es eine winzige Vorschau für die Listen. Entfernte, abgebrochene oder gelöschte Fotos werden wirklich aus dem Speicher gelöscht.'],
+      ['new', 'Orte (Leitung): „📦 Foto-Speicher“ zeigt, wie viel Platz die Fotos belegen (aufgeteilt nach Bereich, mit Balken und Tarif Free 1 GB / Pro 100 GB). „🧹 Alte Arbeitsfotos löschen“ entfernt Fotos älter als X Tage (die Einträge bleiben).'],
+      ['info', 'Einrichtung: sql/1.0.15_wash_photos.sql im Supabase SQL Editor der Küche ausführen.']
+    ] },
   { version: '1.0.26', range: '', date: 'November 2026', title: 'Display am Kühlgerät ablesen, Abwasher-Aufgaben als Liste',
     changes: [
       ['new', 'Kühlschrank-Temperaturen: „📟 Display“. Die rote digitale Anzeige am Kühlgerät fotografieren (oder ein Foto wählen), die KI liest die Temperatur. Du siehst die Zahl groß, vergleichst mit dem Foto, korrigierst bei Bedarf (± dreht das Vorzeichen, z. B. wenn bei einem Tiefkühler das Minus fehlt) und speicherst. Danach ist gleich das nächste Gerät vorgewählt. Datum frei wählbar (nicht in der Zukunft).'],

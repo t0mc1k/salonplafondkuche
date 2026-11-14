@@ -839,8 +839,39 @@ body.on-dashboard { padding-bottom: 5rem; }
 .dw-name { font-weight: 800; font-size: .9rem; color: var(--ui-text); }
 .dw-desc { font-size: .75rem; color: var(--ui-muted); }
 .dw-btn { margin-top: auto; width: 100%; padding: .6rem; font-size: .9rem; }
+/* Abwasher: mehrere Fotos, Galerie, Speicher (v1.0.27) */
+.dw-thumbwrap { position: relative; flex: none; }
+.dw-thumbcnt { position: absolute; right: -.2rem; bottom: -.2rem; font-size: .62rem; font-weight: 800; background: #f59e0b; color: #1c1917; border-radius: 999px; padding: 0 .35rem; }
+.dw-proof { display: flex; gap: .25rem; margin-top: .2rem; }
+.dw-proof-img { width: 2.1rem; height: 2.1rem; border-radius: .4rem; object-fit: cover; cursor: zoom-in; border: 1px solid rgba(16,185,129,.6); }
+.dw-ph-grid { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .4rem; }
+.dw-ph-item { position: relative; width: 5.2rem; height: 5.2rem; }
+.dw-ph-img { width: 100%; height: 100%; object-fit: cover; border-radius: .6rem; cursor: zoom-in; border: 1px solid var(--ui-border); }
+.dw-ph-main { position: absolute; left: .2rem; top: .1rem; font-size: .8rem; }
+.dw-ph-act { position: absolute; right: .15rem; top: .15rem; display: flex; gap: .15rem; }
+.dw-ph-act button { width: 1.5rem; height: 1.5rem; border-radius: 999px; border: 0; background: rgba(15,23,42,.8); color: #fff; font-size: .72rem; cursor: pointer; }
+.dw-ph-act button.danger { background: rgba(220,38,38,.9); }
+.dw-gal { display: flex; flex-direction: column; gap: .6rem; align-items: center; }
+.dw-gal-img { max-width: 100%; max-height: 58vh; object-fit: contain; border-radius: .8rem; cursor: zoom-in; }
+.dw-gal-nav { display: flex; gap: 1rem; align-items: center; color: var(--ui-text); }
+.dw-gal-thumbs { display: flex; gap: .35rem; flex-wrap: wrap; justify-content: center; }
+.dw-gal-th { width: 3.2rem; height: 3.2rem; object-fit: cover; border-radius: .5rem; opacity: .6; cursor: pointer; border: 2px solid transparent; }
+.dw-gal-th.on { opacity: 1; border-color: #f59e0b; }
+.dw-viewgrid { display: flex; flex-wrap: wrap; gap: .4rem; }
+.dw-viewthumb { width: 6rem; height: 6rem; object-fit: cover; border-radius: .6rem; cursor: zoom-in; border: 1px solid var(--ui-border); }
+.dw-storage { margin-bottom: .8rem; padding: .6rem .7rem; border: 1px solid var(--ui-border); border-radius: .8rem; font-size: .8rem; color: var(--ui-text); }
+.dw-st-head { display: flex; flex-wrap: wrap; gap: .3rem .6rem; align-items: baseline; }
+.dw-st-head span { color: var(--ui-muted); font-size: .75rem; }
+.dw-st-bar { height: .5rem; border-radius: 999px; background: rgba(148,163,184,.25); margin: .4rem 0; overflow: hidden; }
+.dw-st-fill { height: 100%; background: #22c55e; border-radius: 999px; }
+.dw-st-fill.hot { background: #ef4444; }
+.dw-st-rows { display: flex; flex-wrap: wrap; gap: .2rem .8rem; font-size: .72rem; color: var(--ui-muted); }
+.dw-st-sel { width: auto; padding: .2rem .4rem; font-size: .75rem; }
 /* Aufgaben als kompakte Liste mit kleinem Vorschaubild (Handy) */
 .dw-list { display: flex; flex-direction: column; gap: .4rem; }
+.dw-row { flex-wrap: wrap; }
+.dw-row .dw-rowmain { flex: 1 1 9rem; }
+.dw-row .dw-rowact { flex: 1 1 auto; justify-content: flex-end; }
 .dw-row { display: flex; align-items: center; gap: .6rem; padding: .45rem .55rem; border: 1px solid var(--ui-border); border-radius: .8rem; background: rgba(148,163,184,.06); }
 .dw-row-done { border-color: rgba(16,185,129,.5); background: rgba(16,185,129,.08); }
 .dw-thumb { flex: none; width: 3.4rem; height: 3.4rem; border-radius: .6rem; object-fit: cover; cursor: zoom-in; display: block; }

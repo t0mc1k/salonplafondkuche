@@ -6,17 +6,101 @@
    und pflegen die Orte; Köche haben keinen Zugriff.
    Zu zweit putzen: Kollegen eintragen (wash_logs.with_names), beide bekommen den Punkt. Rangliste und Monate sehen alle Abwasher.
    Übersicht (Leitung): Klick auf einen Eintrag zeigt das Foto des Ortes.
-   Tabellen: wash_areas, wash_logs, wash_monthly (sql/1.0.05_dishwash.sql, 1.0.13_wash_helpers.sql)
+   Fotos: je Ort bis zu 5 (Orte-Editor), je Erledigt-Eintrag bis zu 3 als Nachweis. Kleine Vorschaubilder sparen Datenvolumen.
+   Leitung: Speicher-Übersicht und Aufräumen alter Nachweisfotos (Orte-Reiter).
+   Tabellen: wash_areas, wash_logs, wash_monthly (sql/1.0.05_dishwash.sql, 1.0.13_wash_helpers.sql, 1.0.15_wash_photos.sql)
    ============================================================ */
 
     const DW_FREQ = { daily: ['Täglich', 'Daily'], weekly: ['Wöchentlich', 'Weekly'], monthly: ['Monatlich', 'Monthly'] };
     const DW_FREQ_ORDER = ['daily', 'weekly', 'monthly'];
-    let dw = { m: null, tab: 'tasks', areas: [], logs: [], stat: { year: 0, month: 0, logs: [] }, archive: [], edit: null, photo: '' };
+    let dw = { m: null, eds: {}, tab: 'tasks', areas: [], logs: [], stat: { year: 0, month: 0, logs: [] }, archive: [], edit: null, photo: '' };
 
     function dwCanWash() { return typeof staffHasRole === 'function' && staffHasRole('dishwasher'); }
     function dwWashers() {
       return (staffDatabaseRecords || []).filter(s => s.role === 'dishwasher' || (Array.isArray(s.extra_roles) && s.extra_roles.indexOf('dishwasher') !== -1)).map(s => s.name);
     }
+    // Fotos eines Ortes (neu: photos[], alt: photo_url)
+    const dwAreaPhotos = a => (a && Array.isArray(a.photos) && a.photos.length) ? a.photos : (a && a.photo_url ? [a.photo_url] : []);
+    // <img> mit kleiner Vorschau; fehlt sie (ältere Fotos), wird das Original geladen
+    const dwImg = (url, cls, extra) => `<img class="${cls}" src="${escapeHtml(fmThumbUrl(url))}" data-full="${escapeHtml(url)}" alt="" loading="lazy" onerror="this.onerror=null;this.src=this.dataset.full" ${extra || ''}>`;
+    const DW_PH_AREA = { max: 5, prefix: 'washarea', opts: { maxSide: 1600, quality: 0.8, thumb: true } };
+    const DW_PH_LOG = { max: 3, prefix: 'washlog', opts: { maxSide: 1280, quality: 0.72, thumb: true } };
+
+    // ----- Foto-Editor (Orte: bis 5, Nachweis: bis 3) -----
+    // id: Name des Editors; cfg: DW_PH_*; list: vorhandene Fotos. Neu hochgeladene Fotos werden gemerkt (newly), entfernte alte (removed):
+    // sie werden erst nach erfolgreichem Speichern aus dem Speicher gelöscht.
+    function dwPhNew(id, cfg, list) { dw.eds[id] = { id, cfg, list: (list || []).slice(), newly: [], removed: [], busy: false, status: '' }; return dw.eds[id]; }
+    function dwPhHtml(id) {
+      const ed = dw.eds[id], full = ed.list.length >= ed.cfg.max;
+      return `<div class="dw-ph" id="dwph_${id}">
+        <div class="dw-ph-grid">${ed.list.map((u, i) => `<div class="dw-ph-item">${dwImg(u, 'dw-ph-img', `onclick="dwGallery(dw.eds['${id}'].list, '', ${i})"`)}
+          ${i === 0 && ed.cfg.max > 3 ? '<span class="dw-ph-main">⭐</span>' : ''}
+          <div class="dw-ph-act">${i > 0 && ed.cfg.max > 3 ? `<button type="button" onclick="dwPhMain('${id}', ${i})" title="Als Hauptfoto">⭐</button>` : ''}<button type="button" class="danger" onclick="dwPhRemove('${id}', ${i})" title="Foto entfernen">✕</button></div></div>`).join('')}</div>
+        <div class="fm-hint">${ed.list.length} / ${ed.cfg.max} Fotos${full ? ' (Maximum erreicht)' : ''}</div>
+        ${full ? '' : `<input type="file" id="dwphCam_${id}" accept="image/*" capture="environment" class="hidden" onchange="dwPhAdd('${id}', this)">
+          <input type="file" id="dwphGal_${id}" accept="image/*" multiple class="hidden" onchange="dwPhAdd('${id}', this)">
+          <div class="fm-row-flex" style="gap:.4rem;flex-wrap:wrap"><button type="button" class="ui-btn-ghost" onclick="document.getElementById('dwphCam_${id}').click()" ${ed.busy ? 'disabled' : ''}>📷 Foto aufnehmen</button>
+            <button type="button" class="ui-btn-ghost" onclick="document.getElementById('dwphGal_${id}').click()" ${ed.busy ? 'disabled' : ''}>🖼️ Datei / Galerie wählen</button></div>`}
+        <div class="fm-hint">${escapeHtml(ed.status)}</div></div>`;
+    }
+    function dwPhRender(id) { const el = document.getElementById('dwph_' + id); if (el) el.outerHTML = dwPhHtml(id); }
+    async function dwPhAdd(id, input) {
+      const ed = dw.eds[id]; if (!ed) return;
+      const files = Array.from(input.files || []).slice(0, ed.cfg.max - ed.list.length);
+      input.value = '';
+      if (!files.length) return;
+      ed.busy = true;
+      for (let i = 0; i < files.length; i++) {
+        ed.status = '⏳ Foto ' + (i + 1) + ' von ' + files.length + ' wird hochgeladen ...'; dwPhRender(id);
+        try { const url = await fmUploadPhoto(files[i], ed.cfg.prefix, ed.cfg.opts); ed.list.push(url); ed.newly.push(url); }
+        catch (e) { ed.status = 'Fehler: ' + (e.message || e); dwPhRender(id); ed.busy = false; return; }
+      }
+      ed.busy = false; ed.status = '✔ Hochgeladen'; dwPhRender(id);
+    }
+    function dwPhRemove(id, i) {
+      const ed = dw.eds[id]; if (!ed) return;
+      const [u] = ed.list.splice(i, 1);
+      const k = ed.newly.indexOf(u);
+      if (k >= 0) { ed.newly.splice(k, 1); fmRemovePhotos([u]); }   // noch nie gespeichert: sofort aus dem Speicher
+      else ed.removed.push(u);
+      ed.status = ''; dwPhRender(id);
+    }
+    function dwPhMain(id, i) { const ed = dw.eds[id]; if (!ed) return; ed.list.unshift(ed.list.splice(i, 1)[0]); dwPhRender(id); }
+    // Abbruch: neu hochgeladene, nicht gespeicherte Fotos wieder löschen
+    function dwPhDiscard(id) { const ed = dw.eds[id]; if (!ed) return; if (ed.newly.length) fmRemovePhotos(ed.newly); delete dw.eds[id]; }
+
+    // Galerie: großes Foto + Vorschau-Leiste
+    function dwGallery(urls, title, start) {
+      urls = (urls || []).filter(Boolean); if (!urls.length) return;
+      let i = Math.max(0, Math.min(urls.length - 1, start || 0));
+      const m = fmOpen('dwGal', { title: title ? '🖼️ ' + title : '🖼️ Fotos', layer: 2, wide: true });
+      const draw = () => {
+        m.setBody(`<div class="dw-gal"><img class="dw-gal-img" src="${escapeHtml(urls[i])}" alt="" onclick="openPhotoPreview(${jsArg(urls[i])})">
+          <div class="dw-gal-nav">${urls.length > 1 ? `<button type="button" class="fm-btn" id="dwGalPrev">‹</button><span>${i + 1} / ${urls.length}</span><button type="button" class="fm-btn" id="dwGalNext">›</button>` : ''}</div>
+          ${urls.length > 1 ? '<div class="dw-gal-thumbs">' + urls.map((u, k) => dwImg(u, 'dw-gal-th' + (k === i ? ' on' : ''), `data-k="${k}"`)).join('') + '</div>' : ''}</div>`);
+        const p = document.getElementById('dwGalPrev'), n = document.getElementById('dwGalNext');
+        if (p) p.onclick = () => { i = (i + urls.length - 1) % urls.length; draw(); };
+        if (n) n.onclick = () => { i = (i + 1) % urls.length; draw(); };
+        m.body.querySelectorAll('.dw-gal-th').forEach(el => { el.onclick = () => { i = Number(el.dataset.k); draw(); }; });
+      };
+      draw();
+      m.setFoot('<button type="button" class="ui-btn-primary" onclick="fmClose(\'dwGal\')">Schließen</button>');
+    }
+
+    // Dialog „Fotos der Arbeit“ (bis 3). Ergebnis: { list, removed, newly } oder null bei Abbruch
+    function dwPhotoDialog(title, initial) {
+      return new Promise(resolve => {
+        const ed = dwPhNew('log', DW_PH_LOG, initial);
+        let done = false;
+        const finish = ok => { if (done) return; done = true; fmClose('dwPhD'); if (ok) resolve({ list: ed.list.slice(), removed: ed.removed.slice(), newly: ed.newly.slice() }); else { dwPhDiscard('log'); resolve(null); } };
+        window.dwPhdOk = () => finish(true); window.dwPhdCancel = () => finish(false);
+        const m = fmOpen('dwPhD', { title, sub: 'Bis zu 3 Fotos deiner Arbeit (z. B. vorher / nachher).', layer: 2 });
+        m.setBody(`<div class="fm-stack">${dwPhHtml('log')}</div>`);
+        m.setFoot('<button type="button" class="ui-btn-ghost" onclick="dwPhdCancel()">Abbrechen</button><button type="button" class="ui-btn-primary" onclick="dwPhdOk()">💾 Übernehmen</button>');
+        m.root.querySelector('[data-fm-close]').onclick = () => finish(false);
+      });
+    }
+
     function dwErr(err) {
       const msg = (err && err.message) || String(err);
       if (/does not exist|schema cache|could not find the (table|function)/i.test(msg) || (err && err.code === '42P01')) {
@@ -117,8 +201,9 @@
         const sorted = list.slice().sort((x, y) => (dwLastDone(x) ? 1 : 0) - (dwLastDone(y) ? 1 : 0));
         html += sorted.map(a => {
           const last = dwLastDone(a);
-          const thumb = a.photo_url
-            ? `<img class="dw-thumb" src="${escapeHtml(a.photo_url)}" alt="${escapeHtml(a.name)}" loading="lazy" onclick="openPhotoPreview(${jsArg(a.photo_url)})" title="Foto vergrößern">`
+          const aph = dwAreaPhotos(a);
+          const thumb = aph.length
+            ? `<div class="dw-thumbwrap">${dwImg(aph[0], 'dw-thumb', `onclick="dwGallery(dwAreaPhotos(dw.areas.find(x => x.id === ${jsArg(a.id)})), ${jsArg(a.name)}, 0)" title="Fotos ansehen"`)}${aph.length > 1 ? `<span class="dw-thumbcnt">+${aph.length - 1}</span>` : ''}</div>`
             : '<div class="dw-thumb dw-nophoto">🧽</div>';
           let info = '', action = '';
           if (last) {
@@ -127,10 +212,13 @@
               ? `<button type="button" class="fm-btn dw-ico" onclick="dwUndo(${jsArg(last.id)})" title="Eintrag zurücknehmen" aria-label="Zurücknehmen">↩️</button>` : '';
             const team = [last.done_by].concat(last.with_names || []).join(' + ');
             const help = (mine || userIsAdmin) ? `<button type="button" class="fm-btn dw-ico" onclick="dwEditHelpers(${jsArg(last.id)})" title="Kollegen eintragen, die mitgeholfen haben" aria-label="Kollegen">👥</button>` : '';
-            info = `<div class="dw-done">✅ ${escapeHtml(team)} · ${escapeHtml(fmDateTime(last.done_at))}</div>`;
-            action = help + undo;
+            const proof = (last.photos || []).length ? `<div class="dw-proof">${last.photos.map((u, k) => dwImg(u, 'dw-proof-img', `onclick="dwGallery(dw.logs.find(x => x.id === ${jsArg(last.id)}).photos, ${jsArg('Arbeit: ' + a.name)}, ${k})"`)).join('')}</div>` : '';
+            const cam = (mine && Date.now() - new Date(last.done_at).getTime() < 86400000) || userIsAdmin ? `<button type="button" class="fm-btn dw-ico" onclick="dwEditLogPhotos(${jsArg(last.id)})" title="Fotos der Arbeit (bis 3)" aria-label="Fotos">📷</button>` : '';
+            info = `<div class="dw-done">✅ ${escapeHtml(team)} · ${escapeHtml(fmDateTime(last.done_at))}</div>${proof}`;
+            action = cam + help + undo;
           } else if (dwCanWash() || userIsAdmin) {
             action = `<button type="button" class="ui-btn-primary dw-ok" onclick="dwMark(${jsArg(a.id)}, this)">✓ Erledigt</button>
+              <button type="button" class="fm-btn dw-ico" onclick="dwMarkPhoto(${jsArg(a.id)})" title="Erledigt mit Foto (bis 3)" aria-label="Mit Foto">📷</button>
               <button type="button" class="fm-btn dw-ico" onclick="dwMarkWith(${jsArg(a.id)})" title="Zu zweit geputzt: Kollegen eintragen" aria-label="Zu zweit">👥</button>`;
           } else {
             info = '<div class="dw-open">⏳ Offen</div>';
@@ -185,20 +273,46 @@
       });
     }
 
-    async function dwMark(areaId, btn, withNames) {
+    async function dwMark(areaId, btn, withNames, photos) {
       if (btn) btn.disabled = true;
       const row = { area_id: areaId };
       if (withNames && withNames.length) row.with_names = withNames;
+      if (photos && photos.length) row.photos = photos;
       const { error } = await _supabase.from('wash_logs').insert([row]);
-      if (error) { if (btn) btn.disabled = false; return fmToast(dwErr(error)); }
+      if (error) { if (btn) btn.disabled = false; fmToast(dwErr(error)); return false; }
       fmToast('✓ Gespeichert');
       await dwLoad();
+      return true;
+    }
+
+    // Erledigt mit Foto(s) der Arbeit
+    async function dwMarkPhoto(areaId) {
+      const res = await dwPhotoDialog('📷 Foto der erledigten Arbeit', []);
+      if (res === null) return;
+      const ok = await dwMark(areaId, null, null, res.list);
+      if (!ok && res.newly.length) fmRemovePhotos(res.newly);
+    }
+
+    // Fotos eines vorhandenen Eintrags ändern (Eintragender bis 24 Std., Leitung immer)
+    async function dwEditLogPhotos(logId) {
+      const l = dw.logs.find(x => x.id === logId) || dw.stat.logs.find(x => x.id === logId);
+      if (!l) return;
+      const res = await dwPhotoDialog('📷 Fotos bei „' + (l.area_name || 'Aufgabe') + '“', l.photos || []);
+      if (res === null) return;
+      const { error } = await _supabase.rpc('wash_set_log_photos', { p_log: logId, p_photos: res.list });
+      if (error) { if (res.newly.length) fmRemovePhotos(res.newly); return fmToast(/Keine Berechtigung/i.test(error.message) ? 'Nur der Eintragende (bis 24 Std.) oder die Leitung darf das ändern.' : dwErr(error)); }
+      if (res.removed.length) fmRemovePhotos(res.removed);
+      fmToast('✓ Gespeichert');
+      fmClose('dwLogView');
+      if (dw.tab === 'overview') await dwLoadStat(); else await dwLoad();
     }
 
     async function dwUndo(logId) {
       if (!confirm('Diesen Eintrag zurücknehmen?')) return;
+      const old = dw.logs.find(x => x.id === logId);
       const { error } = await _supabase.from('wash_logs').delete().eq('id', logId);
       if (error) return fmToast(dwErr(error));
+      if (old && old.photos && old.photos.length) fmRemovePhotos(old.photos);
       await dwLoad();
     }
 
@@ -318,18 +432,23 @@
       const isExtra = !l.area_id && l.extra_text;
       const team = [l.done_by].concat(l.with_names || []);
       const m = fmOpen('dwLogView', { title: isExtra ? '➕ ' + l.extra_text : '🧽 ' + (l.area_name || (a && a.name) || 'Aufgabe'), sub: fmDateTime(l.done_at) + ' · ' + team.join(' + '), layer: 2 });
-      const photo = a && a.photo_url ? `<img class="dw-viewphoto" src="${escapeHtml(a.photo_url)}" alt="${escapeHtml(a.name)}" onclick="openPhotoPreview(${jsArg(a.photo_url)})">`
-        : `<div class="dw-viewphoto dw-nophoto">${isExtra ? '➕' : '🧽'}<small>${isExtra ? 'Extra-Eintrag (kein Ort mit Foto)' : (a ? 'Für diesen Ort gibt es kein Foto' : 'Der Ort wurde inzwischen gelöscht')}</small></div>`;
+      const aph = dwAreaPhotos(a), proof = l.photos || [];
+      const grid = (urls, cap) => urls.length ? `<div class="dw-viewgrid">${urls.map((u, k) => dwImg(u, 'dw-viewthumb', `onclick="dwGallery(${jsArg(urls)}, ${jsArg(cap)}, ${k})"`)).join('')}</div>` : '';
+      const photo = (proof.length ? `<h4 class="dw-group">📷 Foto${proof.length > 1 ? 's' : ''} der Arbeit</h4>${grid(proof, 'Arbeit: ' + (l.area_name || ''))}` : '')
+        + (aph.length ? `<h4 class="dw-group">🧽 ${proof.length ? 'Ort (Soll-Zustand)' : 'Foto des Ortes'}</h4>${proof.length ? grid(aph, a.name) : `<img class="dw-viewphoto" src="${escapeHtml(aph[0])}" alt="${escapeHtml(a.name)}" onclick="dwGallery(${jsArg(aph)}, ${jsArg(a.name)}, 0)">${aph.length > 1 ? grid(aph.slice(1), a.name) : ''}`}` : '')
+        || `<div class="dw-viewphoto dw-nophoto">${isExtra ? '➕' : '🧽'}<small>${isExtra ? 'Extra-Eintrag (kein Ort mit Foto)' : (a ? 'Für diesen Ort gibt es kein Foto' : 'Der Ort wurde inzwischen gelöscht')}</small></div>`;
       m.setBody(`<div class="fm-stack">${photo}
         ${a && a.description ? `<p>${escapeHtml(a.description)}</p>` : ''}
         <div class="tp-summary"><span>👤 <b>${escapeHtml(team.join(' + '))}</b></span><span>🕒 <b>${escapeHtml(fmDateTime(l.done_at))}</b></span>${a ? `<span>${escapeHtml(DW_FREQ[a.frequency][0])}</span>` : ''}</div></div>`);
-      m.setFoot(`<button type="button" class="ui-btn-ghost" onclick="dwEditHelpers(${jsArg(l.id)})">👥 Kollegen</button><button type="button" class="ui-btn-primary" onclick="fmClose('dwLogView')">Schließen</button>`);
+      m.setFoot(`<button type="button" class="ui-btn-ghost" onclick="dwEditHelpers(${jsArg(l.id)})">👥 Kollegen</button><button type="button" class="ui-btn-ghost" onclick="dwEditLogPhotos(${jsArg(l.id)})">📷 Fotos</button><button type="button" class="ui-btn-primary" onclick="fmClose('dwLogView')">Schließen</button>`);
     }
 
     async function dwUndoStat(id) {
       if (!confirm('Eintrag endgültig löschen?')) return;
+      const old = dw.stat.logs.find(x => x.id === id);
       const { error } = await _supabase.from('wash_logs').delete().eq('id', id);
       if (error) return fmToast(dwErr(error));
+      if (old && old.photos && old.photos.length) fmRemovePhotos(old.photos);
       await dwLoadStat();
     }
 
@@ -368,24 +487,58 @@
 
     // ---------- Orte verwalten (Manager/Developer) ----------
     function dwRenderAreas() {
-      let html = `<div class="fm-row-flex" style="justify-content:flex-end;margin-bottom:.6rem"><button type="button" class="ui-btn-primary" onclick="dwOpenAreaForm('')">➕ Neuer Ort / Aufgabe</button></div>`;
+      let html = '<div id="dwStorage" class="dw-storage"><span class="fm-hint">Foto-Speicher wird geprüft …</span></div>' + `<div class="fm-row-flex" style="justify-content:flex-end;margin-bottom:.6rem"><button type="button" class="ui-btn-primary" onclick="dwOpenAreaForm('')">➕ Neuer Ort / Aufgabe</button></div>`;
       html += dw.areas.length ? dw.areas.map(a => `<div class="fm-item${a.active ? '' : ' dw-inactive'}">
-          ${a.photo_url ? `<img class="fm-thumb" src="${escapeHtml(a.photo_url)}" alt="" loading="lazy">` : '<div class="fm-thumb dw-nophoto">🧽</div>'}
+          ${dwAreaPhotos(a).length ? dwImg(dwAreaPhotos(a)[0], 'fm-thumb') : '<div class="fm-thumb dw-nophoto">🧽</div>'}
           <div class="fm-item-main">
-            <div class="fm-item-title">${escapeHtml(a.name)} ${fmStatusChip(DW_FREQ[a.frequency][0], 'blue')}${a.active ? '' : ' ' + fmStatusChip('ausgeblendet', 'gray')}</div>
+            <div class="fm-item-title">${escapeHtml(a.name)} ${fmStatusChip(DW_FREQ[a.frequency][0], 'blue')}${dwAreaPhotos(a).length ? ' ' + fmStatusChip('📷 ' + dwAreaPhotos(a).length, 'gray') : ''}${a.active ? '' : ' ' + fmStatusChip('ausgeblendet', 'gray')}</div>
             ${a.description ? `<div class="fm-item-sub">${escapeHtml(a.description)}</div>` : ''}
             <div class="fm-item-actions">
               <button type="button" class="fm-btn" onclick="dwOpenAreaForm(${jsArg(a.id)})">✏️ Bearbeiten</button>
               <button type="button" class="fm-btn fm-btn-danger" onclick="dwDeleteArea(${jsArg(a.id)})">🗑</button>
             </div></div></div>`).join('') : '<p class="staff-empty">Noch keine Orte. Lege z. B. „Fettabscheider“, „Bodenabläufe“ oder „Spülküche Wände“ an.</p>';
       dw.m.setBody(html);
+      dwLoadStorage();
+    }
+
+    // ---------- Foto-Speicher (Leitung) ----------
+    const DW_PREFIX_NAMES = { washlog: 'Abwasher: Fotos der Arbeit', washarea: 'Abwasher: Orte', abwasher: 'Abwasher: Orte (ältere)', recipe: 'Rezepte', recipes: 'Rezepte', drink: 'Rezepte / Getränke', chat: 'Chat', profile: 'Profile', maint: 'Störungen', staff: 'Profile' };
+    const dwFmtBytes = b => b >= 1073741824 ? (b / 1073741824).toFixed(2).replace('.', ',') + ' GB' : (b >= 1048576 ? (b / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.round(b / 1024) + ' KB');
+    function dwStorageLimit() { try { return Number(localStorage.getItem('dw_storage_gb')) || 1; } catch (e) { return 1; } }
+    function dwSetStorageLimit(gb) { try { localStorage.setItem('dw_storage_gb', String(gb)); } catch (e) {} dwLoadStorage(); }
+    async function dwLoadStorage() {
+      const el = document.getElementById('dwStorage'); if (!el) return;
+      const { data, error } = await _supabase.rpc('photo_storage_stats');
+      if (error) { el.innerHTML = '<span class="fm-hint">Foto-Speicher: ' + escapeHtml(/does not exist|schema cache|could not find/i.test(error.message) ? 'bitte sql/1.0.15_wash_photos.sql ausführen' : error.message) + '</span>'; return; }
+      const rows = data || [], total = rows.length ? Number(rows[0].total_bytes) : 0, files = rows.length ? Number(rows[0].total_files) : 0;
+      const gb = dwStorageLimit(), limit = gb * 1073741824, pct = Math.min(100, total / limit * 100);
+      el.innerHTML = `<div class="dw-st-head"><b>📦 Foto-Speicher</b> <span>${dwFmtBytes(total)} von ${gb} GB belegt (${pct < 1 ? '< 1' : Math.round(pct)} %) · ${files} Dateien</span></div>
+        <div class="dw-st-bar"><div class="dw-st-fill${pct > 80 ? ' hot' : ''}" style="width:${Math.max(1, pct)}%"></div></div>
+        <div class="dw-st-rows">${rows.slice(0, 6).map(r => `<span>${escapeHtml(DW_PREFIX_NAMES[r.prefix] || r.prefix)}: <b>${dwFmtBytes(Number(r.bytes))}</b></span>`).join('')}</div>
+        <div class="fm-row-flex" style="gap:.4rem;flex-wrap:wrap;margin-top:.4rem">
+          <label class="fm-hint">Tarif: <select class="ui-field dw-st-sel" onchange="dwSetStorageLimit(this.value)"><option value="1"${gb === 1 ? ' selected' : ''}>Free (1 GB)</option><option value="100"${gb === 100 ? ' selected' : ''}>Pro (100 GB)</option></select></label>
+          <button type="button" class="fm-btn" onclick="dwCleanupPhotos()">🧹 Alte Arbeitsfotos löschen</button></div>`;
+    }
+    async function dwCleanupPhotos() {
+      const days = parseInt(prompt('Fotos der Arbeit löschen, die älter sind als wie viele Tage? (mindestens 7)\nDie Einträge bleiben erhalten, nur die Fotos werden gelöscht.', '90'), 10);
+      if (!days || days < 7) return;
+      const { data, error } = await _supabase.rpc('wash_old_photos', { p_days: days });
+      if (error) return fmToast(dwErr(error));
+      const rows = data || [], urls = [].concat(...rows.map(r => r.photos || []));
+      if (!rows.length) return fmToast('Keine Fotos älter als ' + days + ' Tage.');
+      if (!confirm(urls.length + ' Fotos von ' + rows.length + ' Einträgen (älter als ' + days + ' Tage) endgültig löschen?')) return;
+      for (let i = 0; i < urls.length; i += 50) await fmRemovePhotos(urls.slice(i, i + 50));
+      const c = await _supabase.rpc('wash_clear_log_photos', { p_ids: rows.map(r => r.log_id) });
+      if (c.error) return fmToast(dwErr(c.error));
+      fmToast('✓ ' + urls.length + ' Fotos gelöscht');
+      dwLoadStorage();
     }
 
     function dwOpenAreaForm(id) {
       const a = id ? dw.areas.find(x => x.id === id) : null;
       dw.edit = a || { id: '', name: '', description: '', photo_url: '', frequency: 'weekly', active: true };
-      dw.photo = dw.edit.photo_url || '';
-      const m = fmOpen('dwForm', { title: a ? '✏️ Ort bearbeiten' : '➕ Neuer Ort / Aufgabe', layer: 2 });
+      dwPhNew('area', DW_PH_AREA, dwAreaPhotos(dw.edit));
+      const m = fmOpen('dwForm', { title: a ? '✏️ Ort bearbeiten' : '➕ Neuer Ort / Aufgabe', layer: 2, onClose: () => dwPhDiscard('area') });
       m.setBody(`<div class="fm-stack">
         <div class="fm-field"><label class="form-label" for="dwfName">Name des Ortes / der Aufgabe *</label>
           <input type="text" id="dwfName" class="ui-field" maxlength="80" value="${escapeHtml(dw.edit.name)}" placeholder="z. B. Bodenablauf Spülküche"></div>
@@ -394,32 +547,12 @@
         <div class="fm-field"><label class="form-label" for="dwfFreq">Wie oft?</label>
           <select id="dwfFreq" class="ui-field">${DW_FREQ_ORDER.map(f => `<option value="${f}"${dw.edit.frequency === f ? ' selected' : ''}>${DW_FREQ[f][0]}</option>`).join('')}</select>
           <p class="fm-hint">Wöchentlich = einmal pro Woche (Mo–So), monatlich = einmal pro Kalendermonat.</p></div>
-        <div class="fm-field"><label class="form-label">Foto des Ortes</label>
-          <div id="dwfPhotoBox">${dwPhotoBoxHtml()}</div>
-          <input type="file" id="dwfPhotoCam" accept="image/*" capture="environment" onchange="dwPhotoPicked(this)" class="hidden">
-          <input type="file" id="dwfPhotoGal" accept="image/*" onchange="dwPhotoPicked(this)" class="hidden">
-          <div class="fm-row-flex" style="gap:.4rem;flex-wrap:wrap">
-            <button type="button" class="ui-btn-ghost" onclick="document.getElementById('dwfPhotoCam').click()">📷 Foto aufnehmen</button>
-            <button type="button" class="ui-btn-ghost" onclick="document.getElementById('dwfPhotoGal').click()">🖼️ Datei / Galerie wählen</button>
-          </div>
-          <div id="dwfPhotoStatus" class="fm-hint"></div></div>
+        <div class="fm-field"><label class="form-label">Fotos des Ortes (bis zu 5, das erste ist das Hauptfoto)</label>
+          ${dwPhHtml('area')}</div>
         <label class="switch-row"><span>Aktiv (sichtbar für Abwasher)</span><span class="switch"><input type="checkbox" id="dwfActive" ${dw.edit.active ? 'checked' : ''}><span class="switch-track"></span></span></label>
       </div>`);
-      m.setFoot(`<button type="button" class="ui-btn-ghost" onclick="fmClose('dwForm')">Abbrechen</button>
+      m.setFoot(`<button type="button" class="ui-btn-ghost" onclick="dwPhDiscard('area'); fmClose('dwForm')">Abbrechen</button>
         <button type="button" class="ui-btn-primary" onclick="dwSaveArea()">💾 Speichern</button>`);
-    }
-
-    function dwPhotoBoxHtml() {
-      return dw.photo ? `<img class="dw-formphoto" src="${escapeHtml(dw.photo)}" alt=""> <button type="button" class="fm-btn fm-btn-danger" onclick="dw.photo=''; document.getElementById('dwfPhotoBox').innerHTML=dwPhotoBoxHtml()">Foto entfernen</button>` : '';
-    }
-
-    async function dwPhotoPicked(input) {
-      const f = input.files && input.files[0];
-      if (!f) return;
-      const st = document.getElementById('dwfPhotoStatus');
-      st.textContent = '⏳ Foto wird hochgeladen ...';
-      try { dw.photo = await fmUploadPhoto(f, 'abwasher'); st.textContent = '✔ Foto hochgeladen'; document.getElementById('dwfPhotoBox').innerHTML = dwPhotoBoxHtml(); }
-      catch (e) { st.textContent = 'Fehler: ' + (e.message || e); }
     }
 
     async function dwSaveArea() {
@@ -427,12 +560,15 @@
       if (!name) return fmToast('Bitte einen Namen eingeben.');
       const payload = {
         name, description: document.getElementById('dwfDesc').value.trim(), frequency: document.getElementById('dwfFreq').value,
-        photo_url: dw.photo || '', active: document.getElementById('dwfActive').checked
+        photos: (dw.eds.area ? dw.eds.area.list : []).slice(0, 5), photo_url: (dw.eds.area && dw.eds.area.list[0]) || '', active: document.getElementById('dwfActive').checked
       };
+      const ed = dw.eds.area;
       const res = dw.edit && dw.edit.id
         ? await _supabase.from('wash_areas').update(payload).eq('id', dw.edit.id)
         : await _supabase.from('wash_areas').insert([Object.assign(payload, { sort_order: dw.areas.length + 1 })]);
       if (res.error) return fmToast(dwErr(res.error));
+      if (ed && ed.removed.length) fmRemovePhotos(ed.removed);   // entfernte Fotos geben Speicher frei
+      delete dw.eds.area;
       fmClose('dwForm');
       fmToast('Gespeichert');
       await dwLoad();
@@ -443,5 +579,6 @@
       if (!a || !confirm('„' + a.name + '“ löschen? Bisherige Einträge bleiben in der Übersicht erhalten. Tipp: „Aktiv“ abwählen blendet den Ort nur aus.')) return;
       const { error } = await _supabase.from('wash_areas').delete().eq('id', id);
       if (error) return fmToast(dwErr(error));
+      fmRemovePhotos(dwAreaPhotos(a));
       await dwLoad();
     }

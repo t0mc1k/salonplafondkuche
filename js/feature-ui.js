@@ -123,16 +123,44 @@
     }
 
     // ---------- Foto-Upload (Bucket „photos“, wie Chat & Rezepte) ----------
-    async function fmUploadPhoto(file, prefix) {
+    // opts (optional): { maxSide, quality } kleiner = weniger Speicher; { thumb: true } legt zusätzlich eine kleine Vorschau (<Name>_t.jpg) ab
+    async function fmUploadPhoto(file, prefix, opts) {
       if (!file || !/^image\//.test(file.type)) throw new Error(fmL('Bitte ein Bild auswählen.', 'Please choose an image.'));
-      const prepared = (typeof compressImageFile === 'function') ? await compressImageFile(file) : file;
+      opts = opts || {};
+      const prepared = (typeof compressImageFile === 'function') ? await compressImageFile(file, opts.maxSide, opts.quality) : file;
       const isJpeg = prepared !== file;
       const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const name = `${prefix}_${Date.now()}_${isJpeg ? safe.replace(/\.[^.]+$/, '') + '.jpg' : safe}`;
+      const name = `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${isJpeg ? safe.replace(/\.[^.]+$/, '') + '.jpg' : safe}`;
       const { error } = await _supabase.storage.from('photos').upload(name, prepared, isJpeg ? { contentType: 'image/jpeg' } : undefined);
       if (error) throw error;
       const { data } = _supabase.storage.from('photos').getPublicUrl(name);
+      if (opts.thumb) {   // kleine Vorschau für Listen (spart Datenvolumen beim Anzeigen)
+        try {
+          const tb = await fmMakeThumb(file, opts.thumbSide || 240);
+          if (tb) await _supabase.storage.from('photos').upload(name.replace(/\.[^.]+$/, '') + '_t.jpg', tb, { contentType: 'image/jpeg' });
+        } catch (e) {}
+      }
       return data.publicUrl;
+    }
+    async function fmMakeThumb(file, side) {
+      const bmp = await createImageBitmap(file);
+      const s = Math.min(1, side / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bmp.width * s)); c.height = Math.max(1, Math.round(bmp.height * s));
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      if (bmp.close) bmp.close();
+      return await new Promise(res => c.toBlob(res, 'image/jpeg', 0.7));
+    }
+    // Adresse der kleinen Vorschau zu einem hochgeladenen Foto (nur für Fotos mit thumb: true; sonst per onerror auf das Original zurückfallen)
+    function fmThumbUrl(url) { return String(url || '').replace(/\.[A-Za-z0-9]+(\?.*)?$/, '_t.jpg'); }
+    // Dateipfad im Bucket „photos“ aus einer öffentlichen Adresse
+    function fmPhotoPath(url) { const m = /\/object\/public\/photos\/([^?]+)/.exec(String(url || '')); return m ? decodeURIComponent(m[1]) : ''; }
+    // Fotos (und ihre Vorschau) aus dem Speicher löschen, damit Platz frei wird. Fehler werden ignoriert.
+    async function fmRemovePhotos(urls) {
+      const paths = [];
+      (urls || []).forEach(u => { const p = fmPhotoPath(u); if (p) { paths.push(p); paths.push(fmPhotoPath(fmThumbUrl(u))); } });
+      const list = paths.filter(Boolean);
+      if (!list.length) return;
+      try { await _supabase.storage.from('photos').remove(list); } catch (e) {}
     }
 
     // Mitarbeitername-Vergleich: Der Arbeitsplan nutzt manchmal längere Namen als die Personalliste.
